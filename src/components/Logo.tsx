@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-// Monograma "N." oficial do Nikola's (PNG com fundo transparente, vindo do site anterior).
+// Monograma "N." com gota, desenho do Bruno (set/2026). Vetor e original em Desktop/Nikolas/Logotipo.
 // "escuro" = N preto para fundos claros; "claro" = N branco para fundos escuros.
 export default function Logo({
   className = "h-10 w-10",
