@@ -12,7 +12,7 @@ export default function Hero() {
           Comida mineira de todo dia, em Ouro Fino desde 1977.
         </h1>
         <p className="mt-6 max-w-[52ch] text-lg text-cafe leading-relaxed">
-          Feijão tropeiro servido diariamente, pratos executivos de segunda a sexta, carnes na chapa,
+          Feijão tropeiro servido diariamente, viradão à mineira, carnes na chapa,
           massas caseiras e o chope sempre gelado. No centro da cidade, com estacionamento fácil.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">

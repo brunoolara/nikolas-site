@@ -36,8 +36,8 @@ export default function Sobre() {
               o cuidado com cada prato e com quem senta à mesa.
             </p>
             <p>
-              Hoje o Nikola&rsquo;s recebe famílias no almoço de domingo, quem trabalha no centro nos
-              executivos de segunda a sexta, e viajantes que cruzam o sul de Minas e já sabem onde
+              Hoje o Nikola&rsquo;s recebe famílias no almoço de domingo, quem trabalha no centro no
+              almoço de segunda a sexta, e viajantes que cruzam o sul de Minas e já sabem onde
               parar.
             </p>
           </div>

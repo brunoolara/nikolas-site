@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { cardapio, formatarPreco } from "@/data/cardapio";
-import { restaurante } from "@/data/restaurante";
+import { cardapio } from "@/data/cardapio";
 import Delivery from "@/components/Delivery";
 
 export const metadata: Metadata = {
   title: "Cardápio",
   description:
-    "Cardápio do Nikola's em Ouro Fino: executivos de segunda a sexta, viradão à mineira, dobradinha, carnes na chapa, massas caseiras, especialidades árabes, petiscos, sobremesas e chope.",
+    "Cardápio do Nikola's em Ouro Fino: viradão à mineira, dobradinha, carnes na chapa, aves, peixes, massas caseiras, especialidades árabes, petiscos, sobremesas e chope.",
   alternates: { canonical: "/cardapio" },
 };
 
@@ -16,9 +15,8 @@ export default function Cardapio() {
       <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 md:pt-16">
         <h1 className="font-display text-5xl md:text-6xl leading-tight">Cardápio</h1>
         <p className="mt-4 max-w-[56ch] text-lg text-cafe leading-relaxed">
-          Almoço e jantar à la carte, com pratos executivos de segunda a sexta. Os valores são os
-          do cardápio digital e podem mudar sem aviso; pratos sem preço variam conforme o
-          acompanhamento escolhido.
+          Almoço e jantar à la carte, com feijão tropeiro servido todos os dias. Para pedir em casa,
+          o cardápio digital tem tudo com fotos.
         </p>
       </section>
 
@@ -50,15 +48,7 @@ export default function Cardapio() {
             <ul className="mt-5 divide-y divide-linha">
               {c.itens.map((item) => (
                 <li key={item.nome} className="py-3">
-                  <div className="flex items-baseline">
-                    <span className="font-medium text-[17px] leading-snug">{item.nome}</span>
-                    {item.preco !== null && (
-                      <>
-                        <span className="leader" aria-hidden="true" />
-                        <span className="shrink-0 tabular-nums">{formatarPreco(item.preco)}</span>
-                      </>
-                    )}
-                  </div>
+                  <p className="font-medium text-[17px] leading-snug">{item.nome}</p>
                   {item.desc && <p className="mt-0.5 text-[15px] text-cafe max-w-[48ch]">{item.desc}</p>}
                 </li>
               ))}
@@ -66,14 +56,6 @@ export default function Cardapio() {
           </section>
         ))}
       </div>
-
-      <p className="mx-auto max-w-6xl px-4 sm:px-6 text-cafe">
-        Preços atualizados em setembro de 2026 a partir do{" "}
-        <a href={restaurante.delivery.url} target="_blank" rel="noopener" className="underline underline-offset-4 decoration-linha hover:text-tinta">
-          cardápio digital
-        </a>
-        .
-      </p>
 
       <Delivery titulo="Quer pedir em casa?" />
     </>

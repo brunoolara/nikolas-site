@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s | Nikola's Restaurante",
   },
   description:
-    "Restaurante tradicional no centro de Ouro Fino, MG. Feijão tropeiro todo dia, pratos executivos, carnes na chapa, massas caseiras, especialidades árabes e chope gelado. Reservas e delivery pelo WhatsApp.",
+    "Restaurante tradicional no centro de Ouro Fino, MG. Feijão tropeiro todo dia, viradão, dobradinha, carnes na chapa, massas caseiras, especialidades árabes e chope gelado. Reservas e delivery pelo WhatsApp.",
   openGraph: {
     type: "website",
     locale: "pt_BR",
