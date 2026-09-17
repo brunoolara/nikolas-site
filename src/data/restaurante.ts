@@ -50,10 +50,9 @@ export const restaurante = {
   },
   // Horários por dia da semana (0 = domingo). Cada turno é [abre, fecha] em "HH:MM".
   horarios: [
-    { dias: [1, 2, 3, 4], rotulo: "Segunda a quinta", turnos: [["11:00", "14:00"], ["19:00", "22:00"]] },
-    { dias: [5], rotulo: "Sexta", turnos: [["11:00", "14:00"], ["19:00", "23:00"]] },
-    { dias: [6], rotulo: "Sábado", turnos: [["11:00", "14:30"], ["19:00", "23:00"]] },
-    { dias: [0], rotulo: "Domingo", turnos: [["11:00", "15:30"]] },
+    { dias: [1, 2, 3, 4, 5], rotulo: "Segunda a sexta", turnos: [["11:00", "14:00"], ["19:00", "22:00"]] },
+    { dias: [6], rotulo: "Sábado", turnos: [["11:00", "14:30"], ["19:00", "22:00"]] },
+    { dias: [0], rotulo: "Domingo", turnos: [["11:00", "14:30"]] },
   ] as const,
 } as const;
 
