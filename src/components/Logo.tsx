@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-// Monograma "N." com gota, desenho do Bruno (set/2026). Vetor e original em Desktop/Nikolas/Logotipo.
+// Monograma "N." com gota: N em Trajan Pro 3 (fonte do logotipo) + gota desenhada pelo Bruno (set/2026). Vetor em Desktop/Nikolas/Logotipo.
 // "escuro" = N preto para fundos claros; "claro" = N branco para fundos escuros.
 export default function Logo({
   className = "h-10 w-10",
