@@ -20,8 +20,8 @@ export default function Destaques() {
             Os pratos da casa
           </h2>
           <p className="mt-4 text-papel/75 max-w-[38ch] leading-relaxed">
-            Os que estão no cardápio há décadas e os que a cidade mais pede. Executivos de segunda a
-            sexta a partir de R$ 28, com arroz, tropeiro, salada e fritas.
+            Os que estão no cardápio há décadas e os que a cidade mais pede. De segunda a sexta,
+            executivos com arroz, tropeiro, salada e fritas.
           </p>
           <Link
             href="/cardapio"
