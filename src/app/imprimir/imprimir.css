@@ -340,6 +340,21 @@ body:has(.papel-fora) {
   }
 }
 
+/* Numa tela estreita a folha de 210 mm estoura para os lados. Só na tela,
+   encolhe para caber — o papel continua saindo em tamanho real. */
+@media screen and (max-width: 860px) {
+  .folha { zoom: 0.82; }
+}
+@media screen and (max-width: 720px) {
+  .folha { zoom: 0.66; }
+}
+@media screen and (max-width: 560px) {
+  .folha { zoom: 0.52; }
+}
+@media screen and (max-width: 420px) {
+  .folha { zoom: 0.40; }
+}
+
 @media print {
   .papel-fora {
     background: none;
