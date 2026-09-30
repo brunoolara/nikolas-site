@@ -4,7 +4,7 @@
 // campos com nome claro, nada de arrastar, e "Ver e imprimir" sempre à mão.
 
 import { useEffect, useState, useTransition } from "react";
-import { acaoSair, acaoSalvar } from "./acoes";
+import { acaoSalvar } from "../acoes";
 import { DIAS, ROTULO_DIA, type Dia, type Item, type MenuExecutivo } from "@/lib/menu/tipos";
 
 type Props = { menu: MenuExecutivo; atualizadoEm: string; atualizadoPor: string };
@@ -139,13 +139,12 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
           >
             Ver e imprimir
           </a>
-          <button
-            type="button"
-            onClick={() => acaoSair()}
+          <a
+            href="/admin"
             className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme"
           >
-            Sair
-          </button>
+            Voltar
+          </a>
         </div>
       </header>
 

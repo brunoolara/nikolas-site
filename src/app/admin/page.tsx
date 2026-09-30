@@ -1,52 +1,57 @@
-import type { Metadata } from "next";
+// Seletor: qual peça o funcionário vai editar.
+
+import Link from "next/link";
 import { lerCardapio } from "@/lib/menu/armazem";
-import { autenticado, faltaConfigurarSenha } from "@/lib/menu/sessao";
-import Editor from "./Editor";
-import Entrar from "./Entrar";
-import "./admin.css";
+import { PECAS, ROTULO_PECA } from "@/lib/menu/tipos";
+import Sair from "./Sair";
 
-export const metadata: Metadata = {
-  title: "Editar o cardápio",
-  robots: { index: false, follow: false },
-};
-
-export const dynamic = "force-dynamic";
-
-export default async function Admin() {
-  if (faltaConfigurarSenha()) {
-    return (
-      <div className="painel mx-auto mt-24 max-w-lg px-6">
-        <h1 className="font-display text-2xl">Falta configurar a senha</h1>
-        <p className="mt-3 text-cafe">
-          O painel só abre depois que a variável <code className="font-mono">SENHA_PAINEL</code> existir
-          no ambiente. Para criar, rode no terminal do projeto:
-        </p>
-        <pre className="mt-3 overflow-x-auto rounded bg-creme p-3 font-mono text-sm">
-          vercel env add SENHA_PAINEL
-        </pre>
-        <p className="mt-3 text-sm text-cafe">
-          Depois rode <code className="font-mono">vercel env pull</code> para usar aqui no computador,
-          e publique de novo para valer no site.
-        </p>
-      </div>
-    );
-  }
-
-  if (!(await autenticado()))
-    return (
-      <div className="painel">
-        <Entrar />
-      </div>
-    );
-
+export default async function EscolherPeca() {
   const cardapio = await lerCardapio();
+  const quando = new Date(cardapio.atualizadoEm).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+
   return (
-    <div className="painel">
-      <Editor
-        menu={cardapio.executivo}
-        atualizadoEm={cardapio.atualizadoEm}
-        atualizadoPor={cardapio.atualizadoPor}
-      />
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <header className="flex flex-wrap items-baseline justify-between gap-3 border-b border-linha pb-4">
+        <div>
+          <h1 className="font-display text-3xl">Cardápio do Nikola&apos;s</h1>
+          <p className="mt-1 text-sm text-cafe">
+            Última alteração por {cardapio.atualizadoPor} em {quando}
+          </p>
+        </div>
+        <Sair />
+      </header>
+
+      <p className="mt-8 text-cafe">Escolha o que você quer editar ou imprimir:</p>
+
+      <div className="mt-4 grid gap-3">
+        {PECAS.map((peca) => {
+          const r = ROTULO_PECA[peca];
+          return (
+            <div key={peca} className="rounded border border-linha p-5 hover:border-verde">
+              <h2 className="font-display text-2xl">{r.nome}</h2>
+              <p className="mt-1 text-sm text-cafe">{r.descricao}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href={`/admin/${peca}`}
+                  className="rounded bg-verde px-4 py-2 text-sm font-semibold text-papel hover:bg-verde-escuro"
+                >
+                  Editar
+                </Link>
+                <a
+                  href={r.imprimir}
+                  target="_blank"
+                  className="rounded border border-verde px-4 py-2 text-sm font-semibold text-verde hover:bg-verde hover:text-papel"
+                >
+                  Ver e imprimir
+                </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

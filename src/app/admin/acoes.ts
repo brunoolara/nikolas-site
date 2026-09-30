@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { gravarCardapio, lerCardapio } from "@/lib/menu/armazem";
 import { autenticado, entrar, sair } from "@/lib/menu/sessao";
-import type { Cardapio, Dia, Especial, MenuExecutivo, Secao } from "@/lib/menu/tipos";
+import type { Cardapio, Dia, Especial, MenuExecutivo, MenuSalao, Secao, SecaoSalao } from "@/lib/menu/tipos";
 import { DIAS } from "@/lib/menu/tipos";
 
 export type Resultado = { ok: boolean; mensagem: string };
@@ -63,6 +63,52 @@ export async function acaoSalvar(menu: MenuExecutivo, autor: string): Promise<Re
     return { ok: true, mensagem: `Salvo (versão ${salvo.versao}).` };
   } catch (erro) {
     console.error("falha ao salvar o cardápio", erro);
+    return { ok: false, mensagem: "Não consegui salvar. Tente de novo em instantes." };
+  }
+}
+
+function limparSecaoSalao(secao: SecaoSalao): SecaoSalao {
+  return {
+    ...secao,
+    titulo: secao.titulo?.trim() || undefined,
+    nota: secao.nota?.trim() || undefined,
+    itens: secao.itens
+      .filter((i) => i.nome?.trim())
+      .map((i) => ({
+        nome: i.nome.trim(),
+        desc: i.desc?.trim() || undefined,
+        unidade: i.unidade?.trim() || undefined,
+        dia: i.dia?.trim() || undefined,
+        // preço vazio na segunda coluna volta a ser item de preço único
+        precos: (i.precos ?? []).slice(0, secao.colunas ? 2 : 1),
+      })),
+  };
+}
+
+export async function acaoSalvarSalao(menu: MenuSalao, autor: string): Promise<Resultado> {
+  if (!(await autenticado())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+
+  const limpo: MenuSalao = {
+    ...menu,
+    frase: menu.frase.trim(),
+    historia: menu.historia.map((p) => p.trim()).filter(Boolean),
+    folhas: menu.folhas.map((f) => ({
+      ...f,
+      eyebrow: f.eyebrow?.trim() || undefined,
+      frase: f.frase?.trim() || undefined,
+    })),
+    secoes: menu.secoes.map(limparSecaoSalao),
+  };
+
+  try {
+    const atual = await lerCardapio();
+    const salvo = await gravarCardapio({ ...atual, salao: limpo }, autor.trim() || "painel");
+    revalidatePath("/imprimir/salao");
+    revalidatePath("/imprimir/domingo");
+    revalidatePath("/admin", "layout");
+    return { ok: true, mensagem: `Salvo (versão ${salvo.versao}).` };
+  } catch (erro) {
+    console.error("falha ao salvar o salão", erro);
     return { ok: false, mensagem: "Não consegui salvar. Tente de novo em instantes." };
   }
 }

@@ -1,0 +1,471 @@
+/* Menu do salão: folhas A4 soltas (capa "Nossa história", 7 folhas e a folha de
+   domingo). Portado do menu-salao.html da Versão 3.
+
+   Mesma regra da peça do executivo: NENHUMA cor vem de background CSS, porque o
+   navegador desliga "Gráficos de fundo" por padrão ao imprimir. Verde e creme
+   entram como <svg>, e os filetes como border. */
+
+.folha-salao {
+  padding: 14mm 15mm 11mm;
+  display: flex;
+  flex-direction: column;
+}
+
+.folha-salao .topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 3.5mm;
+  border-bottom: 0.35mm solid var(--color-tinta);
+}
+.folha-salao .topo h2 {
+  font-size: 9.6mm;
+}
+.folha-salao .topo .wm {
+  width: 31mm;
+  height: auto;
+  margin-bottom: 0.8mm;
+}
+.folha-salao .miolo {
+  flex: 1;
+  margin-top: 7mm;
+  min-height: 0;
+}
+.folha-salao .rodape {
+  margin-top: 6mm;
+  padding-top: 3mm;
+  border-top: 0.15mm solid var(--color-linha);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  font-size: 2.9mm;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.folha-salao .rodape .n {
+  text-align: right;
+  font-weight: 400;
+  color: var(--color-cafe);
+}
+
+/* arranjos de página */
+.miolo.lq {
+  display: grid;
+  grid-template-columns: 1fr 84mm;
+  gap: 9mm;
+  align-items: stretch;
+}
+.miolo.duas-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10mm;
+  align-items: start;
+}
+
+/* seções */
+.folha-salao .bloco + .bloco {
+  margin-top: 8mm;
+}
+.folha-salao h3 {
+  font-size: 6.3mm;
+}
+.eyebrow-sec {
+  font-size: 2.6mm;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-verde);
+  font-weight: 600;
+  margin-bottom: 1.6mm;
+}
+.folha-salao .nota {
+  font-size: 3.15mm;
+  color: var(--color-cafe);
+  font-style: italic;
+  margin-top: 1.4mm;
+  line-height: 1.35;
+}
+.cab {
+  display: grid;
+  grid-template-columns: 1fr 15mm 15mm;
+  column-gap: 3mm;
+  margin-top: 3.2mm;
+  font-size: 2.45mm;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-cafe);
+  font-weight: 600;
+}
+.cab span {
+  display: flex;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+.folha-salao .lista {
+  list-style: none;
+  margin: 2.6mm 0 0;
+  padding: 0;
+}
+.cab + .lista {
+  margin-top: 1.2mm;
+}
+.folha-salao .lista li {
+  display: grid;
+  grid-template-columns: auto minmax(6mm, 1fr) auto;
+  align-items: baseline;
+  column-gap: 2.5mm;
+  padding: 2.3mm 0;
+  border-top: 0.15mm solid var(--color-linha);
+}
+.folha-salao .lista.duas li {
+  grid-template-columns: auto minmax(6mm, 1fr) 15mm 15mm;
+  column-gap: 3mm;
+}
+.folha-salao .lista li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.cab + .lista li:first-child {
+  border-top: 0.15mm solid var(--color-linha);
+  padding-top: 2.3mm;
+}
+.folha-salao .nome {
+  font-weight: 600;
+  font-size: 3.6mm;
+  line-height: 1.25;
+}
+.u {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.u::after {
+  content: " · ";
+  font-weight: 400;
+}
+.dia {
+  font-weight: 700;
+  color: var(--color-chope-escuro);
+  font-size: 2.45mm;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-right: 2.2mm;
+  white-space: nowrap;
+}
+.folha-salao .pontos {
+  border-bottom: 0.4mm dotted rgba(107, 96, 85, 0.5);
+  transform: translateY(-1.1mm);
+}
+.folha-salao .pontos.dupla {
+  grid-column: 2 / 4;
+}
+.folha-salao .preco {
+  font-size: 3.5mm;
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}
+.folha-salao .desc {
+  grid-column: 1 / -1;
+  font-size: 3.05mm;
+  color: var(--color-cafe);
+  margin-top: 0.4mm;
+  line-height: 1.35;
+}
+
+/* páginas em duas colunas: corpo um pouco menor */
+.duas-col .nome {
+  font-size: 3.4mm;
+}
+.duas-col .preco {
+  font-size: 3.35mm;
+}
+.duas-col .desc {
+  font-size: 2.95mm;
+}
+.duas-col .lista li {
+  padding: 2.1mm 0;
+}
+.duas-col .lista.duas li {
+  grid-template-columns: auto minmax(6mm, 1fr) 14mm 14mm;
+  column-gap: 4mm;
+}
+.duas-col .cab {
+  grid-template-columns: 1fr 14mm 14mm;
+  column-gap: 4mm;
+  font-size: 2.3mm;
+  letter-spacing: 0.1em;
+}
+
+/* folhas cheias: linhas mais justas para caber */
+.justa .lista li {
+  padding: 1.7mm 0;
+}
+.justa .desc {
+  margin-top: 0.3mm;
+}
+
+/* o "quadro" verde — a cor vem de um <svg>, não de background */
+.folha-salao .quadro {
+  position: relative;
+  padding: 7mm;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-papel);
+  min-height: 0;
+}
+.folha-salao .quadro > *:not(.fundo) {
+  position: relative;
+  z-index: 1;
+}
+.folha-salao .quadro h3 {
+  color: var(--color-papel);
+  font-size: 6.6mm;
+}
+.folha-salao .quadro .nota {
+  color: rgba(251, 248, 242, 0.7);
+}
+.folha-salao .quadro .cab {
+  color: rgba(251, 248, 242, 0.62);
+}
+.folha-salao .quadro .nome {
+  font-size: 3.3mm;
+}
+.folha-salao .quadro .preco {
+  font-size: 3.25mm;
+}
+.folha-salao .quadro .desc {
+  font-size: 2.9mm;
+  color: rgba(251, 248, 242, 0.74);
+}
+.folha-salao .quadro .lista li {
+  padding: 2mm 0;
+  border-top-color: rgba(251, 248, 242, 0.16);
+}
+.folha-salao .quadro .cab + .lista li:first-child {
+  border-top-color: rgba(251, 248, 242, 0.16);
+}
+.folha-salao .quadro .pontos {
+  border-bottom-color: rgba(251, 248, 242, 0.42);
+}
+.folha-salao .quadro .u {
+  color: var(--color-papel);
+}
+.folha-salao .quadro .dia {
+  color: var(--color-chope);
+}
+
+/* faixa verde de largura inteira: lista à esquerda, frase à direita */
+.quadro.banda {
+  display: grid;
+  grid-template-columns: 1fr 46mm;
+  column-gap: 9mm;
+  margin-top: 8mm;
+  padding: 6mm 7mm 6.5mm;
+}
+.quadro.banda .nome {
+  font-size: 3.6mm;
+}
+.quadro.banda .preco {
+  font-size: 3.5mm;
+}
+.quadro.banda .desc {
+  font-size: 3.05mm;
+}
+.quadro.banda .lista li {
+  padding: 2.3mm 0;
+}
+.quadro.banda .fecho {
+  align-self: end;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* ---------- capa: Nossa história ---------- */
+.miolo.hist {
+  display: grid;
+  grid-template-columns: 1fr 66mm;
+  gap: 10mm;
+  align-items: stretch;
+}
+.texto p {
+  font-size: 3.6mm;
+  line-height: 1.5;
+}
+.texto p + p {
+  margin-top: 3.4mm;
+}
+.texto .lead {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
+  font-size: 4.8mm;
+  line-height: 1.35;
+  margin-bottom: 5.5mm;
+}
+.lado {
+  display: flex;
+  flex-direction: column;
+  gap: 7mm;
+}
+.foto {
+  width: 66mm;
+  margin: 0;
+}
+.foto img {
+  display: block;
+  width: 66mm;
+  height: 88mm;
+  object-fit: cover;
+}
+.foto .falta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 66mm;
+  height: 88mm;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 0.3mm dashed var(--color-linha);
+  color: var(--color-cafe);
+  font-size: 3mm;
+  line-height: 1.45;
+  padding: 6mm;
+}
+.foto .falta > *:not(.fundo) {
+  position: relative;
+  z-index: 1;
+}
+.foto .falta small {
+  display: block;
+  margin-top: 2mm;
+  font-size: 2.6mm;
+  opacity: 0.75;
+}
+.foto figcaption {
+  margin-top: 2mm;
+  font-size: 2.9mm;
+  color: var(--color-cafe);
+  font-style: italic;
+}
+.citacao {
+  flex: 1;
+  justify-content: center;
+  padding: 8mm 7mm;
+}
+.citacao .como {
+  font-size: 2.6mm;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-chope);
+  font-weight: 700;
+}
+.citacao .como span {
+  display: block;
+  margin-top: 0.6mm;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(251, 248, 242, 0.7);
+}
+.citacao blockquote {
+  margin: 4.5mm 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 5.1mm;
+  line-height: 1.3;
+  font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
+}
+
+/* ---------- folha de domingo: cabeçalho verde sangrado ---------- */
+.domingo .abre {
+  position: relative;
+  color: var(--color-papel);
+  margin: -14mm -15mm 0;
+  padding: 13mm 15mm 12mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.domingo .abre > *:not(.fundo) {
+  position: relative;
+  z-index: 1;
+}
+.domingo .abre .wm {
+  width: 36mm;
+  height: auto;
+}
+.domingo .abre h2 {
+  margin-top: 11mm;
+  font-size: 15mm;
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  color: var(--color-papel);
+  max-width: 90mm;
+  text-wrap: balance;
+}
+.domingo .abre .eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4mm;
+  margin: 7mm 0 0;
+  font-weight: 600;
+  font-size: 3.1mm;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-chope);
+}
+.domingo .abre .eyebrow span {
+  display: block;
+  width: 15mm;
+  border-top: 0.35mm solid var(--color-chope);
+}
+.domingo .abre .frase {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 4.6mm;
+  color: rgba(251, 248, 242, 0.75);
+  margin: 5mm 0 0;
+}
+.domingo .miolo {
+  margin-top: 10mm;
+}
+.domingo .nome {
+  font-size: 4.1mm;
+}
+.domingo .preco {
+  font-size: 3.9mm;
+}
+.domingo .desc {
+  font-size: 3.3mm;
+  margin-top: 0.8mm;
+}
+.domingo .lista li {
+  padding: 4mm 0;
+}
+.domingo .cab + .lista li:first-child {
+  padding-top: 4mm;
+}
+.domingo .nota {
+  font-size: 3.4mm;
+}
+.domingo .rodape .n {
+  color: var(--color-verde);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 2.7mm;
+}
+
+.fecho {
+  margin-top: auto;
+  padding-top: 7mm;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 4.3mm;
+  line-height: 1.25;
+  font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
+}

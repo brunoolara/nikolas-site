@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import { lerCardapio } from "@/lib/menu/armazem";
 import { especiaisComPratos, formatarPreco, ROTULO_DIA, type Item, type Secao } from "@/lib/menu/tipos";
 import { restaurante } from "@/data/restaurante";
-import BotaoImprimir from "./BotaoImprimir";
+import BarraImpressao from "../BarraImpressao";
 import "../imprimir.css";
 
 export const metadata: Metadata = {
@@ -67,7 +67,7 @@ export default async function MenuExecutivoImpressao() {
 
   return (
     <div className="papel-fora">
-      <BotaoImprimir />
+      <BarraImpressao voltarPara="/admin/executivo" />
 
       {/* ---------- frente ---------- */}
       <section className="folha capa">

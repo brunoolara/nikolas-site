@@ -4,6 +4,7 @@
 //
 // Serve de semente inicial e de "voltar ao original" se algo se perder.
 
+import { SALAO_INICIAL } from "./salao-inicial";
 import type { Cardapio } from "./tipos";
 
 export const CARDAPIO_INICIAL: Cardapio = {
@@ -105,4 +106,5 @@ export const CARDAPIO_INICIAL: Cardapio = {
       { dia: "domingo", itens: [] },
     ],
   },
+  salao: SALAO_INICIAL,
 };

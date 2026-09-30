@@ -30,10 +30,25 @@ export async function lerCardapio(): Promise<Cardapio> {
     // useCache: false para o funcionário ver na hora o que acabou de salvar.
     const res = await get(ATUAL, { access: "private", useCache: false });
     if (!res || res.statusCode !== 200 || !res.stream) return CARDAPIO_INICIAL;
-    return (await new Response(res.stream).json()) as Cardapio;
+    const guardado = (await new Response(res.stream).json()) as Partial<Cardapio>;
+    return completar(guardado);
   } catch {
     return CARDAPIO_INICIAL;
   }
+}
+
+/**
+ * Completa o que estiver faltando com a carga inicial.
+ * Um arquivo gravado antes de uma peça existir (o salão entrou depois do
+ * executivo) não tem aquele campo; sem isto a página de impressão quebraria.
+ */
+function completar(guardado: Partial<Cardapio>): Cardapio {
+  return {
+    ...CARDAPIO_INICIAL,
+    ...guardado,
+    executivo: guardado.executivo ?? CARDAPIO_INICIAL.executivo,
+    salao: guardado.salao ?? CARDAPIO_INICIAL.salao,
+  };
 }
 
 /** Grava o cardápio e guarda uma cópia datada. Devolve o que foi salvo. */

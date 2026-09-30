@@ -1,7 +1,7 @@
 "use client";
 
 // Barra que só existe na tela. Some na impressão (classe .so-tela).
-export default function BotaoImprimir() {
+export default function BarraImpressao({ voltarPara = "/admin" }: { voltarPara?: string }) {
   return (
     <div className="so-tela flex flex-wrap items-center justify-center gap-3 py-4 text-papel">
       <button
@@ -11,7 +11,7 @@ export default function BotaoImprimir() {
       >
         Imprimir
       </button>
-      <a href="/admin" className="rounded border border-papel/40 px-4 py-2 hover:bg-papel/10">
+      <a href={voltarPara} className="rounded border border-papel/40 px-4 py-2 hover:bg-papel/10">
         Editar o cardápio
       </a>
       <p className="w-full text-center text-sm text-papel/70">

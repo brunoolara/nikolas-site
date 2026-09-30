@@ -66,6 +66,7 @@ export type Cardapio = {
   atualizadoEm: string;
   atualizadoPor: string;
   executivo: MenuExecutivo;
+  salao: MenuSalao;
 };
 
 /** Dias que têm ao menos um prato — os únicos que vão para a peça impressa. */
@@ -81,4 +82,86 @@ export function especiaisComPratos(menu: MenuExecutivo): Especial[] {
 export function formatarPreco(valor: number | null): string {
   if (valor === null) return "";
   return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ---------------------------------------------------------------------------
+// Menu do salão — 9 folhas A4 soltas (capa "Nossa história", 7 folhas e a folha
+// extra de domingo). Formato herdado da peça impressa da Versão 3.
+
+export type ItemSalao = {
+  nome: string;
+  desc?: string;
+  /** "4 unidades", "500 g" — aparece antes da descrição. */
+  unidade?: string;
+  /** "Quinta a domingo" — quando o prato é servido. Sai em âmbar. */
+  dia?: string;
+  /** Um preço, ou dois quando a seção tem duas colunas (1/2 pessoas, meia/inteira). */
+  precos: (number | null)[];
+};
+
+export type SecaoSalao = {
+  id: string;
+  /** Ausente quando o título da folha já nomeia a seção (ex.: Carnes). */
+  titulo?: string;
+  nota?: string;
+  /** Rótulos das duas colunas de preço, quando houver. */
+  colunas?: [string, string];
+  itens: ItemSalao[];
+};
+
+/** Uma folha impressa: diagramação + quais seções entram nela. */
+export type FolhaSalao = {
+  titulo: string;
+  /** Classes de variação da folha: "justa", "domingo", "historia", "semnumero". */
+  variantes: string[];
+  /** Arranjo do miolo: "", "hist", "lq" (lista + quadro), "duas-col". */
+  miolo: string;
+  quadro: boolean;
+  /** Folha que abre com cabeçalho grande (a de domingo). */
+  abre?: boolean;
+  eyebrow?: string;
+  frase?: string;
+  rodapeN?: string;
+  /** Colunas da folha: cada grupo é uma coluna, na ordem. A divisão varia por
+   *  folha (1/2, 2/1, 1/1), por isso não dá para partir a lista ao meio. */
+  grupos: string[][];
+  /** Seções que vão dentro do bloco verde. */
+  quadroSecoes: string[];
+  /** Todas as seções da folha, achatadas — conveniência para o painel. */
+  secoes: string[];
+};
+
+export type MenuSalao = {
+  frase: string;
+  historia: string[];
+  folhas: FolhaSalao[];
+  secoes: SecaoSalao[];
+};
+
+/** Qual peça o painel está editando. */
+export const PECAS = ["executivo", "salao", "domingo"] as const;
+export type Peca = (typeof PECAS)[number];
+
+export const ROTULO_PECA: Record<Peca, { nome: string; descricao: string; imprimir: string }> = {
+  executivo: {
+    nome: "Menu executivo",
+    descricao: "Pratos do almoço de segunda a sexta e os especiais de cada dia.",
+    imprimir: "/imprimir/executivo",
+  },
+  salao: {
+    nome: "Menu do salão",
+    descricao: "O cardápio completo: 8 folhas, da história às bebidas.",
+    imprimir: "/imprimir/salao",
+  },
+  domingo: {
+    nome: "Especiais de domingo",
+    descricao: "A folha extra que entra na pasta só aos domingos.",
+    imprimir: "/imprimir/domingo",
+  },
+};
+
+/** O preço de um item do salão, já formatado, ou "" quando não houver. */
+export function precoSalao(item: ItemSalao, coluna: number): string {
+  const v = item.precos[coluna];
+  return v === null || v === undefined ? "" : formatarPreco(v);
 }
