@@ -1,0 +1,357 @@
+/* Folha A4 pronta para o Ctrl+P.
+   Regra que manda em tudo aqui: NENHUMA cor vem de background CSS.
+   O navegador desliga "Gráficos de fundo" por padrão na impressão — se a arte
+   dependesse de background, o funcionário imprimiria uma folha quase branca.
+   Por isso fundo é <img> ou <svg>, e filete é border. Isso o navegador sempre
+   imprime, com ou sem a opção ligada. */
+
+/* A folha não é uma página do site: some com cabeçalho, rodapé e barra do
+   celular, que o layout raiz põe em volta de todas as páginas. Alvo pelo
+   :has() para não precisar mexer no layout do site inteiro. */
+body:has(.papel-fora) > *:not(main) {
+  display: none !important;
+}
+body:has(.papel-fora) {
+  padding-bottom: 0;
+  display: block;
+}
+
+.folha {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.folha:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+/* camada de cor no fundo da folha (um <svg> com um retângulo) */
+.fundo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+.folha > *:not(.fundo) {
+  position: relative;
+  z-index: 1;
+}
+
+.folha h1,
+.folha h2,
+.folha h3 {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+/* ---------- capa ---------- */
+.capa {
+  color: var(--color-papel);
+}
+.capa .foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.capa .moldura {
+  position: absolute;
+  inset: 8mm;
+  border: 0.4mm solid rgba(251, 248, 242, 0.6);
+  z-index: 2;
+  pointer-events: none;
+}
+.capa .moldura::after {
+  content: "";
+  position: absolute;
+  inset: 1.3mm;
+  border: 0.15mm solid rgba(251, 248, 242, 0.45);
+}
+.capa .conteudo {
+  position: absolute;
+  inset: 8mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 17mm 12mm 0;
+  z-index: 1;
+}
+.capa .wordmark {
+  width: 59mm;
+  height: auto;
+}
+.capa h1 {
+  font-size: 22mm;
+  line-height: 20.6mm;
+  letter-spacing: -0.015em;
+  margin-top: 13mm;
+  /* caixa estreita + balance: "Menu executivo" quebra em duas linhas
+     equilibradas sozinho, sem precisar cortar o texto no código. */
+  max-width: 62mm;
+  text-wrap: balance;
+}
+.capa .site {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 13mm;
+  text-align: center;
+  font-size: 3.3mm;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: rgba(251, 248, 242, 0.9);
+  z-index: 1;
+}
+
+/* filete + horário: traços são border, nunca background */
+.horario {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4mm;
+  font-weight: 600;
+  font-size: 3.1mm;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-chope);
+  margin: 7mm 0 0;
+}
+.horario span {
+  display: block;
+  width: 20mm;
+  border-top: 0.35mm solid var(--color-chope);
+}
+.capa .frase {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
+  font-style: italic;
+  font-size: 4.6mm;
+  line-height: 1.2;
+  color: rgba(251, 248, 242, 0.85);
+  margin: 6mm 0 0;
+}
+
+/* ---------- verso ---------- */
+.verso {
+  padding: 12mm 14mm 11mm;
+  display: flex;
+  flex-direction: column;
+}
+.verso .topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 4mm;
+  border-bottom: 0.35mm solid var(--color-tinta);
+}
+.verso .topo h2 {
+  font-size: 9.6mm;
+}
+.verso .topo .quando {
+  font-size: 2.9mm;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-verde);
+  font-weight: 600;
+  margin: 0;
+}
+.colunas {
+  display: grid;
+  grid-template-columns: 1fr 72mm;
+  gap: 9mm;
+  flex: 1;
+  margin-top: 7mm;
+  min-height: 0;
+}
+.bloco + .bloco {
+  margin-top: 10mm;
+}
+.bloco h3 {
+  font-size: 6.3mm;
+}
+.nota {
+  font-size: 3.15mm;
+  color: var(--color-cafe);
+  font-style: italic;
+  margin: 1.4mm 0 0;
+  line-height: 1.35;
+}
+.lista {
+  list-style: none;
+  margin: 3.2mm 0 0;
+  padding: 0;
+}
+.lista li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  column-gap: 2mm;
+  padding: 2.2mm 0;
+  border-top: 0.15mm solid var(--color-linha);
+}
+.lista li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.lista .nome {
+  font-weight: 600;
+  font-size: 3.75mm;
+}
+.lista .pontos {
+  border-bottom: 0.4mm dotted rgba(107, 96, 85, 0.5);
+  transform: translateY(-1.1mm);
+}
+.lista .preco {
+  font-size: 3.6mm;
+  font-weight: 500;
+}
+.lista .desc {
+  grid-column: 1 / -1;
+  font-size: 3.05mm;
+  color: var(--color-cafe);
+  margin-top: 0.5mm;
+  line-height: 1.35;
+}
+
+/* as duas colunas curtas (adicionais / proteínas adicionais) */
+.duplo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9mm;
+}
+.duplo h3 {
+  font-size: 5.2mm;
+}
+.duplo .lista li {
+  padding: 1.4mm 0;
+}
+.duplo .nome {
+  font-size: 3.4mm;
+  font-weight: 500;
+}
+.duplo .preco {
+  font-size: 3.3mm;
+}
+
+/* o "quadro" da marca — o verde vem de um <svg>, não de background */
+.quadro {
+  position: relative;
+  padding: 7mm;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-papel);
+  min-height: 0;
+}
+.quadro > *:not(.fundo) {
+  position: relative;
+  z-index: 1;
+}
+.quadro h3 {
+  color: var(--color-papel);
+  font-size: 6.6mm;
+}
+.quadro .nota {
+  color: rgba(251, 248, 242, 0.7);
+}
+.quadro .dia {
+  margin-top: 5mm;
+}
+.quadro .rotulo-dia {
+  font-size: 2.65mm;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-chope);
+  font-weight: 700;
+  margin: 0;
+}
+.quadro .lista {
+  margin-top: 1.4mm;
+}
+.quadro .lista li {
+  padding: 1.9mm 0;
+  border-top-color: rgba(251, 248, 242, 0.16);
+}
+.quadro .nome {
+  font-size: 3.5mm;
+}
+.quadro .preco {
+  font-size: 3.4mm;
+}
+.quadro .pontos {
+  border-bottom-color: rgba(251, 248, 242, 0.42);
+}
+.quadro .desc {
+  color: rgba(251, 248, 242, 0.74);
+}
+.quadro .fecho {
+  max-width: 42mm;
+  text-wrap: balance;
+  margin-top: auto;
+  padding-top: 7mm;
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
+  font-style: italic;
+  font-size: 4.3mm;
+  line-height: 1.25;
+}
+.verso .rodape {
+  margin-top: 7mm;
+  padding-top: 3.5mm;
+  border-top: 0.15mm solid var(--color-linha);
+  text-align: center;
+  font-size: 3.1mm;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- tela x papel ---------- */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media screen {
+  .papel-fora {
+    background: #8a8580;
+    padding: 10mm 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10mm;
+    min-height: 100vh;
+  }
+  .folha {
+    box-shadow: 0 2mm 10mm rgba(0, 0, 0, 0.3);
+  }
+}
+
+@media print {
+  .papel-fora {
+    background: none;
+    padding: 0;
+    gap: 0;
+    display: block;
+  }
+  .folha {
+    box-shadow: none;
+    margin: 0;
+  }
+  .so-tela {
+    display: none !important;
+  }
+}

@@ -42,3 +42,9 @@ next-env.d.ts
 
 # artefatos do plugin Playwright
 /.playwright-mcp/
+
+.vercel
+.env*
+
+# o exemplo (sem segredos) deve ir para o repositório
+!.env.example

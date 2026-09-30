@@ -1,0 +1,9 @@
+/* O painel é ferramenta interna, não página do site: some com o cabeçalho, o
+   rodapé e a barra do celular que o layout raiz põe em volta de tudo.
+   Alvo pelo :has() para não precisar reorganizar o layout do site inteiro. */
+body:has(.painel) > *:not(main) {
+  display: none !important;
+}
+body:has(.painel) {
+  padding-bottom: 0;
+}
