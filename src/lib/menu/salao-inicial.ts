@@ -16,10 +16,10 @@ export const SALAO_INICIAL: MenuSalao = {
   ],
   folhas: [
     { titulo: "Nossa história", variantes: ["historia", "semnumero"], miolo: "hist", quadro: false, grupos: [], quadroSecoes: [], secoes: [] },
-    { titulo: "Para começar", variantes: [], miolo: "lq", quadro: true, grupos: [["entradas", "frios"]], quadroSecoes: ["arabes"], secoes: ["entradas", "frios", "arabes"] },
+    { titulo: "Para começar", variantes: [], miolo: "lq", quadro: true, fecho: "A mesa do Sr. Nicola, desde 1977.", grupos: [["entradas", "frios"]], quadroSecoes: ["arabes"], secoes: ["entradas", "frios", "arabes"] },
     { titulo: "Petiscos", variantes: ["justa"], miolo: "duas-col", quadro: false, grupos: [["quentes"], ["chapa"]], quadroSecoes: [], secoes: ["quentes", "chapa"] },
     { titulo: "Carnes", variantes: [], miolo: "", quadro: false, grupos: [["carnes"]], quadroSecoes: [], secoes: ["carnes"] },
-    { titulo: "Aves, peixes e especiais", variantes: [], miolo: "", quadro: false, grupos: [["aves"], ["peixes"]], quadroSecoes: ["especiais"], secoes: ["aves", "peixes", "especiais"] },
+    { titulo: "Aves, peixes e especiais", variantes: [], miolo: "", quadro: false, fecho: "Feijão tropeiro, todos os dias.", grupos: [["aves"], ["peixes"]], quadroSecoes: ["especiais"], secoes: ["aves", "peixes", "especiais"] },
     { titulo: "Massas, sanduíches e porções", variantes: [], miolo: "duas-col", quadro: false, grupos: [["massas"], ["adicionais", "sanduiches"]], quadroSecoes: [], secoes: ["massas", "adicionais", "sanduiches"] },
     { titulo: "Drinks, sucos e refrigerantes", variantes: [], miolo: "duas-col", quadro: false, grupos: [["drinks"], ["sucos", "refrigerantes"]], quadroSecoes: [], secoes: ["drinks", "sucos", "refrigerantes"] },
     { titulo: "Chope, cachaças e doses", variantes: [], miolo: "duas-col", quadro: false, grupos: [["cervejas", "cachacas"], ["doses"]], quadroSecoes: [], secoes: ["cervejas", "cachacas", "doses"] },

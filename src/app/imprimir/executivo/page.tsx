@@ -10,6 +10,7 @@ import { lerCardapio } from "@/lib/menu/armazem";
 import { especiaisComPratos, formatarPreco, ROTULO_DIA, type Item, type Secao } from "@/lib/menu/tipos";
 import { restaurante } from "@/data/restaurante";
 import BarraImpressao from "../BarraImpressao";
+import AvisoEstouro from "../AvisoEstouro";
 import "../imprimir.css";
 
 export const metadata: Metadata = {
@@ -68,6 +69,7 @@ export default async function MenuExecutivoImpressao() {
   return (
     <div className="papel-fora">
       <BarraImpressao voltarPara="/admin/executivo" />
+      <AvisoEstouro />
 
       {/* ---------- frente ---------- */}
       <section className="folha capa">

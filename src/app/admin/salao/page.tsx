@@ -15,7 +15,8 @@ export default async function EditarSalao() {
       atualizadoPor={cardapio.atualizadoPor}
       titulo={ROTULO_PECA.salao.nome}
       imprimirEm={ROTULO_PECA.salao.imprimir}
-      apenas={cardapio.salao.secoes.map((s) => s.id).filter((id) => !doDomingo.has(id))}
+      excluir={[...doDomingo]}
+      completo
     />
   );
 }

@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { lerCardapio } from "@/lib/menu/armazem";
 import FolhaSalao from "../FolhaSalao";
 import BarraImpressao from "../BarraImpressao";
+import AvisoEstouro from "../AvisoEstouro";
 import "../imprimir.css";
 import "../salao.css";
 
@@ -22,6 +23,7 @@ export default async function MenuSalaoImpressao() {
   return (
     <div className="papel-fora">
       <BarraImpressao voltarPara="/admin/salao" />
+      <AvisoEstouro />
       {folhas.map((folha, i) => (
         <FolhaSalao
           key={folha.titulo}

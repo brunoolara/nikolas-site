@@ -122,6 +122,8 @@ export type FolhaSalao = {
   eyebrow?: string;
   frase?: string;
   rodapeN?: string;
+  /** Frase no pé do bloco verde desta folha. Nem toda folha usa a frase da casa. */
+  fecho?: string;
   /** Colunas da folha: cada grupo é uma coluna, na ordem. A divisão varia por
    *  folha (1/2, 2/1, 1/1), por isso não dá para partir a lista ao meio. */
   grupos: string[][];

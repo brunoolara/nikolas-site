@@ -70,6 +70,8 @@ export function Secao({ secao, mostrarTitulo = true }: { secao: SecaoSalao; most
 
 /** Monta o miolo conforme o arranjo da folha, respeitando as colunas do original. */
 function Miolo({ folha, achar, frase }: { folha: Folha; achar: (id: string) => SecaoSalao | undefined; frase: string }) {
+  // cada folha pode ter frase própria no pé do bloco verde
+  const fecho = folha.fecho ?? frase;
   const doGrupo = (ids: string[]) => ids.map(achar).filter(Boolean) as SecaoSalao[];
   const noQuadro = doGrupo(folha.quadroSecoes);
 
@@ -82,7 +84,7 @@ function Miolo({ folha, achar, frase }: { folha: Folha; achar: (id: string) => S
             <Secao key={s.id} secao={s} />
           ))}
         </div>
-        <p className="fecho">{frase}</p>
+        <p className="fecho">{fecho}</p>
       </aside>
     ) : null;
 
@@ -114,12 +116,25 @@ function Miolo({ folha, achar, frase }: { folha: Folha; achar: (id: string) => S
     );
   }
 
-  // seções empilhadas; algumas folhas terminam numa faixa verde de largura inteira
+  // Arranjo simples. Com mais de um grupo, eles ficam lado a lado num bloco de
+  // duas colunas e a faixa verde vem abaixo, ocupando a largura toda — é assim
+  // na folha "Aves, peixes e especiais" do impresso. Empilhar estoura a página.
+  const colunas = folha.grupos.filter((g) => g.length);
   return (
     <div className="miolo">
-      {folha.grupos.flatMap((ids) => doGrupo(ids)).map((s) => (
-        <Secao key={s.id} secao={s} />
-      ))}
+      {colunas.length > 1 ? (
+        <div className="duas-col">
+          {colunas.map((ids, i) => (
+            <div key={i}>
+              {doGrupo(ids).map((s) => (
+                <Secao key={s.id} secao={s} />
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        doGrupo(colunas[0] ?? []).map((s) => <Secao key={s.id} secao={s} />)
+      )}
       {quadro("banda")}
     </div>
   );

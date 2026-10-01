@@ -47,7 +47,22 @@ function completar(guardado: Partial<Cardapio>): Cardapio {
     ...CARDAPIO_INICIAL,
     ...guardado,
     executivo: guardado.executivo ?? CARDAPIO_INICIAL.executivo,
-    salao: guardado.salao ?? CARDAPIO_INICIAL.salao,
+    salao: guardado.salao ? completarSalao(guardado.salao) : CARDAPIO_INICIAL.salao,
+  };
+}
+
+/**
+ * O `fecho` por folha (a frase do pé do bloco verde) entrou depois que o salão
+ * já estava gravado. Para as folhas antigas, recupera pelo título o que a carga
+ * inicial tem — sem isso, a folha de aves mostraria a frase errada.
+ */
+function completarSalao(salao: Cardapio["salao"]): Cardapio["salao"] {
+  const doInicial = new Map(CARDAPIO_INICIAL.salao.folhas.map((f) => [f.titulo, f.fecho]));
+  return {
+    ...salao,
+    folhas: salao.folhas.map((f) =>
+      f.fecho === undefined && doInicial.get(f.titulo) ? { ...f, fecho: doInicial.get(f.titulo) } : f,
+    ),
   };
 }
 

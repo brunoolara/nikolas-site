@@ -55,7 +55,10 @@
   gap: 9mm;
   align-items: stretch;
 }
-.miolo.duas-col {
+/* Vale tanto para o miolo inteiro quanto para um bloco aninhado — a folha
+   "Aves, peixes e especiais" põe duas colunas dentro do miolo e a faixa verde
+   abaixo. Escopar isto em `.miolo.duas-col` fazia as colunas empilharem. */
+.duas-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10mm;

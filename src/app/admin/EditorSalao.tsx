@@ -7,7 +7,8 @@ import { useEffect, useState, useTransition } from "react";
 import { acaoSalvarSalao } from "./acoes";
 import CamposItem, { campo } from "./CamposItem";
 import { mover } from "./Mover";
-import type { ItemSalao, MenuSalao, SecaoSalao } from "@/lib/menu/tipos";
+import NovaCategoria, { idDoNome, type Destino } from "./NovaCategoria";
+import type { FolhaSalao, ItemSalao, MenuSalao, SecaoSalao } from "@/lib/menu/tipos";
 
 type Props = {
   menu: MenuSalao;
@@ -17,8 +18,16 @@ type Props = {
   imprimirEm: string;
   /** Ids das seções a mostrar. Vazio = todas. */
   apenas?: string[];
+  /** Ids a esconder. Usado pela tela do salão para tirar as seções de domingo.
+   *  É por exclusão, e não por lista fixa, para uma categoria recém-criada
+   *  aparecer na hora — com lista fixa ela só surgiria ao recarregar. */
+  excluir?: string[];
   /** Mostra os campos da folha de domingo (chamada e frase). */
   folhaDomingo?: boolean;
+  /** Tela do menu completo: libera frase da casa, "Nossa história" e criar categoria.
+   *  Não dá para deduzir de `apenas`, porque a tela do salão também o usa (para
+   *  esconder as seções de domingo) — foi assim que esses campos sumiram antes. */
+  completo?: boolean;
 };
 
 const ITEM_VAZIO: ItemSalao = { nome: "", precos: [null] };
@@ -30,7 +39,9 @@ export default function EditorSalao({
   titulo,
   imprimirEm,
   apenas,
+  excluir,
   folhaDomingo = false,
+  completo = false,
 }: Props) {
   const [menu, setMenu] = useState<MenuSalao>(inicial);
   const [autor, setAutor] = useState("");
@@ -53,7 +64,9 @@ export default function EditorSalao({
 
   const visiveis = apenas?.length
     ? menu.secoes.filter((s) => apenas.includes(s.id))
-    : menu.secoes;
+    : excluir?.length
+      ? menu.secoes.filter((s) => !excluir.includes(s.id))
+      : menu.secoes;
 
   const mudarSecao = (id: string, troca: Partial<SecaoSalao>) =>
     mudar({ secoes: menu.secoes.map((s) => (s.id === id ? { ...s, ...troca } : s)) });
@@ -61,6 +74,67 @@ export default function EditorSalao({
   const folha = menu.folhas.find((f) => f.abre);
   const mudarFolha = (troca: Partial<typeof folha>) =>
     folha && mudar({ folhas: menu.folhas.map((f) => (f.abre ? { ...f, ...troca } : f)) });
+
+  const criarCategoria = (nome: string, destino: Destino, doisPrecos: boolean) => {
+    const id = idDoNome(nome, menu.secoes.map((s) => s.id));
+    const nova: SecaoSalao = {
+      id,
+      titulo: nome,
+      itens: [],
+      ...(doisPrecos ? { colunas: ["1 pessoa", "2 pessoas"] as [string, string] } : {}),
+    };
+
+    let folhas: FolhaSalao[];
+    if (destino.tipo === "nova") {
+      const folhaNova: FolhaSalao = {
+        titulo: nome,
+        variantes: [],
+        miolo: "",
+        quadro: false,
+        grupos: [[id]],
+        quadroSecoes: [],
+        secoes: [id],
+      };
+      // entra antes da folha de domingo, que é sempre a última
+      const corte = menu.folhas.findIndex((f) => f.abre);
+      folhas =
+        corte === -1
+          ? [...menu.folhas, folhaNova]
+          : [...menu.folhas.slice(0, corte), folhaNova, ...menu.folhas.slice(corte)];
+    } else {
+      folhas = menu.folhas.map((f, i) => {
+        if (i !== destino.folha) return f;
+        const grupos = f.grupos.length ? f.grupos.map((g) => [...g]) : [[]];
+        (grupos[destino.coluna] ?? grupos[0]).push(id);
+        return { ...f, grupos, secoes: [...f.secoes, id] };
+      });
+    }
+
+    mudar({ secoes: [...menu.secoes, nova], folhas });
+  };
+
+  const removerCategoria = (id: string) => {
+    const secao = menu.secoes.find((s) => s.id === id);
+    const quantos = secao?.itens.length ?? 0;
+    const aviso =
+      quantos > 0
+        ? `Remover a categoria "${secao?.titulo || id}" e os ${quantos} pratos dentro dela?`
+        : `Remover a categoria "${secao?.titulo || id}"?`;
+    if (!window.confirm(aviso)) return;
+
+    mudar({
+      secoes: menu.secoes.filter((s) => s.id !== id),
+      // tira a seção das folhas, e descarta a folha que ficar sem nada
+      folhas: menu.folhas
+        .map((f) => ({
+          ...f,
+          grupos: f.grupos.map((g) => g.filter((x) => x !== id)).filter((g) => g.length),
+          quadroSecoes: f.quadroSecoes.filter((x) => x !== id),
+          secoes: f.secoes.filter((x) => x !== id),
+        }))
+        .filter((f) => f.miolo === "hist" || f.abre || f.secoes.length > 0),
+    });
+  };
 
   const salvar = () =>
     iniciar(async () => {
@@ -116,7 +190,7 @@ export default function EditorSalao({
         </section>
       ) : null}
 
-      {!apenas?.length ? (
+      {completo ? (
         <section className="mt-8">
           <label className="block">
             <span className="text-sm font-semibold">Frase da casa</span>
@@ -157,6 +231,13 @@ export default function EditorSalao({
               onChange={(e) => mudarSecao(secao.id, { titulo: e.target.value })}
             />
             <span className="text-xs text-cafe">{secao.itens.length} itens</span>
+            <button
+              type="button"
+              onClick={() => removerCategoria(secao.id)}
+              className="rounded border border-linha px-2 py-1 text-xs text-cafe hover:bg-creme"
+            >
+              Remover categoria
+            </button>
           </div>
           <input
             className={`${campo} mt-2 text-sm italic`}
@@ -194,6 +275,8 @@ export default function EditorSalao({
           </div>
         </section>
       ))}
+
+      {completo ? <NovaCategoria menu={menu} aoCriar={criarCategoria} /> : null}
 
       <div className="fixed inset-x-0 bottom-0 border-t border-linha bg-papel/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">

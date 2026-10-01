@@ -47,7 +47,10 @@ for (const m of html.matchAll(re)) {
   const eyebrow = (corpo.match(/<p class="eyebrow">([\s\S]*?)<\/p>/) || [, ""])[1].replace(/<[^>]+>/g, "").trim();
   const frase = (corpo.match(/<p class="frase">([\s\S]*?)<\/p>/) || [, ""])[1].replace(/<[^>]+>/g, "").trim();
   const rodapeN = (corpo.match(/<span class="n">([\s\S]*?)<\/span>/) || [, ""])[1].trim();
-  folhas.push({ variantes, titulo, miolo, secoes, grupos, quadroSecoes, quadro, abre, eyebrow, frase, rodapeN });
+  // cada folha pode ter um fecho próprio (a capa e a de "aves" têm frases diferentes)
+  const fecho = (corpo.match(/<p class="fecho">([\s\S]*?)<\/p>/) || [, ""])[1]
+    .replace(/<br\s*\/?>/g, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  folhas.push({ variantes, titulo, miolo, secoes, grupos, quadroSecoes, quadro, abre, eyebrow, frase, rodapeN, fecho });
 }
 
 // ---- "Nossa história": parágrafos da primeira folha
@@ -101,6 +104,7 @@ ${folhas
       `    { titulo: ${j(f.titulo)}, variantes: [${f.variantes.map(j).join(", ")}], miolo: ${j(f.miolo)}, quadro: ${f.quadro}` +
       `${f.abre ? ", abre: true" : ""}${f.eyebrow ? `, eyebrow: ${j(f.eyebrow)}` : ""}` +
       `${f.frase ? `, frase: ${j(f.frase)}` : ""}${f.rodapeN ? `, rodapeN: ${j(f.rodapeN)}` : ""}` +
+      `${f.fecho ? `, fecho: ${j(f.fecho)}` : ""}` +
       `, grupos: [${f.grupos.map((g) => "[" + g.map(j).join(", ") + "]").join(", ")}]` +
       `, quadroSecoes: [${f.quadroSecoes.map(j).join(", ")}]` +
       `, secoes: [${f.secoes.map(j).join(", ")}] },`,
