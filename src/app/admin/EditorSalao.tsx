@@ -6,6 +6,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { acaoSalvarSalao } from "./acoes";
 import CamposItem, { campo } from "./CamposItem";
+import { mover } from "./Mover";
 import type { ItemSalao, MenuSalao, SecaoSalao } from "@/lib/menu/tipos";
 
 type Props = {
@@ -178,6 +179,9 @@ export default function EditorSalao({
                 aoRemover={() =>
                   mudarSecao(secao.id, { itens: secao.itens.filter((_, k) => k !== i) })
                 }
+                indice={i}
+                total={secao.itens.length}
+                aoMover={(para) => mudarSecao(secao.id, { itens: mover(secao.itens, i, para) })}
               />
             ))}
             <button

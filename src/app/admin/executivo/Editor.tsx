@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { acaoSalvar } from "../acoes";
+import Mover, { mover } from "../Mover";
 import { DIAS, ROTULO_DIA, type Dia, type Item, type MenuExecutivo } from "@/lib/menu/tipos";
 
 type Props = { menu: MenuExecutivo; atualizadoEm: string; atualizadoPor: string };
@@ -38,6 +39,12 @@ function LinhasItens({
       {itens.map((item, i) => (
         <div key={i} className="rounded border border-linha bg-creme/40 p-3">
           <div className="flex gap-2">
+            <Mover
+              indice={i}
+              total={itens.length}
+              aoMover={(para) => aoMudar(mover(itens, i, para))}
+              oQue="prato"
+            />
             <input
               className={campo}
               placeholder="Nome do prato"

@@ -3,6 +3,7 @@
 // Campos de um item do menu do salão. Usado pelo editor do salão e pelo de
 // domingo — são a mesma peça, só mudam as seções que entram.
 
+import Mover from "./Mover";
 import type { ItemSalao } from "@/lib/menu/tipos";
 
 export const campo = "w-full rounded border border-linha bg-white px-2.5 py-1.5";
@@ -23,11 +24,17 @@ export default function CamposItem({
   colunas,
   aoMudar,
   aoRemover,
+  indice,
+  total,
+  aoMover,
 }: {
   item: ItemSalao;
   colunas?: [string, string];
   aoMudar: (troca: Partial<ItemSalao>) => void;
   aoRemover: () => void;
+  indice: number;
+  total: number;
+  aoMover: (para: number) => void;
 }) {
   const precos = item.precos ?? [];
   const mudarPreco = (i: number, texto: string) => {
@@ -41,6 +48,7 @@ export default function CamposItem({
   return (
     <div className="rounded border border-linha bg-creme/40 p-3">
       <div className="flex flex-wrap gap-2">
+        <Mover indice={indice} total={total} aoMover={aoMover} oQue="prato" />
         <input
           className={`${campo} min-w-48 flex-1`}
           placeholder="Nome do prato"
