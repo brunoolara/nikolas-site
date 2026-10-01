@@ -3,7 +3,7 @@
 // Tela de edição do menu executivo. Pensada para quem não é designer:
 // campos com nome claro, nada de arrastar, e "Ver e imprimir" sempre à mão.
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { acaoSalvar } from "../acoes";
 import Mover, { mover } from "../Mover";
 import { DIAS, ROTULO_DIA, type Dia, type Item, type MenuExecutivo } from "@/lib/menu/tipos";
@@ -88,12 +88,19 @@ function LinhasItens({
 
 export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: Props) {
   const [menu, setMenu] = useState<MenuExecutivo>(inicial);
-  const [autor, setAutor] = useState("");
+  // nome de quem edita, lembrado no navegador. Lido por useSyncExternalStore
+  // para não precisar de um efeito que chama setState logo ao montar.
+  const autorGuardado = useSyncExternalStore(
+    () => () => {},
+    () => localStorage.getItem("nikolas:autor") ?? "",
+    () => "",
+  );
+  const [digitado, setDigitado] = useState<string | null>(null);
+  const autor = digitado ?? autorGuardado;
   const [aviso, setAviso] = useState("");
   const [salvando, iniciar] = useTransition();
   const [sujo, setSujo] = useState(false);
 
-  useEffect(() => setAutor(localStorage.getItem("nikolas:autor") ?? ""), []);
 
   // avisa antes de sair com alteração não salva
   useEffect(() => {
@@ -226,7 +233,7 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
             className="w-40 rounded border border-linha bg-white px-2.5 py-1.5 text-sm"
             placeholder="Seu nome"
             value={autor}
-            onChange={(e) => setAutor(e.target.value)}
+            onChange={(e) => setDigitado(e.target.value)}
           />
           <button
             type="button"

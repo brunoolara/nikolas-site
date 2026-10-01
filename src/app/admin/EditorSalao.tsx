@@ -1,9 +1,11 @@
 "use client";
 
-// Editor das peças do salão. Com `apenas` recebendo um id de seção, edita só
-// aquela seção — é assim que a tela de domingo funciona, sem código separado.
+// Editor das peças do salão. A tela de domingo é o mesmo componente: com
+// `folhaDomingo`, mostra só as seções daquela folha. As listas de seções saem
+// do estado ao vivo, e não de uma lista fixada no servidor — senão uma
+// categoria recém-criada só apareceria ao recarregar a página.
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { acaoSalvarSalao } from "./acoes";
 import CamposItem, { campo } from "./CamposItem";
 import { mover } from "./Mover";
@@ -16,17 +18,12 @@ type Props = {
   atualizadoPor: string;
   titulo: string;
   imprimirEm: string;
-  /** Ids das seções a mostrar. Vazio = todas. */
-  apenas?: string[];
-  /** Ids a esconder. Usado pela tela do salão para tirar as seções de domingo.
-   *  É por exclusão, e não por lista fixa, para uma categoria recém-criada
-   *  aparecer na hora — com lista fixa ela só surgiria ao recarregar. */
-  excluir?: string[];
+
   /** Mostra os campos da folha de domingo (chamada e frase). */
   folhaDomingo?: boolean;
-  /** Tela do menu completo: libera frase da casa, "Nossa história" e criar categoria.
-   *  Não dá para deduzir de `apenas`, porque a tela do salão também o usa (para
-   *  esconder as seções de domingo) — foi assim que esses campos sumiram antes. */
+  /** Tela do menu completo: libera a frase da casa e o texto da "Nossa história".
+   *  Precisa ser explícito: deduzir isso de outra coisa já fez esses campos
+   *  sumirem da tela sem ninguém notar. */
   completo?: boolean;
 };
 
@@ -38,18 +35,23 @@ export default function EditorSalao({
   atualizadoPor,
   titulo,
   imprimirEm,
-  apenas,
-  excluir,
   folhaDomingo = false,
   completo = false,
 }: Props) {
   const [menu, setMenu] = useState<MenuSalao>(inicial);
-  const [autor, setAutor] = useState("");
+  // nome de quem edita, lembrado no navegador. Lido por useSyncExternalStore
+  // para não precisar de um efeito que chama setState logo ao montar.
+  const autorGuardado = useSyncExternalStore(
+    () => () => {},
+    () => localStorage.getItem("nikolas:autor") ?? "",
+    () => "",
+  );
+  const [digitado, setDigitado] = useState<string | null>(null);
+  const autor = digitado ?? autorGuardado;
   const [aviso, setAviso] = useState("");
   const [sujo, setSujo] = useState(false);
   const [salvando, iniciar] = useTransition();
 
-  useEffect(() => setAutor(localStorage.getItem("nikolas:autor") ?? ""), []);
   useEffect(() => {
     if (!sujo) return;
     const alerta = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -62,11 +64,13 @@ export default function EditorSalao({
     setSujo(true);
   };
 
-  const visiveis = apenas?.length
-    ? menu.secoes.filter((s) => apenas.includes(s.id))
-    : excluir?.length
-      ? menu.secoes.filter((s) => !excluir.includes(s.id))
-      : menu.secoes;
+  // A folha de domingo tem tela própria: ou mostramos só o que é dela, ou tudo
+  // menos o que é dela.
+  const indiceDomingo = menu.folhas.findIndex((f) => f.abre);
+  const idsDomingo = new Set(indiceDomingo === -1 ? [] : menu.folhas[indiceDomingo].secoes);
+  const visiveis = menu.secoes.filter((s) =>
+    folhaDomingo ? idsDomingo.has(s.id) : !idsDomingo.has(s.id),
+  );
 
   const mudarSecao = (id: string, troca: Partial<SecaoSalao>) =>
     mudar({ secoes: menu.secoes.map((s) => (s.id === id ? { ...s, ...troca } : s)) });
@@ -276,7 +280,15 @@ export default function EditorSalao({
         </section>
       ))}
 
-      {completo ? <NovaCategoria menu={menu} aoCriar={criarCategoria} /> : null}
+      {completo || (folhaDomingo && indiceDomingo !== -1) ? (
+        <NovaCategoria
+          menu={menu}
+          aoCriar={criarCategoria}
+          destinoFixo={
+            folhaDomingo ? { tipo: "folha", folha: indiceDomingo, coluna: 0 } : undefined
+          }
+        />
+      ) : null}
 
       <div className="fixed inset-x-0 bottom-0 border-t border-linha bg-papel/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
@@ -284,7 +296,7 @@ export default function EditorSalao({
             className="w-40 rounded border border-linha bg-white px-2.5 py-1.5 text-sm"
             placeholder="Seu nome"
             value={autor}
-            onChange={(e) => setAutor(e.target.value)}
+            onChange={(e) => setDigitado(e.target.value)}
           />
           <button
             type="button"

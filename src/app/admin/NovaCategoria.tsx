@@ -37,9 +37,12 @@ function folhasDisponiveis(menu: MenuSalao): { folha: FolhaSalao; indice: number
 export default function NovaCategoria({
   menu,
   aoCriar,
+  destinoFixo,
 }: {
   menu: MenuSalao;
   aoCriar: (nome: string, destino: Destino, doisPrecos: boolean) => void;
+  /** Quando a peça tem uma folha só (domingo), não há o que escolher. */
+  destinoFixo?: Destino;
 }) {
   const [aberto, setAberto] = useState(false);
   const [nome, setNome] = useState("");
@@ -59,9 +62,10 @@ export default function NovaCategoria({
   const criar = () => {
     if (!nome.trim()) return;
     const destino: Destino =
-      onde === "nova"
+      destinoFixo ??
+      (onde === "nova"
         ? { tipo: "nova" }
-        : { tipo: "folha", folha: Number(onde.split(":")[0]), coluna: Number(onde.split(":")[1]) };
+        : { tipo: "folha", folha: Number(onde.split(":")[0]), coluna: Number(onde.split(":")[1]) });
     aoCriar(nome.trim(), destino, doisPrecos);
     setNome("");
     setOnde("nova");
@@ -97,6 +101,7 @@ export default function NovaCategoria({
         />
       </label>
 
+      {destinoFixo ? null : (
       <label className="mt-4 block">
         <span className="text-sm font-semibold">Em qual folha ela entra</span>
         <select
@@ -116,6 +121,7 @@ export default function NovaCategoria({
           coube — a folha tem tamanho fixo.
         </span>
       </label>
+      )}
 
       <label className="mt-4 flex items-center gap-2">
         <input
