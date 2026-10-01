@@ -5,6 +5,7 @@ import { lerCardapio } from "@/lib/menu/armazem";
 import FolhaSalao from "../FolhaSalao";
 import BarraImpressao from "../BarraImpressao";
 import AvisoEstouro from "../AvisoEstouro";
+import Encaixe from "../Encaixe";
 import "../imprimir.css";
 import "../salao.css";
 
@@ -31,6 +32,7 @@ export default async function DomingoImpressao() {
   return (
     <div className="papel-fora">
       <BarraImpressao voltarPara="/admin/domingo" />
+      <Encaixe />
       <AvisoEstouro />
       <FolhaSalao folha={folha} menu={salao} />
     </div>

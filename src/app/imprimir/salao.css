@@ -379,12 +379,22 @@
   font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
 }
 
-/* ---------- folha de domingo: cabeçalho verde sangrado ---------- */
+/* ---------- folha de domingo: cabeçalho verde sangrado ----------
+   Esta folha é uma só e tem de caber inteira, mas o número de pratos muda toda
+   semana. Por isso aqui quase nada tem medida fixa: duas variáveis comandam a
+   página e o Encaixe.tsx as regula depois de montar, medindo a folha.
+
+   --e  cabeçalho: 1 = do tamanho desenhado, 0 = recolhido
+   --c  lista: 1 = com respiro, 0 = linhas justas (só depois de --e chegar a 0) */
+.domingo {
+  --e: 1;
+  --c: 1;
+}
 .domingo .abre {
   position: relative;
   color: var(--color-papel);
   margin: -14mm -15mm 0;
-  padding: 13mm 15mm 12mm;
+  padding: calc(6mm + 7mm * var(--e)) 15mm calc(5mm + 7mm * var(--e));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -395,12 +405,12 @@
   z-index: 1;
 }
 .domingo .abre .wm {
-  width: 36mm;
+  width: calc(22mm + 14mm * var(--e));
   height: auto;
 }
 .domingo .abre h2 {
-  margin-top: 11mm;
-  font-size: 15mm;
+  margin-top: calc(3mm + 8mm * var(--e));
+  font-size: calc(8.5mm + 6.5mm * var(--e));
   line-height: 0.98;
   letter-spacing: -0.015em;
   color: var(--color-papel);
@@ -412,7 +422,7 @@
   align-items: center;
   justify-content: center;
   gap: 4mm;
-  margin: 7mm 0 0;
+  margin: calc(2.5mm + 4.5mm * var(--e)) 0 0;
   font-weight: 600;
   font-size: 3.1mm;
   letter-spacing: 0.26em;
@@ -429,31 +439,38 @@
   font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
   font-style: italic;
   font-weight: 400;
-  font-size: 4.6mm;
+  font-size: calc(3.5mm + 1.1mm * var(--e));
   color: rgba(251, 248, 242, 0.75);
-  margin: 5mm 0 0;
+  margin: calc(2mm + 3mm * var(--e)) 0 0;
 }
 .domingo .miolo {
-  margin-top: 10mm;
+  margin-top: calc(4mm + 6mm * var(--e));
 }
 .domingo .nome {
-  font-size: 4.1mm;
+  font-size: calc(3.5mm + 0.6mm * var(--c));
 }
 .domingo .preco {
-  font-size: 3.9mm;
+  font-size: calc(3.4mm + 0.5mm * var(--c));
 }
 .domingo .desc {
-  font-size: 3.3mm;
-  margin-top: 0.8mm;
+  font-size: calc(2.9mm + 0.4mm * var(--c));
+  margin-top: calc(0.4mm + 0.4mm * var(--c));
 }
 .domingo .lista li {
-  padding: 4mm 0;
+  padding: calc(1.6mm + 2.4mm * var(--c)) 0;
 }
 .domingo .cab + .lista li:first-child {
-  padding-top: 4mm;
+  padding-top: calc(1.6mm + 2.4mm * var(--c));
 }
 .domingo .nota {
-  font-size: 3.4mm;
+  font-size: calc(3mm + 0.4mm * var(--c));
+}
+/* com .folha-salao na frente para ganhar das medidas gerais das folhas */
+.folha-salao.domingo h3 {
+  font-size: calc(5mm + 1.3mm * var(--c));
+}
+.folha-salao.domingo .bloco + .bloco {
+  margin-top: calc(4.5mm + 3.5mm * var(--c));
 }
 .domingo .rodape .n {
   color: var(--color-verde);

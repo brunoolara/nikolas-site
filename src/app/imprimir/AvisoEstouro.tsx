@@ -7,8 +7,7 @@
 // Isto mede cada folha depois de montada e avisa, só na tela, quais estouraram.
 
 import { useEffect, useState } from "react";
-
-const FOLGA = 4; // px de tolerância, para arredondamento do navegador
+import { ENCAIXE_PRONTO, estourou } from "./medida";
 
 export default function AvisoEstouro() {
   const [cheias, setCheias] = useState<string[]>([]);
@@ -17,7 +16,7 @@ export default function AvisoEstouro() {
     const medir = () => {
       const estouradas: string[] = [];
       document.querySelectorAll<HTMLElement>(".folha").forEach((folha, i) => {
-        const passou = folha.scrollHeight > folha.clientHeight + FOLGA;
+        const passou = estourou(folha);
         folha.style.outline = passou ? "3px solid #b91c1c" : "";
         folha.style.outlineOffset = passou ? "-3px" : "";
         if (passou) {
@@ -33,7 +32,12 @@ export default function AvisoEstouro() {
     pronto.then(() => requestAnimationFrame(medir));
 
     window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
+    // a folha de domingo só tem a altura definitiva depois de se encaixar
+    window.addEventListener(ENCAIXE_PRONTO, medir);
+    return () => {
+      window.removeEventListener("resize", medir);
+      window.removeEventListener(ENCAIXE_PRONTO, medir);
+    };
   }, []);
 
   if (!cheias.length) return null;
