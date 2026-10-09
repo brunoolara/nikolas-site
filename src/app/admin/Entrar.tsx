@@ -5,13 +5,18 @@ import { acaoEntrar, type Resultado } from "./acoes";
 
 const INICIAL: Resultado = { ok: false, mensagem: "" };
 
-export default function Entrar() {
-  const [estado, enviar, enviando] = useActionState(acaoEntrar, INICIAL);
+type Props = {
+  acao?: (estado: Resultado, dados: FormData) => Promise<Resultado>;
+  subtitulo?: string;
+};
+
+export default function Entrar({ acao = acaoEntrar, subtitulo = "Entre para editar e imprimir." }: Props) {
+  const [estado, enviar, enviando] = useActionState(acao, INICIAL);
 
   return (
     <form action={enviar} className="mx-auto mt-24 w-full max-w-sm px-6">
       <h1 className="font-display text-3xl">Cardápio do Nikola&apos;s</h1>
-      <p className="mt-2 text-cafe">Entre para editar e imprimir.</p>
+      <p className="mt-2 text-cafe">{subtitulo}</p>
 
       <label className="mt-8 block text-sm font-semibold" htmlFor="senha">
         Senha

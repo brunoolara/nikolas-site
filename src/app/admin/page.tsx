@@ -52,6 +52,20 @@ export default async function EscolherPeca() {
           );
         })}
       </div>
+
+      <div className="mt-8 rounded border border-linha p-5 hover:border-verde">
+        <h2 className="font-display text-2xl">Posts do status</h2>
+        <p className="mt-1 text-sm text-cafe">
+          Fotos para a equipe postar no status do WhatsApp, por dia ou no banco de posts. A equipe entra
+          em /posts com a senha dela.
+        </p>
+        <Link
+          href="/posts"
+          className="mt-4 inline-block rounded bg-verde px-4 py-2 text-sm font-semibold text-papel hover:bg-verde-escuro"
+        >
+          Abrir posts
+        </Link>
+      </div>
     </div>
   );
 }
