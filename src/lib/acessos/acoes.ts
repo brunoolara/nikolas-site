@@ -6,7 +6,11 @@ import type { Area } from "./usuarios";
 
 export type Resultado = { ok: boolean; mensagem: string };
 
-export async function acaoEntrar(area: Area | "master", _estado: Resultado, dados: FormData): Promise<Resultado> {
+export async function acaoEntrar(
+  area: Area | "master" | "qualquer",
+  _estado: Resultado,
+  dados: FormData,
+): Promise<Resultado> {
   const erro = await entrar(String(dados.get("usuario") ?? ""), String(dados.get("senha") ?? ""), area);
   if (erro) return { ok: false, mensagem: erro };
   revalidatePath("/", "layout");

@@ -30,6 +30,9 @@ export default async function Posts() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linha pb-4">
         <div>
+          <Link href="/" className="text-sm text-cafe underline">
+            ← Painel
+          </Link>
           <h1 className="font-display text-3xl">Posts do status</h1>
           <p className="mt-1 text-sm text-cafe">
             <span className="capitalize">{rotuloData(dia)}</span> · {sessao?.nome}

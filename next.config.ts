@@ -9,9 +9,6 @@ const nextConfig: NextConfig = {
       { source: "/cardápio", destination: "/cardapio", permanent: true },
       { source: "/card%C3%A1pio", destination: "/cardapio", permanent: true },
       { source: "/como-chegar", destination: "/contato", permanent: true },
-      // o painel do cardápio mudou de endereço
-      { source: "/admin", destination: "/alterar-cardapio", permanent: true },
-      { source: "/admin/:caminho*", destination: "/alterar-cardapio/:caminho*", permanent: true },
     ];
   },
   async headers() {

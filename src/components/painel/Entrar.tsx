@@ -1,23 +1,20 @@
 "use client";
 
-// Porta de cada área interna: usuário e senha. Se já há alguém nesta máquina
-// sem acesso à área, avisa quem é e oferece sair, em vez de só pedir senha.
+// A porta do painel: usuário e senha.
 
 import { useActionState } from "react";
-import { acaoEntrar, acaoSair, type Resultado } from "@/lib/acessos/acoes";
+import { acaoEntrar, type Resultado } from "@/lib/acessos/acoes";
 import type { Area } from "@/lib/acessos/areas";
 
 const INICIAL: Resultado = { ok: false, mensagem: "" };
 
 type Props = {
-  area: Area | "master";
+  area: Area | "master" | "qualquer";
   titulo: string;
   subtitulo: string;
-  /** Nome de quem já entrou nesta máquina, mas não tem acesso a esta área. */
-  logadoComo?: string;
 };
 
-export default function Entrar({ area, titulo, subtitulo, logadoComo }: Props) {
+export default function Entrar({ area, titulo, subtitulo }: Props) {
   const [estado, enviar, enviando] = useActionState(acaoEntrar.bind(null, area), INICIAL);
 
   return (
@@ -25,14 +22,6 @@ export default function Entrar({ area, titulo, subtitulo, logadoComo }: Props) {
       <h1 className="font-display text-3xl">{titulo}</h1>
       <p className="mt-2 text-cafe">{subtitulo}</p>
 
-      {logadoComo ? (
-        <p className="mt-4 rounded border border-linha bg-creme p-3 text-sm">
-          Você está como <strong>{logadoComo}</strong>, que não tem acesso a esta área.{" "}
-          <button type="button" onClick={() => acaoSair()} className="text-verde underline">
-            Sair
-          </button>
-        </p>
-      ) : null}
 
       <label className="mt-8 block text-sm font-semibold" htmlFor="usuario">
         Usuário

@@ -12,6 +12,7 @@
 import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 import { AREAS, MASTER, lerUsuarios, senhaConfere, type Area } from "./usuarios";
 
@@ -44,10 +45,14 @@ function iguais(a: string, b: string): boolean {
 const resumo = (s: string) => createHash("sha256").update(s).digest("hex");
 
 /**
- * Confere usuário e senha para entrar numa área ("master" = só o master).
- * Devolve uma mensagem de erro, ou null se entrou.
+ * Confere usuário e senha para entrar numa área ("master" = só o master,
+ * "qualquer" = a porta do painel). Devolve uma mensagem de erro, ou null se entrou.
  */
-export async function entrar(usuario: string, senha: string, area: Area | "master"): Promise<string | null> {
+export async function entrar(
+  usuario: string,
+  senha: string,
+  area: Area | "master" | "qualquer",
+): Promise<string | null> {
   const mestre = senhaMaster();
   if (!mestre) return "O painel ainda não foi configurado.";
   const nome = usuario.trim().toLowerCase();
@@ -59,7 +64,8 @@ export async function entrar(usuario: string, senha: string, area: Area | "maste
   } else {
     const u = (await lerUsuarios()).find((x) => x.usuario === nome && x.ativo);
     if (!u || !senhaConfere(u, senha)) return "Usuário ou senha incorretos.";
-    if (area === "master" || !u.areas.includes(area)) return "Este usuário não tem acesso a esta área.";
+    const liberado = area === "qualquer" ? u.areas.length > 0 : area !== "master" && u.areas.includes(area);
+    if (!liberado) return "Este usuário não tem acesso a esta área.";
     versao = u.versao;
   }
 
@@ -90,6 +96,16 @@ export const sessaoAtual = cache(async (): Promise<Sessao | null> => {
   if (!u || !u.ativo || u.versao !== versao) return null;
   return { usuario, nome: u.nome, master: false, areas: u.areas };
 });
+
+/**
+ * Guarda das áreas: sem login, volta para a porta do painel. Devolve a sessão
+ * e se ela pode entrar na área (quem não pode vê o aviso de sem acesso).
+ */
+export async function exigir(area: Area | "master"): Promise<{ sessao: Sessao; liberado: boolean }> {
+  const sessao = await sessaoAtual();
+  if (!sessao) redirect("/");
+  return { sessao, liberado: area === "master" ? sessao.master : sessao.areas.includes(area) };
+}
 
 /** A sessão atual pode entrar nesta área? */
 export async function pode(area: Area): Promise<boolean> {

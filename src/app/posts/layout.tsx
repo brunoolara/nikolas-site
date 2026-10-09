@@ -2,8 +2,8 @@
 // marca como publicado. Só o master cria e edita.
 
 import type { Metadata } from "next";
-import { sessaoAtual } from "@/lib/acessos/sessao";
-import Entrar from "@/components/painel/Entrar";
+import { exigir } from "@/lib/acessos/sessao";
+import SemAcesso from "@/components/painel/SemAcesso";
 import "@/components/painel/painel.css";
 
 export const metadata: Metadata = {
@@ -14,18 +14,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function LayoutPosts({ children }: { children: React.ReactNode }) {
-  const sessao = await sessaoAtual();
-  if (!sessao?.areas.includes("posts")) {
-    return (
-      <div className="painel">
-        <Entrar
-          area="posts"
-          titulo="Posts do Nikola's"
-          subtitulo="Entre para ver os posts do dia."
-          logadoComo={sessao?.nome}
-        />
-      </div>
-    );
-  }
-  return <div className="painel">{children}</div>;
+  const { sessao, liberado } = await exigir("posts");
+  return <div className="painel">{liberado ? children : <SemAcesso nome={sessao.nome} />}</div>;
 }
