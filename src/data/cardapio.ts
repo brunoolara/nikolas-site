@@ -79,9 +79,17 @@ export const cardapio: Categoria[] = [
     id: "arabes",
     titulo: "Especialidades árabes",
     itens: [
-      { nome: "Babaganuche", desc: "Quinta a sábado. Berinjela temperada com tahine e azeite." },
-      { nome: "Homus", desc: "Quinta a sábado. Pasta de grão-de-bico com tahine." },
-      { nome: "Kibe chapado com queijo derretido", desc: "Quinta a sábado. Kibe na chapa com muçarela derretida por cima." },
+      // Mesmos pratos e textos do painel do cardápio (salão). Árabes de quinta a sábado,
+      // menos o filé mignon à moda árabe (Bruno, 2026-10-08).
+      { nome: "Filé mignon à moda árabe", desc: "Tiras de filé mignon com homus e amêndoas laminadas." },
+      { nome: "Kibe cru", desc: "Quinta a sábado. Carne moída com trigo, cebola e hortelã, servida crua, com azeite." },
+      { nome: "Kibe chapado com queijo", desc: "Quinta a sábado. Kibe aberto na chapa, coberto com queijo." },
+      { nome: "Kafta", desc: "Quinta a sábado. 4 unidades. Carne moída com especiarias árabes, na chapa." },
+      { nome: "Kafta com tabule", desc: "Quinta a sábado. 4 unidades. A kafta com salada de trigo, tomate, salsa e hortelã." },
+      { nome: "Tábua Dona Zena", desc: "Quinta a sábado. Kibe cru, homus, babaganuche e pão sírio." },
+      { nome: "Tábua Dona Zena completa", desc: "Quinta a sábado. Kibe cru, homus, babaganuche, tabule, kafta e pão sírio." },
+      { nome: "Homus", desc: "Quinta a sábado. Pasta de grão-de-bico com tahine, limão e azeite." },
+      { nome: "Babaganuche", desc: "Quinta a sábado. Pasta de berinjela assada com tahine e azeite." },
     ],
   },
   {
