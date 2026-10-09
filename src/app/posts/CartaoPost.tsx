@@ -5,8 +5,10 @@
 // "Postar no status" usa o compartilhamento do celular (Web Share). Nenhum
 // site consegue abrir direto o status do WhatsApp: abre a folha de
 // compartilhamento, a pessoa toca em WhatsApp e escolhe "Meu status".
-// As fotos são baixadas ao abrir a página porque o Safari só deixa
-// compartilhar logo depois do toque — esperar o download no clique quebra.
+// As fotos são baixadas antes do toque porque o Safari só deixa compartilhar
+// logo depois dele — esperar o download no clique quebra. Mas só quando o post
+// aparece na tela: com o banco e duas semanas de agenda, baixar tudo ao abrir
+// seriam dezenas de MB no celular da equipe.
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -17,6 +19,7 @@ const src = (nome: string) => `/posts/imagem/${nome}`;
 const arquivo = (nome: string, i: number) => `nikolas-${i + 1}.${nome.split(".").pop()}`;
 
 export default function CartaoPost({ post, master }: { post: Post; master: boolean }) {
+  const cartao = useRef<HTMLElement>(null);
   const arquivos = useRef<File[] | null>(null);
   const [podeCompartilhar, setPodeCompartilhar] = useState(false);
   const [aviso, setAviso] = useState("");
@@ -24,20 +27,31 @@ export default function CartaoPost({ post, master }: { post: Post; master: boole
 
   useEffect(() => {
     let vivo = true;
-    Promise.all(
-      post.imagens.map(async (nome, i) => {
-        const blob = await (await fetch(src(nome))).blob();
-        return new File([blob], arquivo(nome, i), { type: blob.type });
-      }),
-    )
-      .then((files) => {
-        if (!vivo) return;
-        arquivos.current = files;
-        setPodeCompartilhar(Boolean(navigator.canShare?.({ files })));
-      })
-      .catch(() => {});
+    const baixar = () =>
+      Promise.all(
+        post.imagens.map(async (nome, i) => {
+          const blob = await (await fetch(src(nome))).blob();
+          return new File([blob], arquivo(nome, i), { type: blob.type });
+        }),
+      )
+        .then((files) => {
+          if (!vivo) return;
+          arquivos.current = files;
+          setPodeCompartilhar(Boolean(navigator.canShare?.({ files })));
+        })
+        .catch(() => {});
+    const olho = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        olho.disconnect();
+        baixar();
+      },
+      { rootMargin: "300px" },
+    );
+    if (cartao.current) olho.observe(cartao.current);
     return () => {
       vivo = false;
+      olho.disconnect();
     };
   }, [post.imagens]);
 
@@ -68,7 +82,7 @@ export default function CartaoPost({ post, master }: { post: Post; master: boole
   const feito = Boolean(post.data && ultima);
 
   return (
-    <article className={`rounded border p-4 ${feito ? "border-linha opacity-70" : "border-verde"}`}>
+    <article ref={cartao} className={`rounded border p-4 ${feito ? "border-linha opacity-70" : "border-verde"}`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-semibold">{post.titulo}</h3>
         {master ? (
@@ -81,7 +95,7 @@ export default function CartaoPost({ post, master }: { post: Post; master: boole
       <div className="mt-3 flex gap-2 overflow-x-auto">
         {post.imagens.map((nome, i) => (
           // eslint-disable-next-line @next/next/no-img-element -- foto privada, servida pela nossa rota
-          <img key={nome} src={src(nome)} alt={`Foto ${i + 1}`} className="h-48 w-auto rounded border border-linha" />
+          <img key={nome} src={src(nome)} alt={`Foto ${i + 1}`} loading="lazy" className="h-48 w-auto rounded border border-linha" />
         ))}
       </div>
 

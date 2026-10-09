@@ -72,11 +72,16 @@ export default async function Posts() {
         {deHoje.length ? deHoje.map(cartao) : <Vazio>Nada agendado para hoje. Veja o banco de posts lá embaixo.</Vazio>}
       </Bloco>
 
-      {[...porDia].map(([d, lista]) => (
-        <Bloco key={d} titulo={rotuloData(d)}>
-          {lista.map(cartao)}
-        </Bloco>
-      ))}
+      {porDia.size ? (
+        <details className="mt-8">
+          <summary className="cursor-pointer font-display text-2xl">Próximos dias ({proximos.length})</summary>
+          {[...porDia].map(([d, lista]) => (
+            <Bloco key={d} titulo={rotuloData(d)}>
+              {lista.map(cartao)}
+            </Bloco>
+          ))}
+        </details>
+      ) : null}
 
       <Bloco titulo="Banco de posts" nota="Podem sair em qualquer dia, quantas vezes precisar.">
         {banco.length ? banco.map(cartao) : <Vazio>O banco está vazio.</Vazio>}
