@@ -1,6 +1,7 @@
 // O que a equipe abre, em duas abas para a página não virar um rolo:
 // - Agenda: um dia por vez (hoje, se não escolher outro), navegável por setas
-//   e pela faixa dos próximos 14 dias, com aviso do que ficou para trás.
+//   e pela faixa com os dias do mês (mês e ano escolhidos nos seletores),
+//   com aviso do que ficou para trás.
 // - Banco de posts: os que podem sair em qualquer dia, com filtro por tipo.
 // Os posts aparecem em grade de miniaturas; tocar abre em tela cheia. Aba e
 // dia ficam no endereço (?aba=banco, ?dia=AAAA-MM-DD), dá para mandar o link.
@@ -11,6 +12,7 @@ import { lerPosts } from "@/lib/posts/armazem";
 import { DATA, hoje, rotuloCurto, rotuloData, somarDias } from "@/lib/posts/tipos";
 import Sair from "@/components/painel/Sair";
 import GradePosts from "./GradePosts";
+import SeletorMes from "./SeletorMes";
 
 export default async function Posts({ searchParams }: PageProps<"/posts">) {
   const [sessao, posts, busca] = await Promise.all([sessaoAtual(), lerPosts(), searchParams]);
@@ -27,7 +29,12 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
 
   const quantos = new Map<string, number>();
   for (const p of agenda) quantos.set(p.data!, (quantos.get(p.data!) ?? 0) + 1);
-  const faixa = Array.from({ length: 14 }, (_, i) => somarDias(dia, i));
+  // a faixa mostra o mês do dia aberto, inteiro
+  const [anoPedido, mesPedido] = pedido.split("-").map(Number);
+  const diasNoMes = new Date(Date.UTC(anoPedido, mesPedido, 0)).getUTCDate();
+  const faixa = Array.from({ length: diasNoMes }, (_, i) => `${pedido.slice(0, 8)}${String(i + 1).padStart(2, "0")}`);
+  const anoHoje = Number(dia.slice(0, 4));
+  const anos = [...new Set([anoHoje, anoHoje + 1, anoPedido, ...agenda.map((p) => Number(p.data!.slice(0, 4)))])].sort();
   const linkDia = (d: string) => (d === dia ? "/posts" : `/posts?dia=${d}`);
 
 
@@ -131,7 +138,9 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
               </Link>
             </div>
 
-            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1">
+            <SeletorMes pedido={pedido} hoje={dia} anos={anos} />
+
+            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" aria-label="Dias do mês">
               {faixa.map((d) => {
                 const { semana, dia: num } = rotuloCurto(d);
                 const n = quantos.get(d) ?? 0;
