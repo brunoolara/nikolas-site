@@ -79,9 +79,9 @@ export const cardapio: Categoria[] = [
     id: "arabes",
     titulo: "Especialidades árabes",
     itens: [
-      { nome: "Babaganuche", desc: "Berinjela temperada com tahine e azeite." },
-      { nome: "Homus", desc: "Pasta de grão-de-bico com tahine." },
-      { nome: "Kibe chapado com queijo derretido", desc: "Kibe na chapa com muçarela derretida por cima." },
+      { nome: "Babaganuche", desc: "Quinta a sábado. Berinjela temperada com tahine e azeite." },
+      { nome: "Homus", desc: "Quinta a sábado. Pasta de grão-de-bico com tahine." },
+      { nome: "Kibe chapado com queijo derretido", desc: "Quinta a sábado. Kibe na chapa com muçarela derretida por cima." },
     ],
   },
   {
