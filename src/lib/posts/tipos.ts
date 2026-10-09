@@ -17,7 +17,7 @@ export type Post = {
   publicacoes: Publicacao[];
 };
 
-export const NOME_IMAGEM = /^[0-9a-f-]{36}\.jpg$/;
+export const NOME_IMAGEM = /^[0-9a-f-]{36}\.(jpg|png)$/;
 export const DATA = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Hoje no fuso do restaurante, como "AAAA-MM-DD". */

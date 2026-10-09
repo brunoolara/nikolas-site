@@ -154,7 +154,7 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
             Ver e imprimir
           </a>
           <a
-            href="/admin"
+            href="/alterar-cardapio"
             className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme"
           >
             Voltar

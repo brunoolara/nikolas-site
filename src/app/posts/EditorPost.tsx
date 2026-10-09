@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { Post } from "@/lib/posts/tipos";
 import { acaoExcluirPost, acaoSalvarPost } from "./acoes";
-import Mover, { mover } from "../admin/Mover";
+import Mover, { mover } from "../alterar-cardapio/Mover";
 
 const LADO_MAIOR = 1920;
 

@@ -3,13 +3,13 @@
 // de 4,5 MB por requisição da Vercel.
 
 import { randomUUID } from "node:crypto";
-import { papel } from "@/lib/menu/sessao";
+import { eMaster } from "@/lib/acessos/sessao";
 import { gravarImagem } from "@/lib/posts/armazem";
 
 const LIMITE = 4 * 1024 * 1024;
 
 export async function POST(req: Request) {
-  if ((await papel()) !== "dono") return Response.json({ erro: "Só o dono envia fotos." }, { status: 403 });
+  if (!(await eMaster())) return Response.json({ erro: "Só o master envia fotos." }, { status: 403 });
 
   const arquivo = (await req.formData()).get("foto");
   if (!(arquivo instanceof Blob) || arquivo.type !== "image/jpeg" || arquivo.size > LIMITE) {

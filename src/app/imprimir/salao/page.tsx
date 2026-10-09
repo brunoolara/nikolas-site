@@ -22,7 +22,7 @@ export default async function MenuSalaoImpressao() {
 
   return (
     <div className="papel-fora">
-      <BarraImpressao voltarPara="/admin/salao" />
+      <BarraImpressao voltarPara="/alterar-cardapio/salao" />
       <AvisoEstouro />
       {folhas.map((folha, i) => (
         <FolhaSalao

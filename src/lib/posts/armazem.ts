@@ -28,8 +28,10 @@ export async function gravarPosts(posts: Post[]): Promise<void> {
   });
 }
 
+export const tipoImagem = (nome: string) => (nome.endsWith(".png") ? "image/png" : "image/jpeg");
+
 export async function gravarImagem(nome: string, arquivo: Blob): Promise<void> {
-  await put(`${PASTA_IMG}/${nome}`, arquivo, { access: "private", contentType: "image/jpeg" });
+  await put(`${PASTA_IMG}/${nome}`, arquivo, { access: "private", contentType: tipoImagem(nome) });
 }
 
 export async function lerImagem(nome: string) {

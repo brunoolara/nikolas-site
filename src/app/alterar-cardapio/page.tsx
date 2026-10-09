@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { lerCardapio } from "@/lib/menu/armazem";
 import { PECAS, ROTULO_PECA } from "@/lib/menu/tipos";
-import Sair from "./Sair";
+import Sair from "@/components/painel/Sair";
+import { eMaster } from "@/lib/acessos/sessao";
 
 export default async function EscolherPeca() {
-  const cardapio = await lerCardapio();
+  const [cardapio, master] = await Promise.all([lerCardapio(), eMaster()]);
   const quando = new Date(cardapio.atualizadoEm).toLocaleString("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
@@ -35,7 +36,7 @@ export default async function EscolherPeca() {
               <p className="mt-1 text-sm text-cafe">{r.descricao}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link
-                  href={`/admin/${peca}`}
+                  href={`/alterar-cardapio/${peca}`}
                   className="rounded bg-verde px-4 py-2 text-sm font-semibold text-papel hover:bg-verde-escuro"
                 >
                   Editar
@@ -53,19 +54,30 @@ export default async function EscolherPeca() {
         })}
       </div>
 
-      <div className="mt-8 rounded border border-linha p-5 hover:border-verde">
-        <h2 className="font-display text-2xl">Posts do status</h2>
-        <p className="mt-1 text-sm text-cafe">
-          Fotos para a equipe postar no status do WhatsApp, por dia ou no banco de posts. A equipe entra
-          em /posts com a senha dela.
-        </p>
-        <Link
-          href="/posts"
-          className="mt-4 inline-block rounded bg-verde px-4 py-2 text-sm font-semibold text-papel hover:bg-verde-escuro"
-        >
-          Abrir posts
-        </Link>
-      </div>
+      {master ? (
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <div className="rounded border border-linha p-5 hover:border-verde">
+            <h2 className="font-display text-2xl">Posts do status</h2>
+            <p className="mt-1 text-sm text-cafe">Fotos para a equipe postar no status do WhatsApp.</p>
+            <Link
+              href="/posts"
+              className="mt-4 inline-block rounded bg-verde px-4 py-2 text-sm font-semibold text-papel hover:bg-verde-escuro"
+            >
+              Abrir posts
+            </Link>
+          </div>
+          <div className="rounded border border-linha p-5 hover:border-verde">
+            <h2 className="font-display text-2xl">Acessos</h2>
+            <p className="mt-1 text-sm text-cafe">Cadastro dos funcionários, senhas e o que cada um acessa.</p>
+            <Link
+              href="/acessos"
+              className="mt-4 inline-block rounded bg-verde px-4 py-2 text-sm font-semibold text-papel hover:bg-verde-escuro"
+            >
+              Abrir acessos
+            </Link>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

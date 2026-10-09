@@ -1,9 +1,9 @@
-// Porta do painel: a senha é conferida uma vez aqui, e vale para todas as telas.
+// Porta do cardápio: usuário e senha conferidos uma vez aqui, valem para todas as telas.
 
 import type { Metadata } from "next";
-import { autenticado, faltaConfigurarSenha } from "@/lib/menu/sessao";
-import Entrar from "./Entrar";
-import "./admin.css";
+import { faltaConfigurarSenha, sessaoAtual } from "@/lib/acessos/sessao";
+import Entrar from "@/components/painel/Entrar";
+import "@/components/painel/painel.css";
 
 export const metadata: Metadata = {
   title: "Editar o cardápio",
@@ -18,7 +18,7 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
       <div className="painel mx-auto mt-24 max-w-lg px-6">
         <h1 className="font-display text-2xl">Falta configurar a senha</h1>
         <p className="mt-3 text-cafe">
-          O painel só abre depois que a variável <code className="font-mono">SENHA_PAINEL</code> existir
+          O painel só abre depois que a variável <code className="font-mono">SENHA_PAINEL</code> (a senha do master) existir
           no ambiente. Para criar, rode no terminal do projeto:
         </p>
         <pre className="mt-3 overflow-x-auto rounded bg-creme p-3 font-mono text-sm">
@@ -28,10 +28,16 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
     );
   }
 
-  if (!(await autenticado())) {
+  const sessao = await sessaoAtual();
+  if (!sessao?.areas.includes("cardapio")) {
     return (
       <div className="painel">
-        <Entrar />
+        <Entrar
+          area="cardapio"
+          titulo="Cardápio do Nikola's"
+          subtitulo="Entre para editar e imprimir."
+          logadoComo={sessao?.nome}
+        />
       </div>
     );
   }

@@ -4,23 +4,13 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { apagarImagens, gravarPosts, lerPosts } from "@/lib/posts/armazem";
 import { DATA, NOME_IMAGEM, type Post } from "@/lib/posts/tipos";
-import { entrar, entrarEquipe, papel } from "@/lib/menu/sessao";
-import type { Resultado } from "../admin/acoes";
-
-/** Aceita as duas senhas: a do dono abre tudo, a da equipe só os posts. */
-export async function acaoEntrarPosts(_estado: Resultado, dados: FormData): Promise<Resultado> {
-  const senha = String(dados.get("senha") ?? "");
-  if ((await entrar(senha)) || (await entrarEquipe(senha))) {
-    revalidatePath("/posts");
-    return { ok: true, mensagem: "" };
-  }
-  return { ok: false, mensagem: "Senha incorreta." };
-}
+import { eMaster, sessaoAtual } from "@/lib/acessos/sessao";
+import type { Resultado } from "@/lib/acessos/acoes";
 
 export type DadosPost = Pick<Post, "titulo" | "data" | "legenda" | "imagens"> & { id?: string };
 
 export async function acaoSalvarPost(dados: DadosPost): Promise<Resultado & { id?: string }> {
-  if ((await papel()) !== "dono") return { ok: false, mensagem: "Só o dono cria e edita posts." };
+  if (!(await eMaster())) return { ok: false, mensagem: "Só o master cria e edita posts." };
 
   const imagens = dados.imagens.filter((n) => NOME_IMAGEM.test(n));
   if (!imagens.length) return { ok: false, mensagem: "Coloque pelo menos uma foto." };
@@ -50,7 +40,7 @@ export async function acaoSalvarPost(dados: DadosPost): Promise<Resultado & { id
 }
 
 export async function acaoExcluirPost(id: string): Promise<Resultado> {
-  if ((await papel()) !== "dono") return { ok: false, mensagem: "Só o dono exclui posts." };
+  if (!(await eMaster())) return { ok: false, mensagem: "Só o master exclui posts." };
   try {
     const posts = await lerPosts();
     const alvo = posts.find((p) => p.id === id);
@@ -66,15 +56,16 @@ export async function acaoExcluirPost(id: string): Promise<Resultado> {
 }
 
 /** Marca (ou, com desfazer, desmarca a última marcação) que o post foi publicado. */
-export async function acaoMarcarPublicado(id: string, por: string, desfazer = false): Promise<Resultado> {
-  if (!(await papel())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+export async function acaoMarcarPublicado(id: string, desfazer = false): Promise<Resultado> {
+  const sessao = await sessaoAtual();
+  if (!sessao?.areas.includes("posts")) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
   try {
     const posts = await lerPosts();
     const novos = posts.map((p) => {
       if (p.id !== id) return p;
       const publicacoes = desfazer
         ? p.publicacoes.slice(0, -1)
-        : [...p.publicacoes, { quando: new Date().toISOString(), por: por.trim() || "equipe" }];
+        : [...p.publicacoes, { quando: new Date().toISOString(), por: sessao.nome }];
       return { ...p, publicacoes };
     });
     await gravarPosts(novos);

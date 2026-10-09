@@ -1,7 +1,7 @@
 "use client";
 
 // Barra que só existe na tela. Some na impressão (classe .so-tela).
-export default function BarraImpressao({ voltarPara = "/admin" }: { voltarPara?: string }) {
+export default function BarraImpressao({ voltarPara = "/alterar-cardapio" }: { voltarPara?: string }) {
   return (
     <div className="so-tela flex flex-wrap items-center justify-center gap-3 py-4 text-papel">
       <button

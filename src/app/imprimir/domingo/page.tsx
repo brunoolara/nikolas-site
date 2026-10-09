@@ -23,7 +23,7 @@ export default async function DomingoImpressao() {
   if (!folha) {
     return (
       <div className="papel-fora">
-        <BarraImpressao voltarPara="/admin/domingo" />
+        <BarraImpressao voltarPara="/alterar-cardapio/domingo" />
         <p className="so-tela p-8 text-papel">A folha de domingo não está no cardápio salvo.</p>
       </div>
     );
@@ -31,7 +31,7 @@ export default async function DomingoImpressao() {
 
   return (
     <div className="papel-fora">
-      <BarraImpressao voltarPara="/admin/domingo" />
+      <BarraImpressao voltarPara="/alterar-cardapio/domingo" />
       <Encaixe />
       <AvisoEstouro />
       <FolhaSalao folha={folha} menu={salao} />

@@ -68,7 +68,7 @@ export default async function MenuExecutivoImpressao() {
 
   return (
     <div className="papel-fora">
-      <BarraImpressao voltarPara="/admin/executivo" />
+      <BarraImpressao voltarPara="/alterar-cardapio/executivo" />
       <AvisoEstouro />
 
       {/* ---------- frente ---------- */}

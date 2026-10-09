@@ -14,8 +14,9 @@ import type { Post } from "@/lib/posts/tipos";
 import { acaoMarcarPublicado } from "./acoes";
 
 const src = (nome: string) => `/posts/imagem/${nome}`;
+const arquivo = (nome: string, i: number) => `nikolas-${i + 1}.${nome.split(".").pop()}`;
 
-export default function CartaoPost({ post, dono }: { post: Post; dono: boolean }) {
+export default function CartaoPost({ post, master }: { post: Post; master: boolean }) {
   const arquivos = useRef<File[] | null>(null);
   const [podeCompartilhar, setPodeCompartilhar] = useState(false);
   const [aviso, setAviso] = useState("");
@@ -26,7 +27,7 @@ export default function CartaoPost({ post, dono }: { post: Post; dono: boolean }
     Promise.all(
       post.imagens.map(async (nome, i) => {
         const blob = await (await fetch(src(nome))).blob();
-        return new File([blob], `nikolas-${i + 1}.jpg`, { type: "image/jpeg" });
+        return new File([blob], arquivo(nome, i), { type: blob.type });
       }),
     )
       .then((files) => {
@@ -56,14 +57,8 @@ export default function CartaoPost({ post, dono }: { post: Post; dono: boolean }
   }
 
   function marcar(desfazer = false) {
-    let nome = localStorage.getItem("nikolas:autor") ?? "";
-    if (!desfazer && !nome) {
-      nome = window.prompt("Seu nome (fica guardado neste aparelho):")?.trim() ?? "";
-      if (!nome) return;
-      localStorage.setItem("nikolas:autor", nome);
-    }
     iniciar(async () => {
-      const r = await acaoMarcarPublicado(post.id, nome, desfazer);
+      const r = await acaoMarcarPublicado(post.id, desfazer);
       setAviso(r.ok ? "" : r.mensagem);
     });
   }
@@ -76,7 +71,7 @@ export default function CartaoPost({ post, dono }: { post: Post; dono: boolean }
     <article className={`rounded border p-4 ${feito ? "border-linha opacity-70" : "border-verde"}`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-semibold">{post.titulo}</h3>
-        {dono ? (
+        {master ? (
           <Link href={`/posts/${post.id}`} className="shrink-0 text-sm text-verde underline">
             Editar
           </Link>
@@ -118,7 +113,7 @@ export default function CartaoPost({ post, dono }: { post: Post; dono: boolean }
           <a
             key={nome}
             href={src(nome)}
-            download={`nikolas-${i + 1}.jpg`}
+            download={arquivo(nome, i)}
             className="rounded border border-linha px-3 py-2 text-sm"
           >
             {post.imagens.length > 1 ? `Baixar foto ${i + 1}` : "Baixar foto"}

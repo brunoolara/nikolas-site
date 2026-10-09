@@ -1,6 +1,6 @@
 "use client";
 
-import { acaoSair } from "./acoes";
+import { acaoSair } from "@/lib/acessos/acoes";
 
 export default function Sair() {
   return (

@@ -166,7 +166,7 @@ export default function EditorSalao({
           >
             Ver e imprimir
           </a>
-          <a href="/admin" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
+          <a href="/alterar-cardapio" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
             Voltar
           </a>
         </div>

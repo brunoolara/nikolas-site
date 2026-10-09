@@ -2,15 +2,15 @@
 // próximos dias e o banco de posts para usar a qualquer momento.
 
 import Link from "next/link";
-import { papel } from "@/lib/menu/sessao";
+import { sessaoAtual } from "@/lib/acessos/sessao";
 import { lerPosts } from "@/lib/posts/armazem";
 import { hoje, rotuloData, somarDias, type Post } from "@/lib/posts/tipos";
-import Sair from "../admin/Sair";
+import Sair from "@/components/painel/Sair";
 import CartaoPost from "./CartaoPost";
 
 export default async function Posts() {
-  const [quem, posts] = await Promise.all([papel(), lerPosts()]);
-  const dono = quem === "dono";
+  const [sessao, posts] = await Promise.all([sessaoAtual(), lerPosts()]);
+  const master = Boolean(sessao?.master);
   const dia = hoje();
 
   const agenda = posts.filter((p) => p.data).sort((a, b) => a.data!.localeCompare(b.data!));
@@ -24,19 +24,27 @@ export default async function Posts() {
   const porDia = new Map<string, Post[]>();
   for (const p of proximos) porDia.set(p.data!, [...(porDia.get(p.data!) ?? []), p]);
 
-  const cartao = (p: Post) => <CartaoPost key={p.id} post={p} dono={dono} />;
+  const cartao = (p: Post) => <CartaoPost key={p.id} post={p} master={master} />;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linha pb-4">
         <div>
           <h1 className="font-display text-3xl">Posts do status</h1>
-          <p className="mt-1 text-sm capitalize text-cafe">{rotuloData(dia)}</p>
+          <p className="mt-1 text-sm text-cafe">
+            <span className="capitalize">{rotuloData(dia)}</span> · {sessao?.nome}
+          </p>
         </div>
         <div className="flex gap-2">
-          {dono ? (
+          {master ? (
             <>
-              <Link href="/admin" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
+              <Link href="/acessos" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
+                Acessos
+              </Link>
+              <Link
+                href="/alterar-cardapio"
+                className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme"
+              >
                 Cardápio
               </Link>
               <Link

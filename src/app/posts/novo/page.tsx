@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { papel } from "@/lib/menu/sessao";
+import { eMaster } from "@/lib/acessos/sessao";
 import EditorPost from "../EditorPost";
 
 export default async function NovoPost() {
-  if ((await papel()) !== "dono") redirect("/posts");
+  if (!(await eMaster())) redirect("/posts");
   return <EditorPost />;
 }
