@@ -24,12 +24,11 @@ export default async function MenuSalaoImpressao() {
     <div className="papel-fora">
       <BarraImpressao voltarPara="/alterar-cardapio/salao" />
       <AvisoEstouro />
-      {folhas.map((folha, i) => (
+      {folhas.map((folha) => (
         <FolhaSalao
           key={folha.titulo}
           folha={folha}
           menu={salao}
-          numero={folha.variantes.includes("semnumero") ? undefined : i}
         />
       ))}
     </div>

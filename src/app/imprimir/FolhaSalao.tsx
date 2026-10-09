@@ -143,11 +143,9 @@ function Miolo({ folha, achar, frase }: { folha: Folha; achar: (id: string) => S
 export default function FolhaSalao({
   folha,
   menu,
-  numero,
 }: {
   folha: Folha;
   menu: MenuSalao;
-  numero?: number;
 }) {
   const achar = (id: string) => menu.secoes.find((s) => s.id === id);
   const classes = ["folha", "folha-salao", ...folha.variantes].join(" ");
@@ -192,7 +190,7 @@ export default function FolhaSalao({
         <footer className="rodape">
           <span />
           <span>{SITE}</span>
-          <span className="n">{folha.rodapeN ?? ""}</span>
+          <img className="mono" src="/images/monograma-preto.svg" alt="" />
         </footer>
       </section>
     );
@@ -220,7 +218,7 @@ export default function FolhaSalao({
         <footer className="rodape">
           <span />
           <span>{SITE}</span>
-          <span className="n">{folha.rodapeN ?? "Domingo"}</span>
+          <img className="mono" src="/images/monograma-preto.svg" alt="" />
         </footer>
       </section>
     );
@@ -238,7 +236,7 @@ export default function FolhaSalao({
       <footer className="rodape">
         <span />
         <span>{SITE}</span>
-        <span className="n">{numero ? String(numero) : ""}</span>
+        <img className="mono" src="/images/monograma-preto.svg" alt="" />
       </footer>
     </section>
   );
