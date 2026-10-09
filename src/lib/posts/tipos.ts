@@ -38,3 +38,12 @@ export function rotuloData(data: string): string {
   const semana = dia.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "UTC" }).replace("-feira", "");
   return `${semana}, ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`;
 }
+
+/** { semana: "seg", dia: "12" } — para a faixa de dias. */
+export function rotuloCurto(data: string): { semana: string; dia: string } {
+  const [a, m, d] = data.split("-").map(Number);
+  const semana = new Date(Date.UTC(a, m - 1, d, 12))
+    .toLocaleDateString("pt-BR", { weekday: "short", timeZone: "UTC" })
+    .replace(".", "");
+  return { semana, dia: String(d).padStart(2, "0") };
+}
