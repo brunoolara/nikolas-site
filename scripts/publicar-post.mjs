@@ -40,51 +40,59 @@ if (values.listar) {
     const feito = p.publicacoes.length ? ` · publicado ${p.publicacoes.length}x` : "";
     console.log(`${p.data ?? "banco     "}  ${p.titulo}  (${p.imagens.length} foto(s))${feito}  id=${p.id}`);
   }
-  process.exit(0);
+} else {
+  await publicar();
 }
 
-if (!values.titulo || !positionals.length) {
-  console.error('Uso: --titulo "..." [--data AAAA-MM-DD] [--legenda "..."] foto1.png [foto2.jpg ...]');
-  process.exit(1);
-}
-if (values.data && !/^\d{4}-\d{2}-\d{2}$/.test(values.data)) {
-  console.error("--data no formato AAAA-MM-DD (ou sem --data para o banco de posts).");
-  process.exit(1);
-}
-
-const imagens = [];
-for (const caminho of positionals) {
-  const ext = extname(caminho).toLowerCase();
-  const tipo = ext === ".png" ? "png" : ext === ".jpg" || ext === ".jpeg" ? "jpg" : null;
-  if (!tipo) {
-    console.error(`${caminho}: só .jpg ou .png.`);
-    process.exit(1);
+// process.exit logo depois do SDK da Blob derruba o Node no Windows (assert do libuv): sai pelo fim
+async function publicar() {
+  if (!values.titulo || !positionals.length) {
+    console.error('Uso: --titulo "..." [--data AAAA-MM-DD] [--legenda "..."] foto1.png [foto2.jpg ...]');
+    process.exitCode = 1;
+    return;
   }
-  const conteudo = await readFile(caminho);
-  if (conteudo.length > 8 * 1024 * 1024) {
-    console.error(`${caminho}: passa de 8 MB — reduza antes (story é 1080x1920).`);
-    process.exit(1);
+  if (values.data && !/^\d{4}-\d{2}-\d{2}$/.test(values.data)) {
+    console.error("--data no formato AAAA-MM-DD (ou sem --data para o banco de posts).");
+    process.exitCode = 1;
+    return;
   }
-  const nome = `${randomUUID()}.${tipo}`;
-  await put(`posts/img/${nome}`, conteudo, { access: "private", contentType: tipo === "png" ? "image/png" : "image/jpeg" });
-  imagens.push(nome);
-  console.log(`foto enviada: ${caminho}`);
-}
 
-// relê antes de gravar, para não apagar algo que mudou no site enquanto as fotos subiam
-const atual = await lerLista();
-const post = {
-  id: randomUUID(),
-  titulo: values.titulo.trim(),
-  data: values.data ?? null,
-  ...(values.legenda?.trim() ? { legenda: values.legenda.trim() } : {}),
-  imagens,
-  criadoEm: new Date().toISOString(),
-  publicacoes: [],
-};
-await put(LISTA, JSON.stringify([...atual, post], null, 2), {
-  access: "private",
-  contentType: "application/json",
-  allowOverwrite: true,
-});
-console.log(`post publicado em /posts: "${post.titulo}" (${post.data ?? "banco de posts"}) id=${post.id}`);
+  const imagens = [];
+  for (const caminho of positionals) {
+    const ext = extname(caminho).toLowerCase();
+    const tipo = ext === ".png" ? "png" : ext === ".jpg" || ext === ".jpeg" ? "jpg" : null;
+    if (!tipo) {
+      console.error(`${caminho}: só .jpg ou .png.`);
+      process.exitCode = 1;
+      return;
+    }
+    const conteudo = await readFile(caminho);
+    if (conteudo.length > 8 * 1024 * 1024) {
+      console.error(`${caminho}: passa de 8 MB — reduza antes (story é 1080x1920).`);
+      process.exitCode = 1;
+      return;
+    }
+    const nome = `${randomUUID()}.${tipo}`;
+    await put(`posts/img/${nome}`, conteudo, { access: "private", contentType: tipo === "png" ? "image/png" : "image/jpeg" });
+    imagens.push(nome);
+    console.log(`foto enviada: ${caminho}`);
+  }
+
+  // relê antes de gravar, para não apagar algo que mudou no site enquanto as fotos subiam
+  const atual = await lerLista();
+  const post = {
+    id: randomUUID(),
+    titulo: values.titulo.trim(),
+    data: values.data ?? null,
+    ...(values.legenda?.trim() ? { legenda: values.legenda.trim() } : {}),
+    imagens,
+    criadoEm: new Date().toISOString(),
+    publicacoes: [],
+  };
+  await put(LISTA, JSON.stringify([...atual, post], null, 2), {
+    access: "private",
+    contentType: "application/json",
+    allowOverwrite: true,
+  });
+  console.log(`post publicado em /posts: "${post.titulo}" (${post.data ?? "banco de posts"}) id=${post.id}`);
+}
