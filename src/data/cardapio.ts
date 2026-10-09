@@ -12,7 +12,7 @@ export const cardapio: Categoria[] = [
     nota: "Receitas da casa desde 1977.",
     itens: [
       { nome: "Dobradinha à moda Nikola's", desc: "Só às quartas. Receita clássica da casa com feijão branco, calabresa e bacon, coberta com queijo." },
-      { nome: "Dobradinha simples", desc: "Somente a dobradinha, sem arroz." },
+      { nome: "Dobradinha simples", desc: "Só às quartas. Somente a dobradinha, sem arroz." },
       { nome: "Viradão à mineira", desc: "Bisteca, lombo, calabresa, tutu, torresmo, couve e banana à milanesa." },
       { nome: "Viradão de contra filé", desc: "Contra filé, calabresa, tutu, torresmo, couve e banana à milanesa." },
       { nome: "Viradão de filé mignon", desc: "Filé mignon, calabresa, tutu, torresmo, couve e banana à milanesa." },
