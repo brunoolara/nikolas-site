@@ -38,7 +38,7 @@ function LinhasItens({
     <div className="mt-3 space-y-3">
       {itens.map((item, i) => (
         <div key={i} className="rounded border border-linha bg-creme/40 p-3">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Mover
               indice={i}
               total={itens.length}
@@ -46,7 +46,7 @@ function LinhasItens({
               oQue="prato"
             />
             <input
-              className={campo}
+              className={`${campo} min-w-48 flex-1`}
               placeholder="Nome do prato"
               value={item.nome}
               onChange={(e) => mudar(i, { nome: e.target.value })}
