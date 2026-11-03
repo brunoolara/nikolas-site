@@ -5,8 +5,11 @@ import Sair from "@/components/painel/Sair";
 import { MASTER, lerUsuarios } from "@/lib/acessos/usuarios";
 import LinhaUsuario from "./LinhaUsuario";
 import NovoUsuario from "./NovoUsuario";
+import { exigir } from "@/lib/acessos/sessao";
 
 export default async function Acessos() {
+  // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
+  if (!(await exigir("master")).liberado) return null;
   const usuarios = (await lerUsuarios()).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   return (

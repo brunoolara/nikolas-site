@@ -5,6 +5,7 @@
 
 /* eslint-disable @next/next/no-img-element -- peça impressa: o next/image
    embrulha a imagem e atrapalha o encaixe em milímetros na folha. */
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { lerCardapio } from "@/lib/menu/armazem";
 import { especiaisComPratos, formatarPreco, ROTULO_DIA, type Item, type Secao } from "@/lib/menu/tipos";
@@ -12,6 +13,7 @@ import { restaurante } from "@/data/restaurante";
 import BarraImpressao from "../BarraImpressao";
 import AvisoEstouro from "../AvisoEstouro";
 import "../imprimir.css";
+import { pode } from "@/lib/acessos/sessao";
 
 export const metadata: Metadata = {
   title: "Menu executivo para impressão",
@@ -58,6 +60,8 @@ function Bloco({ secao, className = "" }: { secao: Secao; className?: string }) 
 }
 
 export default async function MenuExecutivoImpressao() {
+  // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
+  if (!(await pode("cardapio"))) redirect("/");
   const { executivo } = await lerCardapio();
   const porId = new Map(executivo.secoes.map((s) => [s.id, s]));
   const diarios = porId.get("diarios");

@@ -1,5 +1,6 @@
 // A folha extra dos especiais de domingo, que entra na pasta só aos domingos.
 
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { lerCardapio } from "@/lib/menu/armazem";
 import FolhaSalao from "../FolhaSalao";
@@ -8,6 +9,7 @@ import AvisoEstouro from "../AvisoEstouro";
 import Encaixe from "../Encaixe";
 import "../imprimir.css";
 import "../salao.css";
+import { pode } from "@/lib/acessos/sessao";
 
 export const metadata: Metadata = {
   title: "Especiais de domingo para impressão",
@@ -17,6 +19,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function DomingoImpressao() {
+  // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
+  if (!(await pode("cardapio"))) redirect("/");
   const { salao } = await lerCardapio();
   const folha = salao.folhas.find((f) => f.abre);
 

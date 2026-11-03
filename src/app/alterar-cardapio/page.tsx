@@ -4,9 +4,11 @@ import Link from "next/link";
 import { lerCardapio } from "@/lib/menu/armazem";
 import { PECAS, ROTULO_PECA } from "@/lib/menu/tipos";
 import Sair from "@/components/painel/Sair";
-import { eMaster } from "@/lib/acessos/sessao";
+import { eMaster, exigir } from "@/lib/acessos/sessao";
 
 export default async function EscolherPeca() {
+  // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
+  if (!(await exigir("cardapio")).liberado) return null;
   const [cardapio, master] = await Promise.all([lerCardapio(), eMaster()]);
   const quando = new Date(cardapio.atualizadoEm).toLocaleString("pt-BR", {
     dateStyle: "short",

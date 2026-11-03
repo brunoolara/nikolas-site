@@ -7,7 +7,7 @@
 // dia ficam no endereço (?aba=banco, ?dia=AAAA-MM-DD), dá para mandar o link.
 
 import Link from "next/link";
-import { sessaoAtual } from "@/lib/acessos/sessao";
+import { exigir, sessaoAtual } from "@/lib/acessos/sessao";
 import { lerPosts } from "@/lib/posts/armazem";
 import { DATA, hoje, rotuloCurto, rotuloData, somarDias } from "@/lib/posts/tipos";
 import Sair from "@/components/painel/Sair";
@@ -15,6 +15,8 @@ import GradePosts from "./GradePosts";
 import SeletorMes from "./SeletorMes";
 
 export default async function Posts({ searchParams }: PageProps<"/posts">) {
+  // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
+  if (!(await exigir("posts")).liberado) return null;
   const [sessao, posts, busca] = await Promise.all([sessaoAtual(), lerPosts(), searchParams]);
   const master = Boolean(sessao?.master);
   const dia = hoje();

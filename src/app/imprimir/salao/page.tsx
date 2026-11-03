@@ -1,6 +1,7 @@
 // Menu do salão pronto para imprimir: capa "Nossa história" + 7 folhas.
 // A folha de domingo fica de fora — ela é avulsa, em /imprimir/domingo.
 
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { lerCardapio } from "@/lib/menu/armazem";
 import FolhaSalao from "../FolhaSalao";
@@ -8,6 +9,7 @@ import BarraImpressao from "../BarraImpressao";
 import AvisoEstouro from "../AvisoEstouro";
 import "../imprimir.css";
 import "../salao.css";
+import { pode } from "@/lib/acessos/sessao";
 
 export const metadata: Metadata = {
   title: "Menu do salão para impressão",
@@ -17,6 +19,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function MenuSalaoImpressao() {
+  // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
+  if (!(await pode("cardapio"))) redirect("/");
   const { salao } = await lerCardapio();
   const folhas = salao.folhas.filter((f) => !f.abre);
 
