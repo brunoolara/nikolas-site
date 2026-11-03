@@ -3,7 +3,7 @@
 // Tela de edição do menu executivo. Pensada para quem não é designer:
 // campos com nome claro, nada de arrastar, e "Ver e imprimir" sempre à mão.
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { acaoSalvar } from "../acoes";
 import Mover, { mover } from "../Mover";
 import { DIAS, ROTULO_DIA, type Dia, type Item, type MenuExecutivo } from "@/lib/menu/tipos";
@@ -88,15 +88,6 @@ function LinhasItens({
 
 export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: Props) {
   const [menu, setMenu] = useState<MenuExecutivo>(inicial);
-  // nome de quem edita, lembrado no navegador. Lido por useSyncExternalStore
-  // para não precisar de um efeito que chama setState logo ao montar.
-  const autorGuardado = useSyncExternalStore(
-    () => () => {},
-    () => localStorage.getItem("nikolas:autor") ?? "",
-    () => "",
-  );
-  const [digitado, setDigitado] = useState<string | null>(null);
-  const autor = digitado ?? autorGuardado;
   const [aviso, setAviso] = useState("");
   const [salvando, iniciar] = useTransition();
   const [sujo, setSujo] = useState(false);
@@ -129,8 +120,7 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
 
   const salvar = () =>
     iniciar(async () => {
-      localStorage.setItem("nikolas:autor", autor);
-      const r = await acaoSalvar(menu, autor);
+      const r = await acaoSalvar(menu);
       setAviso(r.mensagem);
       if (r.ok) setSujo(false);
     });
@@ -229,12 +219,6 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
       {/* barra fixa: salvar nunca fica longe */}
       <div className="fixed inset-x-0 bottom-0 border-t border-linha bg-papel/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
-          <input
-            className="w-40 rounded border border-linha bg-white px-2.5 py-1.5 text-sm"
-            placeholder="Seu nome"
-            value={autor}
-            onChange={(e) => setDigitado(e.target.value)}
-          />
           <button
             type="button"
             onClick={salvar}

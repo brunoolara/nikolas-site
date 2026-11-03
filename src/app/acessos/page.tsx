@@ -22,6 +22,9 @@ export default async function Acessos() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/acessos/registro" className="rounded border border-verde px-3 py-2 text-sm font-semibold text-verde hover:bg-verde hover:text-papel">
+            Registro
+          </Link>
           <Link href="/alterar-cardapio" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
             Cardápio
           </Link>

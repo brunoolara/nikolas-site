@@ -62,6 +62,12 @@ export default async function Painel() {
             <p className="mt-1 text-sm text-cafe">Cadastro dos funcionários, senhas e o que cada um acessa.</p>
           </Link>
         ) : null}
+        {sessao.master ? (
+          <Link href="/acessos/registro" className="block rounded border border-linha p-5 hover:border-verde">
+            <h2 className="font-display text-2xl">Registro</h2>
+            <p className="mt-1 text-sm text-cafe">O que cada um mudou no cardápio, e quem entrou no painel e quando.</p>
+          </Link>
+        ) : null}
       </div>
     </div>
   );

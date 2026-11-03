@@ -5,7 +5,7 @@
 // do estado ao vivo, e não de uma lista fixada no servidor — senão uma
 // categoria recém-criada só apareceria ao recarregar a página.
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { acaoSalvarSalao } from "./acoes";
 import CamposItem, { campo } from "./CamposItem";
 import { mover } from "./Mover";
@@ -39,15 +39,6 @@ export default function EditorSalao({
   completo = false,
 }: Props) {
   const [menu, setMenu] = useState<MenuSalao>(inicial);
-  // nome de quem edita, lembrado no navegador. Lido por useSyncExternalStore
-  // para não precisar de um efeito que chama setState logo ao montar.
-  const autorGuardado = useSyncExternalStore(
-    () => () => {},
-    () => localStorage.getItem("nikolas:autor") ?? "",
-    () => "",
-  );
-  const [digitado, setDigitado] = useState<string | null>(null);
-  const autor = digitado ?? autorGuardado;
   const [aviso, setAviso] = useState("");
   const [sujo, setSujo] = useState(false);
   const [salvando, iniciar] = useTransition();
@@ -142,8 +133,7 @@ export default function EditorSalao({
 
   const salvar = () =>
     iniciar(async () => {
-      localStorage.setItem("nikolas:autor", autor);
-      const r = await acaoSalvarSalao(menu, autor);
+      const r = await acaoSalvarSalao(menu, titulo);
       setAviso(r.mensagem);
       if (r.ok) setSujo(false);
     });
@@ -292,12 +282,6 @@ export default function EditorSalao({
 
       <div className="fixed inset-x-0 bottom-0 border-t border-linha bg-papel/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
-          <input
-            className="w-40 rounded border border-linha bg-white px-2.5 py-1.5 text-sm"
-            placeholder="Seu nome"
-            value={autor}
-            onChange={(e) => setDigitado(e.target.value)}
-          />
           <button
             type="button"
             onClick={salvar}

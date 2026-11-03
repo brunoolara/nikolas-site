@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { gravarCardapio, lerCardapio } from "@/lib/menu/armazem";
-import { pode } from "@/lib/acessos/sessao";
+import { sessaoAtual } from "@/lib/acessos/sessao";
+import { registrar } from "@/lib/registro";
+import { diferencasExecutivo, diferencasSalao } from "@/lib/menu/diferencas";
 import type { Resultado } from "@/lib/acessos/acoes";
 import type { Cardapio, Dia, Especial, MenuExecutivo, MenuSalao, Secao, SecaoSalao } from "@/lib/menu/tipos";
 import { DIAS } from "@/lib/menu/tipos";
@@ -27,8 +29,15 @@ function limparEspecial(esp: Especial): Especial {
   return { dia: esp.dia, itens: limparSecao({ id: "", titulo: "", itens: esp.itens }).itens };
 }
 
-export async function acaoSalvar(menu: MenuExecutivo, autor: string): Promise<Resultado> {
-  if (!(await pode("cardapio"))) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+/** Quem está salvando — o nome vem do login, não de um campo que se digita. */
+async function quemSalva() {
+  const sessao = await sessaoAtual();
+  return sessao?.areas.includes("cardapio") ? sessao : null;
+}
+
+export async function acaoSalvar(menu: MenuExecutivo): Promise<Resultado> {
+  const sessao = await quemSalva();
+  if (!sessao) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
 
   const diasValidos = new Set<Dia>(DIAS);
   const limpo: MenuExecutivo = {
@@ -42,7 +51,15 @@ export async function acaoSalvar(menu: MenuExecutivo, autor: string): Promise<Re
   try {
     const atual = await lerCardapio();
     const novo: Cardapio = { ...atual, executivo: limpo };
-    const salvo = await gravarCardapio(novo, autor.trim() || "painel");
+    const salvo = await gravarCardapio(novo, sessao.nome);
+    await registrar({
+      tipo: "cardapio",
+      usuario: sessao.usuario,
+      nome: sessao.nome,
+      onde: "Menu executivo",
+      versao: salvo.versao,
+      detalhes: diferencasExecutivo(atual.executivo, limpo),
+    });
     revalidatePath("/imprimir/executivo");
     revalidatePath("/alterar-cardapio");
     return { ok: true, mensagem: `Salvo (versão ${salvo.versao}).` };
@@ -70,8 +87,9 @@ function limparSecaoSalao(secao: SecaoSalao): SecaoSalao {
   };
 }
 
-export async function acaoSalvarSalao(menu: MenuSalao, autor: string): Promise<Resultado> {
-  if (!(await pode("cardapio"))) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+export async function acaoSalvarSalao(menu: MenuSalao, peca: string): Promise<Resultado> {
+  const sessao = await quemSalva();
+  if (!sessao) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
 
   const limpo: MenuSalao = {
     ...menu,
@@ -87,7 +105,15 @@ export async function acaoSalvarSalao(menu: MenuSalao, autor: string): Promise<R
 
   try {
     const atual = await lerCardapio();
-    const salvo = await gravarCardapio({ ...atual, salao: limpo }, autor.trim() || "painel");
+    const salvo = await gravarCardapio({ ...atual, salao: limpo }, sessao.nome);
+    await registrar({
+      tipo: "cardapio",
+      usuario: sessao.usuario,
+      nome: sessao.nome,
+      onde: peca,
+      versao: salvo.versao,
+      detalhes: diferencasSalao(atual.salao, limpo),
+    });
     revalidatePath("/imprimir/salao");
     revalidatePath("/imprimir/domingo");
     revalidatePath("/alterar-cardapio", "layout");

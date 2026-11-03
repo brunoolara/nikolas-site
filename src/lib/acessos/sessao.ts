@@ -13,7 +13,9 @@ import "server-only";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { cache } from "react";
+import { registrar } from "@/lib/registro";
 import { AREAS, MASTER, lerUsuarios, senhaConfere, type Area } from "./usuarios";
 
 const COOKIE = "sessao";
@@ -56,18 +58,25 @@ export async function entrar(
   const mestre = senhaMaster();
   if (!mestre) return "O painel ainda não foi configurado.";
   const nome = usuario.trim().toLowerCase();
+  const falhou = async (motivo: string) => {
+    await registrar({ tipo: "falhou", usuario: nome.slice(0, 40) || "(vazio)", onde: motivo });
+    return motivo;
+  };
 
   let versao: number;
+  let quem = "Bruno";
   if (nome === MASTER) {
-    if (!iguais(resumo(senha), resumo(mestre))) return "Usuário ou senha incorretos.";
+    if (!iguais(resumo(senha), resumo(mestre))) return falhou("Usuário ou senha incorretos.");
     versao = 0;
   } else {
     const u = (await lerUsuarios()).find((x) => x.usuario === nome && x.ativo);
-    if (!u || !senhaConfere(u, senha)) return "Usuário ou senha incorretos.";
+    if (!u || !senhaConfere(u, senha)) return falhou("Usuário ou senha incorretos.");
     const liberado = area === "qualquer" ? u.areas.length > 0 : area !== "master" && u.areas.includes(area);
-    if (!liberado) return "Este usuário não tem acesso a esta área.";
+    if (!liberado) return falhou("Este usuário não tem acesso a esta área.");
     versao = u.versao;
+    quem = u.nome;
   }
+  await registrar({ tipo: "entrou", usuario: nome, nome: quem });
 
   (await cookies()).set(COOKIE, `${nome}~${versao}~${assinar(nome, versao)}`, {
     httpOnly: true,
@@ -80,7 +89,24 @@ export async function entrar(
 }
 
 export async function sair(): Promise<void> {
+  const sessao = await sessaoAtual();
   (await cookies()).delete(COOKIE);
+  if (sessao) await registrar({ tipo: "saiu", usuario: sessao.usuario, nome: sessao.nome });
+}
+
+// A sessão dura 30 dias, então o login sozinho não diz quem usou o painel.
+// A primeira visita de cada funcionário no dia vai para o registro. Esta
+// memória é por instância do servidor: pode escapar uma visita repetida, e a
+// tela do registro junta as do mesmo dia.
+const vistosHoje = new Set<string>();
+
+function anotarVisita(sessao: Sessao) {
+  if (sessao.master) return;
+  const dia = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const chave = `${sessao.usuario}|${dia}`;
+  if (vistosHoje.has(chave)) return;
+  vistosHoje.add(chave);
+  after(() => registrar({ tipo: "visita", usuario: sessao.usuario, nome: sessao.nome }));
 }
 
 /** Quem está nesta máquina, conferido contra o cadastro. Uma leitura por requisição. */
@@ -94,7 +120,9 @@ export const sessaoAtual = cache(async (): Promise<Sessao | null> => {
   if (usuario === MASTER) return { usuario, nome: "Bruno", master: true, areas: AREAS };
   const u = (await lerUsuarios()).find((x) => x.usuario === usuario);
   if (!u || !u.ativo || u.versao !== versao) return null;
-  return { usuario, nome: u.nome, master: false, areas: u.areas };
+  const sessao: Sessao = { usuario, nome: u.nome, master: false, areas: u.areas };
+  anotarVisita(sessao);
+  return sessao;
 });
 
 /**
