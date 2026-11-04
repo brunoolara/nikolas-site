@@ -392,6 +392,13 @@
   --e: 1;
   --c: 1;
 }
+/* O globals.css dá uma transição de 0,01 ms a tudo quando o sistema pede menos
+   animação. Com transição, a medida feita logo depois de mudar --e/--c ainda lê o
+   valor antigo: o Encaixe encolheria tudo e acusaria "não coube" à toa. */
+.domingo,
+.domingo * {
+  transition: none !important;
+}
 .domingo .abre {
   position: relative;
   color: var(--color-papel);

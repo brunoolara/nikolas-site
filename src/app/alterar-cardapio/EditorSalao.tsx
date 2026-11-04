@@ -10,6 +10,7 @@ import { acaoSalvarSalao } from "./acoes";
 import CamposItem, { campo } from "./CamposItem";
 import { mover } from "./Mover";
 import NovaCategoria, { idDoNome, type Destino } from "./NovaCategoria";
+import { ID_VIRADAO } from "@/lib/menu/viradao";
 import type { FolhaSalao, ItemSalao, MenuSalao, SecaoSalao } from "@/lib/menu/tipos";
 
 type Props = {
@@ -225,13 +226,17 @@ export default function EditorSalao({
               onChange={(e) => mudarSecao(secao.id, { titulo: e.target.value })}
             />
             <span className="text-xs text-cafe">{secao.itens.length} itens</span>
-            <button
-              type="button"
-              onClick={() => removerCategoria(secao.id)}
-              className="rounded border border-linha px-2 py-1 text-xs text-cafe hover:bg-creme"
-            >
-              Remover categoria
-            </button>
+            {secao.id === ID_VIRADAO ? (
+              <span className="text-xs text-cafe">Fixo aos domingos</span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => removerCategoria(secao.id)}
+                className="rounded border border-linha px-2 py-1 text-xs text-cafe hover:bg-creme"
+              >
+                Remover categoria
+              </button>
+            )}
           </div>
           <input
             className={`${campo} mt-2 text-sm italic`}

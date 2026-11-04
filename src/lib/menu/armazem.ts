@@ -11,6 +11,7 @@
 import "server-only";
 import { get, list, put } from "@vercel/blob";
 import { CARDAPIO_INICIAL } from "./inicial";
+import { comViradao } from "./viradao";
 import type { Cardapio } from "./tipos";
 
 const ATUAL = "cardapio/atual.json";
@@ -58,12 +59,12 @@ function completar(guardado: Partial<Cardapio>): Cardapio {
  */
 function completarSalao(salao: Cardapio["salao"]): Cardapio["salao"] {
   const doInicial = new Map(CARDAPIO_INICIAL.salao.folhas.map((f) => [f.titulo, f.fecho]));
-  return {
+  return comViradao({
     ...salao,
     folhas: salao.folhas.map((f) =>
       f.fecho === undefined && doInicial.get(f.titulo) ? { ...f, fecho: doInicial.get(f.titulo) } : f,
     ),
-  };
+  });
 }
 
 /** Grava o cardápio e guarda uma cópia datada. Devolve o que foi salvo. */
