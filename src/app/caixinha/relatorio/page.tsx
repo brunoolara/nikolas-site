@@ -89,8 +89,8 @@ function Variacao({ atual, antes }: { atual: number; antes: number }) {
 function Numero(props: { titulo: string; valor: string; sub?: React.ReactNode; alerta?: boolean }) {
   return (
     <div className="p-cartao p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-cafe">{props.titulo}</p>
-      <p className={`mt-1 font-display text-2xl tabular-nums sm:text-3xl ${props.alerta ? "text-[var(--p-vermelho)]" : ""}`}>
+      <p className="p-kpi-rotulo">{props.titulo}</p>
+      <p className={`p-kpi-valor ${props.alerta ? "text-[var(--p-vermelho)]" : ""}`}>
         {props.valor}
       </p>
       {props.sub ? <div className="mt-0.5 text-xs text-cafe">{props.sub}</div> : null}

@@ -191,8 +191,8 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
 function Numero({ titulo, valor, sub, destaque }: { titulo: string; valor: string; sub: string; destaque?: boolean }) {
   return (
     <div className={`p-cartao p-4 ${destaque ? "border-verde/40 bg-[var(--p-verde-fundo)]" : ""}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-cafe">{titulo}</p>
-      <p className="mt-1 font-display text-2xl tabular-nums sm:text-3xl">{valor}</p>
+      <p className="p-kpi-rotulo">{titulo}</p>
+      <p className="p-kpi-valor">{valor}</p>
       <p className="mt-0.5 text-xs text-cafe">{sub}</p>
     </div>
   );

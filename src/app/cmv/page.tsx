@@ -162,27 +162,27 @@ export default async function Cmv({ searchParams }: PageProps<"/cmv">) {
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="p-cartao p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">Faturamento</p>
-          <p className="mt-1 font-display text-3xl tabular-nums">{reais(fat)}</p>
+          <p className="p-kpi-rotulo">Faturamento</p>
+          <p className="p-kpi-valor">{reais(fat)}</p>
           <p className="mt-0.5 text-xs text-cafe">
             Salão {reais(vendas.salao)} · Delivery {reais(vendas.delivery)}
           </p>
         </div>
         <div className="p-cartao p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">CMV teórico</p>
-          <p className={`mt-1 font-display text-3xl tabular-nums ${corCmv(cmvT)}`}>{pct(cmvT)}</p>
+          <p className="p-kpi-rotulo">CMV teórico</p>
+          <p className={`p-kpi-valor ${corCmv(cmvT)}`}>{pct(cmvT)}</p>
           <p className="mt-0.5 text-xs text-cafe">{reais(teorico.custo)} pelas fichas · meta {pct(META)}</p>
         </div>
         <div className="p-cartao p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">CMV real</p>
+          <p className="p-kpi-rotulo">CMV real</p>
           {realOk ? (
             <>
-              <p className={`mt-1 font-display text-3xl tabular-nums ${corCmv(cmvR)}`}>{pct(cmvR)}</p>
+              <p className={`p-kpi-valor ${corCmv(cmvR)}`}>{pct(cmvR)}</p>
               <p className="mt-0.5 text-xs text-cafe">{reais(realOk.cmv)} pela contagem</p>
             </>
           ) : (
             <>
-              <p className="mt-1 font-display text-3xl text-cafe">—</p>
+              <p className="p-kpi-valor text-cafe">—</p>
               <p className="mt-0.5 text-xs text-cafe">
                 {p.tipo === "mes" ? "Veja por semana abaixo." : real && "falta" in real ? `Falta ${real.falta}.` : ""}
               </p>
@@ -190,8 +190,8 @@ export default async function Cmv({ searchParams }: PageProps<"/cmv">) {
           )}
         </div>
         <div className="p-cartao p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">Margem bruta</p>
-          <p className="mt-1 font-display text-3xl tabular-nums">{pct(margem)}</p>
+          <p className="p-kpi-rotulo">Margem bruta</p>
+          <p className="p-kpi-valor">{pct(margem)}</p>
           <p className="mt-0.5 text-xs text-cafe">
             {reais(fat - base)} · sobre o CMV {realOk ? "real" : "teórico"}
           </p>

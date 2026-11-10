@@ -237,10 +237,8 @@ html:has(.painel) {
     padding: 0.5rem 0.6rem;
     border-bottom: 1px solid var(--color-linha);
     color: var(--color-cafe);
-    font-weight: 500;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    font-size: 0.8125rem;
     text-align: left;
     white-space: nowrap;
   }
@@ -257,6 +255,29 @@ html:has(.painel) {
   .p-tabela tfoot td {
     border-bottom: 0;
     font-weight: 700;
+  }
+
+  /* Números em destaque (cartões de indicador): rótulo em caixa normal e o
+     valor sempre no mesmo corpo, em qualquer tela */
+  .p-kpi-rotulo {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-cafe);
+  }
+  .p-kpi-valor {
+    margin-top: 0.25rem;
+    font-family: var(--font-display);
+    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
+    letter-spacing: -0.015em;
+    font-size: 1.75rem;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (min-width: 640px) {
+    .p-kpi-valor {
+      font-size: 1.875rem;
+    }
   }
 
   /* Abas: uma régua só para todas as telas (Caixinha, Posts, Ao vivo,
@@ -316,4 +337,20 @@ html:has(.painel) {
   .p-rolagem::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Foco do teclado no painel: anel verde da marca. Fora da camada de
+   componentes de propósito, para ganhar do foco âmbar do site. Nas abas o
+   anel fica por dentro, porque a faixa rola e cortaria o de fora. */
+.painel :focus-visible {
+  outline: 2px solid var(--color-verde);
+  outline-offset: 2px;
+}
+.painel .p-aba:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-verde);
+}
+.painel .p-aba[aria-current="page"]:focus-visible,
+.painel .p-aba[aria-selected="true"]:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--color-papel);
 }

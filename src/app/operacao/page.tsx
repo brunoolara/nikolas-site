@@ -76,8 +76,8 @@ export default async function AoVivo({ searchParams }: PageProps<"/operacao">) {
 function Numero({ rotulo, valor, detalhe, alerta }: { rotulo: string; valor: string; detalhe?: string; alerta?: boolean }) {
   return (
     <div className={`p-cartao p-4 ${alerta ? "border-[var(--p-vermelho)]/50 bg-[var(--p-vermelho-fundo)]" : ""}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-cafe">{rotulo}</p>
-      <p className={`mt-1 font-display text-3xl tabular-nums ${alerta ? "text-[var(--p-vermelho)]" : ""}`}>{valor}</p>
+      <p className="p-kpi-rotulo">{rotulo}</p>
+      <p className={`p-kpi-valor ${alerta ? "text-[var(--p-vermelho)]" : ""}`}>{valor}</p>
       {detalhe ? <p className="mt-0.5 text-xs text-cafe">{detalhe}</p> : null}
     </div>
   );
@@ -294,7 +294,7 @@ function CartaoPedido({ x }: { x: PedidoDelivery }) {
       </summary>
       <div className="grid gap-4 border-t border-linha/70 bg-white/70 px-4 py-3 text-sm sm:grid-cols-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">Itens</p>
+          <p className="p-kpi-rotulo">Itens</p>
           <ul className="mt-1 space-y-0.5">
             {x.itens.map((it, k) => (
               <li key={k}>
@@ -306,7 +306,7 @@ function CartaoPedido({ x }: { x: PedidoDelivery }) {
           </ul>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">Andamento</p>
+          <p className="p-kpi-rotulo">Andamento</p>
           <ul className="mt-1 space-y-0.5">
             {x.marcos.map((m) => (
               <li key={m.rotulo} className="flex justify-between gap-3">
