@@ -6,9 +6,11 @@ import { exigir } from "@/lib/acessos/sessao";
 import { lerEquipe, lerEstado } from "@/lib/caixinha/armazem";
 import { reais } from "@/lib/caixinha/tipos";
 import Equipe from "./Equipe";
+import Abas from "../Abas";
 
 export default async function PaginaEquipe() {
-  if (!(await exigir("caixinha")).liberado) return null;
+  const { sessao, liberado } = await exigir("caixinha");
+  if (!liberado) return null;
   const [equipe, estado] = await Promise.all([lerEquipe(), lerEstado()]);
   const pessoas = equipe
     .sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, "pt-BR"))
@@ -17,10 +19,10 @@ export default async function PaginaEquipe() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
       <Cabecalho
-        voltar={{ href: "/caixinha", rotulo: "Caixinha" }}
         titulo="Equipe da caixinha"
         descricao="Todos os funcionários entram no rateio; sócios ficam de fora. Quem tem saldo negativo aparece com o valor que ainda deve."
       />
+      <Abas atual="equipe" master={sessao.master} />
       <Equipe pessoas={pessoas.map((p) => ({ ...p, saldoTexto: p.saldo < 0 ? reais(-p.saldo) : "" }))} />
     </div>
   );

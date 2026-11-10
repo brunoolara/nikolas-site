@@ -227,7 +227,11 @@ const inicioDoDia = (data: string) => Date.UTC(+data.slice(0, 4), +data.slice(5,
  * Brasília, inclusive). Fatias antigas vêm do arquivo; só a fatia de hoje vai
  * à Takeat, e no máximo a cada 10 min.
  */
-export async function comandasDoPeriodo(diaIni: string, diaFim: string): Promise<Comanda[]> {
+export async function comandasDoPeriodo(
+  diaIni: string,
+  diaFim: string,
+  prioridade: Prioridade = "normal",
+): Promise<Comanda[]> {
   const ini = inicioDoDia(diaIni);
   const fim = inicioDoDia(diaFim) + DIA;
   const agora = Date.now();
@@ -242,7 +246,7 @@ export async function comandasDoPeriodo(diaIni: string, diaFim: string): Promise
       guardada && (guardada.fechada || agora - new Date(guardada.em).getTime() < 10 * 60_000);
     let comandas = guardada?.comandas ?? [];
     if (!valida) {
-      comandas = await consultar(new Date(fatia).toISOString(), new Date(fimFatia).toISOString(), "normal");
+      comandas = await consultar(new Date(fatia).toISOString(), new Date(fimFatia).toISOString(), prioridade);
       // fatia que acabou há mais de um dia não muda mais
       await gravarJson(caminho, { em: new Date().toISOString(), fechada: fatia + 4 * DIA < agora, comandas });
     }

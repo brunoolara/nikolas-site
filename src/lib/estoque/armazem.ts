@@ -10,6 +10,7 @@
 
 import "server-only";
 import { get, put } from "@vercel/blob";
+import { forte } from "@/lib/etag";
 import type { Categoria } from "./categorias";
 
 const PASTA = process.env.NODE_ENV === "production" ? "estoque" : "estoque-teste";
@@ -36,7 +37,7 @@ export type Ajustes = Record<string, { categoria?: Categoria; naoContar?: boolea
 async function ler<T>(caminho: string): Promise<{ valor: T | null; etag?: string }> {
   const res = await get(caminho, { access: "private", useCache: false });
   if (!res || res.statusCode !== 200 || !res.stream) return { valor: null };
-  return { valor: (await new Response(res.stream).json()) as T, etag: res.blob.etag };
+  return { valor: (await new Response(res.stream).json()) as T, etag: forte(res.blob.etag) };
 }
 
 async function atualizar<T>(caminho: string, vazio: () => T, mudar: (atual: T) => T): Promise<T> {

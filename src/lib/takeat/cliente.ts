@@ -16,6 +16,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { get, put } from "@vercel/blob";
+import { forte } from "@/lib/etag";
 
 const BASE = "https://public-api.takeat.app";
 
@@ -65,7 +66,7 @@ async function contar(rota: string): Promise<void> {
       await put(caminho, JSON.stringify(atual), {
         access: "private",
         contentType: "application/json",
-        ...(res?.blob.etag ? { allowOverwrite: true, ifMatch: res.blob.etag } : { allowOverwrite: false }),
+        ...(res?.blob.etag ? { allowOverwrite: true, ifMatch: forte(res.blob.etag) } : { allowOverwrite: false }),
       });
       return;
     } catch {

@@ -3,12 +3,13 @@
 // Fecha o dia (congela o pagamento e passa os saldos adiante) ou reabre o
 // último dia fechado.
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { acaoFecharDia, acaoReabrirDia } from "./acoes";
 
-type Props = { data: string; fechado: boolean; podeReabrir: boolean; bloqueado: boolean };
+type Props = { data: string; fechado: boolean; podeReabrir: boolean; bloqueado: boolean; diasNoPagamento: number };
 
-export default function BotaoFechar({ data, fechado, podeReabrir, bloqueado }: Props) {
+export default function BotaoFechar({ data, fechado, podeReabrir, bloqueado, diasNoPagamento }: Props) {
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
 
@@ -18,7 +19,11 @@ export default function BotaoFechar({ data, fechado, podeReabrir, bloqueado }: P
   }
 
   function reabrir() {
-    if (!window.confirm("Reabrir o dia? Os saldos voltam ao que eram antes do fechamento.")) return;
+    const texto =
+      diasNoPagamento > 1
+        ? `Este dia foi pago junto com outros. Reabrir reabre os ${diasNoPagamento} dias do pagamento, e os saldos voltam ao que eram. Continuar?`
+        : "Reabrir o dia? Os saldos voltam ao que eram antes do fechamento.";
+    if (!window.confirm(texto)) return;
     iniciar(async () => setAviso((await acaoReabrirDia(data)).mensagem));
   }
 
@@ -27,10 +32,10 @@ export default function BotaoFechar({ data, fechado, podeReabrir, bloqueado }: P
       {fechado ? (
         podeReabrir ? (
           <button type="button" disabled={ocupado} onClick={reabrir} className="p-btn p-btn-secundario">
-            Reabrir o dia
+            {diasNoPagamento > 1 ? `Reabrir o pagamento (${diasNoPagamento} dias)` : "Reabrir o dia"}
           </button>
         ) : (
-          <p className="text-sm text-cafe">Para reabrir, reabra antes os dias fechados depois deste.</p>
+          <p className="text-sm text-cafe">Para reabrir, reabra antes os pagamentos feitos depois deste.</p>
         )
       ) : bloqueado ? (
         <p className="text-sm text-cafe">Há um dia fechado depois deste; os dias se fecham em ordem.</p>
@@ -44,6 +49,11 @@ export default function BotaoFechar({ data, fechado, podeReabrir, bloqueado }: P
           Fechar o dia e pagar
         </button>
       )}
+      {!fechado && !bloqueado ? (
+        <Link href="/caixinha/pagamento" className="text-sm font-semibold text-verde hover:underline">
+          ou pagar vários dias de uma vez
+        </Link>
+      ) : null}
       {aviso ? <p className="text-sm text-cafe">{aviso}</p> : null}
     </div>
   );

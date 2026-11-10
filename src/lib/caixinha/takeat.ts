@@ -9,7 +9,7 @@
 
 import "server-only";
 import { mensagemDe, takeatGet } from "@/lib/takeat/cliente";
-import type { Comanda } from "@/lib/takeat/comandas";
+import { comandasDoPeriodo, type Comanda } from "@/lib/takeat/comandas";
 import { arredondar, type Turno } from "./tipos";
 
 /** Mesa aberta a partir desta hora (horário de Ouro Fino) é jantar. */
@@ -92,24 +92,62 @@ async function consultar(data: string): Promise<TaxaTakeat> {
       "essencial",
     );
     const comandas = Array.isArray(corpo) ? corpo : (corpo.data ?? []);
-
-    const taxa: Record<Turno, number> = { almoco: 0, jantar: 0 };
-    const quantas: Record<Turno, number> = { almoco: 0, jantar: 0 };
-    for (const c of comandas) {
-      const valor = taxaDaComanda(c);
-      if (!valor || !c.start_time) continue;
-      const lugar = classificar(c.start_time);
-      if (!lugar || lugar.data !== data) continue;
-      taxa[lugar.turno] += valor;
-      quantas[lugar.turno] += 1;
-    }
-    return {
-      ok: true,
-      taxa: { almoco: arredondar(taxa.almoco), jantar: arredondar(taxa.jantar) },
-      comandas: quantas,
-    };
+    return somarTaxas(comandas, [data]).get(data)!;
   } catch (erro) {
     console.error("caixinha: falha ao ler a Takeat", erro instanceof Error ? erro.message : erro);
     return { ok: false, motivo: mensagemDe(erro) };
   }
+}
+
+/** Soma a taxa de cada turno das comandas, separada pelos dias pedidos. */
+function somarTaxas(comandas: Comanda[], dias: string[]): Map<string, TaxaTakeat> {
+  const conta = new Map(dias.map((d) => [d, { taxa: { almoco: 0, jantar: 0 }, quantas: { almoco: 0, jantar: 0 } }]));
+  for (const c of comandas) {
+    const valor = taxaDaComanda(c);
+    if (!valor || !c.start_time) continue;
+    const lugar = classificar(c.start_time);
+    const dia = lugar && conta.get(lugar.data);
+    if (!lugar || !dia) continue;
+    dia.taxa[lugar.turno] += valor;
+    dia.quantas[lugar.turno] += 1;
+  }
+  return new Map(
+    [...conta].map(([d, x]) => [
+      d,
+      {
+        ok: true as const,
+        taxa: { almoco: arredondar(x.taxa.almoco), jantar: arredondar(x.taxa.jantar) },
+        comandas: x.quantas,
+      },
+    ]),
+  );
+}
+
+/**
+ * A taxa de vários dias. Hoje e ontem vão à Takeat como no dia a dia (mesas
+ * ainda podem estar abertas); os dias anteriores saem das fatias de comandas
+ * guardadas, que custam uma consulta a cada três dias e só na primeira vez.
+ * `fresca` é para o fechamento: hoje e ontem sem a memória de alguns minutos.
+ */
+export async function taxasDoPeriodo(dias: string[], fresca = false): Promise<Map<string, TaxaTakeat>> {
+  const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  const ontem = somarDias(hoje, -1);
+  const antigos = dias.filter((d) => d < ontem);
+  const recentes = dias.filter((d) => d >= ontem && d <= hoje);
+  const resultado = new Map<string, TaxaTakeat>();
+
+  if (antigos.length) {
+    try {
+      // até o dia seguinte ao último: a madrugada conta no jantar do dia anterior
+      const comandas = await comandasDoPeriodo(antigos[0], somarDias(antigos[antigos.length - 1], 1), "essencial");
+      for (const [d, t] of somarTaxas(comandas, antigos)) resultado.set(d, t);
+    } catch (erro) {
+      console.error("caixinha: falha ao ler a Takeat", erro instanceof Error ? erro.message : erro);
+      for (const d of antigos) resultado.set(d, { ok: false, motivo: mensagemDe(erro) });
+    }
+  }
+  for (const d of recentes) resultado.set(d, await taxaDoDia(d, fresca));
+  // dia no futuro ainda não tem taxa
+  for (const d of dias) if (!resultado.has(d)) resultado.set(d, somarTaxas([], [d]).get(d)!);
+  return resultado;
 }

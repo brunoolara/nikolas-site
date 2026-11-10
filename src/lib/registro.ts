@@ -7,6 +7,7 @@
 
 import "server-only";
 import { get, put } from "@vercel/blob";
+import { forte } from "@/lib/etag";
 
 export type TipoEvento = "entrou" | "falhou" | "saiu" | "visita" | "cardapio";
 
@@ -36,7 +37,7 @@ const arquivoDoMes = (d: Date) => `${PASTA}/${d.toISOString().slice(0, 7)}.json`
 async function lerArquivo(caminho: string): Promise<{ eventos: Evento[]; etag?: string }> {
   const res = await get(caminho, { access: "private", useCache: false });
   if (!res || res.statusCode !== 200 || !res.stream) return { eventos: [] };
-  return { eventos: (await new Response(res.stream).json()) as Evento[], etag: res.blob.etag };
+  return { eventos: (await new Response(res.stream).json()) as Evento[], etag: forte(res.blob.etag) };
 }
 
 export async function registrar(evento: Omit<Evento, "quando">): Promise<void> {

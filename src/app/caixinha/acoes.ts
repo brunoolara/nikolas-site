@@ -1,17 +1,39 @@
 "use server";
 
 // Tudo que muda a Caixinha. Quem tem a área "caixinha" mexe; dia fechado não
-// muda mais até ser reaberto, e os dias se fecham e reabrem em ordem, porque
-// o saldo de um dia passa para o seguinte.
+// muda mais até ser reaberto. Os dias se fecham num pagamento (um dia só ou
+// um período) e se fecham e reabrem em ordem, porque o saldo passa adiante.
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { sessaoAtual } from "@/lib/acessos/sessao";
 import type { Resultado } from "@/lib/acessos/acoes";
-import { DATA } from "@/lib/posts/tipos";
-import { atualizarDia, atualizarEquipe, gravarEstado, lerDia, lerEquipe, lerEstado } from "@/lib/caixinha/armazem";
-import { taxaDoDia } from "@/lib/caixinha/takeat";
-import { arredondar, calcularDia, ROTULO_TURNO, TURNOS, type Dia, type Turno } from "@/lib/caixinha/tipos";
+import { DATA, hoje, rotuloData } from "@/lib/posts/tipos";
+import {
+  apagarPagamento,
+  atualizarDia,
+  atualizarEquipe,
+  gravarEstado,
+  gravarPagamento,
+  lerDia,
+  lerEquipe,
+  lerEstado,
+  lerPagamento,
+} from "@/lib/caixinha/armazem";
+import { taxasDoPeriodo, type TaxaTakeat } from "@/lib/caixinha/takeat";
+import {
+  arredondar,
+  diasEntre,
+  idPagamento,
+  MAX_DIAS_PAGAMENTO,
+  PAGAMENTO_ID,
+  partesDoDia,
+  ROTULO_TURNO,
+  somarPagamento,
+  TURNOS,
+  type Dia,
+  type Turno,
+} from "@/lib/caixinha/tipos";
 
 const FALHA = "Não consegui gravar. Tente de novo em instantes.";
 
@@ -97,97 +119,157 @@ export async function acaoRemoverConsumo(data: string, id: string) {
   return mexerNoDia(data, (dia) => ({ ...dia, consumos: dia.consumos.filter((c) => c.id !== id) }));
 }
 
-/** Fecha o dia: congela a taxa usada, o pagamento de cada um e passa os saldos adiante. */
-export async function acaoFecharDia(data: string): Promise<Resultado> {
-  const nome = await quem();
-  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
-  if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
-
-  try {
-    const [dia, estado, equipe] = await Promise.all([lerDia(data), lerEstado(), lerEquipe()]);
-    if (dia.fechamento) return { ok: false, mensagem: "Este dia já está fechado." };
-    if (estado.ultimoFechado && estado.ultimoFechado >= data)
-      return { ok: false, mensagem: "Já existe um dia fechado depois deste. Os dias se fecham em ordem." };
-
-    const precisaTakeat = TURNOS.some((t) => dia.turnos[t].taxaManual === null);
-    // no fechamento a taxa é buscada de novo, sem a memória de alguns minutos
-    const takeat = precisaTakeat ? await taxaDoDia(data, true) : null;
+/**
+ * A taxa de cada turno de cada dia, como vai no fechamento: a digitada, senão
+ * a da Takeat; turno sem ninguém e sem taxa fica com zero. Devolve o motivo
+ * se algum dia não puder fechar.
+ */
+async function taxasParaFechar(
+  dias: Dia[],
+): Promise<{ ok: true; taxas: Map<string, Record<Turno, number>> } | { ok: false; mensagem: string }> {
+  const precisam = dias.filter((d) => TURNOS.some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
+  // no fechamento hoje e ontem são buscados de novo, sem a memória de alguns minutos
+  const takeat = precisam.length ? await taxasDoPeriodo(precisam, true) : new Map<string, TaxaTakeat>();
+  const taxas = new Map<string, Record<Turno, number>>();
+  for (const dia of dias) {
+    const tk = takeat.get(dia.data);
     const taxa = {} as Record<Turno, number>;
     for (const t of TURNOS) {
       const manual = dia.turnos[t].taxaManual;
       const ninguem = !dia.turnos[t].presencas.some((p) => p.pct > 0);
+      const quando = `${ROTULO_TURNO[t]} de ${rotuloData(dia.data)}`;
       if (manual !== null) taxa[t] = manual;
-      else if (takeat?.ok) taxa[t] = takeat.taxa[t];
+      else if (tk?.ok) taxa[t] = tk.taxa[t];
       // turno sem ninguém (domingo à noite, por exemplo) não precisa de taxa
       else if (ninguem) taxa[t] = 0;
       else
         return {
           ok: false,
-          mensagem: `Sem a taxa da Takeat: ${takeat?.ok === false ? takeat.motivo : ""} Digite a taxa à mão.`,
+          mensagem: `${quando}: sem a taxa da Takeat (${tk && !tk.ok ? tk.motivo : "sem resposta"}). Digite a taxa à mão nesse dia.`,
         };
       if (ninguem && taxa[t] > 0)
-        return {
-          ok: false,
-          mensagem: `O ${ROTULO_TURNO[t].toLowerCase()} teve taxa e ninguém marcado. Marque quem trabalhou antes de fechar.`,
-        };
+        return { ok: false, mensagem: `${quando} teve taxa e ninguém marcado. Marque quem trabalhou antes de fechar.` };
     }
+    taxas.set(dia.data, taxa);
+  }
+  return { ok: true, taxas };
+}
 
-    const linhas = calcularDia(dia, taxa, equipe, estado.saldos);
+/**
+ * Fecha e paga os dias de `ini` a `fim`: congela a taxa e as partes de cada
+ * dia, soma tudo num pagamento só e passa os saldos negativos adiante.
+ */
+export async function acaoFecharPeriodo(ini: string, fim: string): Promise<Resultado> {
+  const nome = await quem();
+  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  if (!DATA.test(ini) || !DATA.test(fim) || ini > fim) return { ok: false, mensagem: "Período inválido." };
+  const datas = diasEntre(ini, fim);
+  if (datas.length > MAX_DIAS_PAGAMENTO)
+    return { ok: false, mensagem: `Um pagamento cobre no máximo ${MAX_DIAS_PAGAMENTO} dias.` };
+  if (fim > hoje()) return { ok: false, mensagem: "O período não pode passar de hoje." };
+
+  try {
+    const [dias, estado, equipe] = await Promise.all([Promise.all(datas.map(lerDia)), lerEstado(), lerEquipe()]);
+    const jaFechado = dias.find((d) => d.fechamento);
+    if (jaFechado) return { ok: false, mensagem: `${rotuloData(jaFechado.data)} já está fechado.` };
+    if (estado.ultimoFechado && estado.ultimoFechado >= ini)
+      return { ok: false, mensagem: "Já existe um dia fechado depois do início do período. Os dias se fecham em ordem." };
+
+    const r = await taxasParaFechar(dias);
+    if (!r.ok) return r;
+
+    const id = idPagamento(ini, fim);
+    const em = new Date().toISOString();
+    const partes = dias.map((d) => partesDoDia(d, r.taxas.get(d.data)!, equipe));
+    const linhas = somarPagamento(partes, estado.saldos);
     const saldos = { ...estado.saldos };
     for (const l of linhas) {
       if (l.novoSaldo < 0) saldos[l.pessoa] = l.novoSaldo;
       else delete saldos[l.pessoa];
     }
 
-    let corrida = false;
-    await atualizarDia(data, (atual) => {
-      if (atual.fechamento) {
-        corrida = true;
-        return atual;
-      }
-      return {
-        ...atual,
-        fechamento: {
-          em: new Date().toISOString(),
-          por: nome,
-          taxa,
-          linhas,
-          saldosAntes: estado.saldos,
-          fechadoAntes: estado.ultimoFechado,
-        },
-      };
+    await gravarPagamento({
+      id,
+      ini,
+      fim,
+      dias: datas,
+      em,
+      por: nome,
+      linhas,
+      saldosAntes: estado.saldos,
+      fechadoAntes: estado.ultimoFechado,
     });
-    if (corrida) return { ok: false, mensagem: "Alguém fechou este dia agora há pouco." };
-    await gravarEstado({ saldos, ultimoFechado: data });
+    let corrida = false;
+    await Promise.all(
+      dias.map((d, i) =>
+        atualizarDia(d.data, (atual) => {
+          if (atual.fechamento) {
+            corrida = true;
+            return atual;
+          }
+          return {
+            ...atual,
+            fechamento: { em, por: nome, taxa: r.taxas.get(d.data)!, partes: partes[i], pagamento: id },
+          };
+        }),
+      ),
+    );
+    if (corrida) return { ok: false, mensagem: "Alguém fechou um destes dias agora há pouco. Confira antes de pagar." };
+    await gravarEstado({
+      saldos,
+      ultimoFechado: fim,
+      pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
+    });
     revalidatePath("/caixinha", "layout");
-    return { ok: true, mensagem: "Dia fechado." };
+    return { ok: true, mensagem: datas.length === 1 ? "Dia fechado." : `${datas.length} dias fechados e pagos.` };
   } catch (erro) {
-    console.error("caixinha: falha ao fechar o dia", erro);
+    console.error("caixinha: falha ao fechar", erro);
     return { ok: false, mensagem: FALHA };
   }
 }
 
-/** Reabre o último dia fechado e devolve os saldos de antes. */
-export async function acaoReabrirDia(data: string): Promise<Resultado> {
+export async function acaoFecharDia(data: string): Promise<Resultado> {
+  return acaoFecharPeriodo(data, data);
+}
+
+/** Reabre o último pagamento: todos os dias dele voltam a abrir e os saldos voltam ao que eram. */
+export async function acaoReabrirPagamento(id: string): Promise<Resultado> {
   if (!(await quem())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  if (!PAGAMENTO_ID.test(id)) return { ok: false, mensagem: "Pagamento inválido." };
   try {
-    const [dia, estado] = await Promise.all([lerDia(data), lerEstado()]);
-    if (!dia.fechamento) return { ok: true, mensagem: "" };
-    if (estado.ultimoFechado !== data)
-      return { ok: false, mensagem: "Só dá para reabrir o último dia fechado. Reabra os dias depois dele antes." };
-    const { saldosAntes, fechadoAntes } = dia.fechamento;
-    await atualizarDia(data, (atual) => {
-      const copia = { ...atual };
-      delete copia.fechamento;
-      return copia;
+    const [pag, estado] = await Promise.all([lerPagamento(id), lerEstado()]);
+    if (!pag) return { ok: true, mensagem: "" };
+    if (estado.ultimoFechado !== pag.fim)
+      return { ok: false, mensagem: "Só dá para reabrir o último pagamento. Reabra os pagamentos depois dele antes." };
+    await Promise.all(
+      pag.dias.map((d) =>
+        atualizarDia(d, (atual) => {
+          const copia = { ...atual };
+          delete copia.fechamento;
+          return copia;
+        }),
+      ),
+    );
+    await gravarEstado({
+      saldos: pag.saldosAntes,
+      ultimoFechado: pag.fechadoAntes,
+      pagamentos: (estado.pagamentos ?? []).filter((p) => p !== id),
     });
-    await gravarEstado({ saldos: saldosAntes, ultimoFechado: fechadoAntes });
+    await apagarPagamento(id);
     revalidatePath("/caixinha", "layout");
-    return { ok: true, mensagem: "Dia reaberto." };
+    return { ok: true, mensagem: pag.dias.length === 1 ? "Dia reaberto." : `${pag.dias.length} dias reabertos.` };
   } catch (erro) {
-    console.error("caixinha: falha ao reabrir o dia", erro);
+    console.error("caixinha: falha ao reabrir", erro);
     return { ok: false, mensagem: FALHA };
   }
+}
+
+/** Reabre o dia, junto com os outros dias do mesmo pagamento. */
+export async function acaoReabrirDia(data: string): Promise<Resultado> {
+  if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
+  const dia = await lerDia(data);
+  if (!dia.fechamento) return { ok: true, mensagem: "" };
+  return acaoReabrirPagamento(dia.fechamento.pagamento);
 }
 
 export async function acaoAdicionarPessoa(nome: string): Promise<Resultado> {
