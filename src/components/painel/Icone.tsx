@@ -13,7 +13,13 @@ export type NomeIcone =
   | "voltar"
   | "mais"
   | "equipe"
-  | "calendario";
+  | "calendario"
+  | "operacao"
+  | "estoque"
+  | "cmv"
+  | "moto"
+  | "mesa"
+  | "alerta";
 
 const TRACOS: Record<NomeIcone, React.ReactNode> = {
   inicio: (
@@ -78,6 +84,41 @@ const TRACOS: Record<NomeIcone, React.ReactNode> = {
     <>
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
+  operacao: (
+    <>
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.6 4.6a10.4 10.4 0 0 0 0 14.8M19.4 4.6a10.4 10.4 0 0 1 0 14.8" />
+    </>
+  ),
+  estoque: (
+    <>
+      <path d="M3 8l9-5 9 5v8l-9 5-9-5Z" />
+      <path d="M3 8l9 5 9-5M12 13v8" />
+    </>
+  ),
+  cmv: (
+    <>
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+    </>
+  ),
+  moto: (
+    <>
+      <circle cx="5.5" cy="17" r="3" />
+      <circle cx="18.5" cy="17" r="3" />
+      <path d="M8.5 17h6l3-6h-4l-2 3H7M14 6h3l1.5 5" />
+    </>
+  ),
+  mesa: (
+    <>
+      <path d="M3 9h18M5 9v11M19 9v11M8 9V5h8v4" />
+    </>
+  ),
+  alerta: (
+    <>
+      <path d="M12 3 2 20h20Z" />
+      <path d="M12 10v4M12 17h.01" />
     </>
   ),
 };

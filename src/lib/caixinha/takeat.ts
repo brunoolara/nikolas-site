@@ -1,11 +1,6 @@
-// Taxa de serviço do dia, lida da API pública da Takeat.
-//
-// Autenticação (docs.takeat.app, "API Key: access e refresh tokens"): a chave
-// do AI Builders (variável TAKEAT_API_KEY, só no servidor) é trocada em
-// POST /oauth/token por um access token de 15 minutos, reaproveitado enquanto
-// vale. Não usamos o refresh token de propósito: ele é de uso único e, na
-// Vercel, duas instâncias renovando ao mesmo tempo revogariam a chave. Cada
-// instância nova troca a chave de novo, o que a documentação permite.
+// Taxa de serviço do dia, lida da Takeat pelo cliente comum (lib/takeat),
+// que cuida da chave, do token e da cota diária. A Caixinha tem prioridade
+// "essencial": é a última a ficar sem cota.
 //
 // A taxa segue a conta da Caixinha do Hawks: de cada comanda paga, o que foi
 // pago além do consumo, limitado ao total com serviço. Ficam fora comandas
@@ -13,9 +8,10 @@
 // ABERTURA da mesa (start_time): mesa aberta no almoço fica inteira no almoço.
 
 import "server-only";
+import { mensagemDe, takeatGet } from "@/lib/takeat/cliente";
+import type { Comanda } from "@/lib/takeat/comandas";
 import { arredondar, type Turno } from "./tipos";
 
-const BASE = "https://public-api.takeat.app";
 /** Mesa aberta a partir desta hora (horário de Ouro Fino) é jantar. */
 const INICIO_JANTAR = 17 * 60;
 /** Até esta hora da madrugada a mesa ainda conta como jantar do dia anterior. */
@@ -24,41 +20,6 @@ const FIM_MADRUGADA = 6 * 60;
 export type TaxaTakeat =
   | { ok: true; taxa: Record<Turno, number>; comandas: Record<Turno, number> }
   | { ok: false; motivo: string };
-
-let token: { valor: string; vence: number } | null = null;
-let trocando: Promise<string> | null = null;
-
-async function trocarChave(chave: string): Promise<string> {
-  const inicio = Date.now();
-  const res = await fetch(`${BASE}/oauth/token`, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "api_key", api_key: chave, scope: "table-sessions:read" }),
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Takeat recusou a chave (${res.status})`);
-  const dados = (await res.json()) as { access_token?: string; expires_in?: number };
-  if (!dados.access_token) throw new Error("Takeat não devolveu o token");
-  const segundos = typeof dados.expires_in === "number" ? dados.expires_in : 900;
-  token = { valor: dados.access_token, vence: inicio + segundos * 1000 - 60_000 };
-  return token.valor;
-}
-
-async function obterToken(chave: string, renovar = false): Promise<string> {
-  if (!renovar && token && Date.now() < token.vence) return token.valor;
-  if (!trocando) trocando = trocarChave(chave).finally(() => (trocando = null));
-  return trocando;
-}
-
-type Comanda = {
-  status?: string;
-  is_delivery?: boolean;
-  delivery_canceled_at?: string | null;
-  start_time?: string;
-  total_price?: string;
-  total_service_price?: string;
-  payments?: { payment_value?: string }[];
-};
 
 /** "AAAA-MM-DD" e minutos do dia, no horário de Ouro Fino. */
 function horaLocal(iso: string): { data: string; minutos: number } | null {
@@ -102,7 +63,6 @@ function taxaDaComanda(c: Comanda): number {
   return Math.max(0, Math.min(pago, comServico) - consumo);
 }
 
-// A chave do restaurante pode fazer 10 consultas por minuto e 500 por dia.
 // Cada clique na Caixinha redesenha a página, então a taxa de cada dia fica
 // guardada por alguns minutos: hoje e ontem mudam (mesas ainda abertas),
 // dias mais antigos quase nunca.
@@ -111,38 +71,26 @@ const MINUTO = 60_000;
 
 /** A taxa de serviço de cada turno do dia `data` ("AAAA-MM-DD"). */
 export async function taxaDoDia(data: string, fresca = false): Promise<TaxaTakeat> {
-  const chave = process.env.TAKEAT_API_KEY;
-  if (!chave) return { ok: false, motivo: "A chave da Takeat ainda não foi configurada na Vercel." };
-
   const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
   const validade = data >= somarDias(hoje, -1) ? 3 * MINUTO : 60 * MINUTO;
   const guardada = guardadas.get(data);
   if (!fresca && guardada?.taxa.ok && Date.now() - guardada.em < validade) return guardada.taxa;
 
-  const taxa = await consultar(chave, data);
+  const taxa = await consultar(data);
   if (taxa.ok) guardadas.set(data, { em: Date.now(), taxa });
   return taxa;
 }
 
-async function consultar(chave: string, data: string): Promise<TaxaTakeat> {
-
-  // do começo do dia até as 6h do dia seguinte, em horário de Ouro Fino (UTC-3)
-  const inicio = `${data}T03:00:00Z`;
-  const fim = `${somarDias(data, 1)}T09:00:00Z`;
-  const url = `${BASE}/v1/table-sessions?start_date=${encodeURIComponent(inicio)}&end_date=${encodeURIComponent(fim)}`;
-
+async function consultar(data: string): Promise<TaxaTakeat> {
   try {
-    let res = await fetch(url, { headers: { authorization: `Bearer ${await obterToken(chave)}` }, cache: "no-store" });
-    if (res.status === 401) {
-      res = await fetch(url, {
-        headers: { authorization: `Bearer ${await obterToken(chave, true)}` },
-        cache: "no-store",
-      });
-    }
-    if (res.status === 429)
-      return { ok: false, motivo: "A Takeat pediu para esperar (limite de consultas). Tente em um minuto." };
-    if (!res.ok) return { ok: false, motivo: `A Takeat respondeu com erro (${res.status}).` };
-    const corpo = (await res.json()) as Comanda[] | { data?: Comanda[] };
+    // do começo do dia até as 6h do dia seguinte, em horário de Ouro Fino
+    // (UTC-3), sem passar de agora: a Takeat não aceita fim no futuro
+    const fim = new Date(Math.min(Date.parse(`${somarDias(data, 1)}T09:00:00Z`), Date.now())).toISOString();
+    const corpo = await takeatGet<Comanda[] | { data?: Comanda[] }>(
+      "/v1/table-sessions",
+      { start_date: `${data}T03:00:00Z`, end_date: fim },
+      "essencial",
+    );
     const comandas = Array.isArray(corpo) ? corpo : (corpo.data ?? []);
 
     const taxa: Record<Turno, number> = { almoco: 0, jantar: 0 };
@@ -162,6 +110,6 @@ async function consultar(chave: string, data: string): Promise<TaxaTakeat> {
     };
   } catch (erro) {
     console.error("caixinha: falha ao ler a Takeat", erro instanceof Error ? erro.message : erro);
-    return { ok: false, motivo: "Não consegui falar com a Takeat agora." };
+    return { ok: false, motivo: mensagemDe(erro) };
   }
 }

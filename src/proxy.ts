@@ -12,7 +12,17 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
-const INTERNAS = ["/alterar-cardapio", "/posts", "/caixinha", "/acessos", "/imprimir", "/painel"];
+const INTERNAS = [
+  "/alterar-cardapio",
+  "/posts",
+  "/caixinha",
+  "/operacao",
+  "/estoque",
+  "/cmv",
+  "/acessos",
+  "/imprimir",
+  "/painel",
+];
 const ANTIGAS: [string, string][] = [["/admin", "/alterar-cardapio"]];
 const DOMINIO = "nikolasrestaurante.com.br";
 

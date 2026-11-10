@@ -8,8 +8,9 @@ import { sessaoAtual } from "@/lib/acessos/sessao";
 import type { Area } from "@/lib/acessos/areas";
 import Icone, { type NomeIcone } from "./Icone";
 import Sair from "./Sair";
+import RolarAtivo from "./RolarAtivo";
 
-export type Secao = "inicio" | Area | "acessos";
+export type Secao = "inicio" | Area | "cmv" | "acessos";
 
 type Item = { chave: Secao; href: string; nome: string; icone: NomeIcone; area?: Area; master?: boolean };
 
@@ -17,7 +18,10 @@ export const ITENS: Item[] = [
   { chave: "inicio", href: "/", nome: "Início", icone: "inicio" },
   { chave: "cardapio", href: "/alterar-cardapio", nome: "Cardápio", icone: "cardapio", area: "cardapio" },
   { chave: "posts", href: "/posts", nome: "Posts", icone: "posts", area: "posts" },
+  { chave: "operacao", href: "/operacao", nome: "Ao vivo", icone: "operacao", area: "operacao" },
   { chave: "caixinha", href: "/caixinha", nome: "Caixinha", icone: "caixinha", area: "caixinha" },
+  { chave: "estoque", href: "/estoque", nome: "Estoque", icone: "estoque", area: "estoque" },
+  { chave: "cmv", href: "/cmv", nome: "CMV", icone: "cmv", master: true },
   { chave: "acessos", href: "/acessos", nome: "Acessos", icone: "acessos", master: true },
 ];
 
@@ -37,7 +41,7 @@ export default async function Moldura({ atual }: { atual: Secao }) {
           </span>
         </Link>
 
-        <nav className="ml-2 hidden flex-1 items-center gap-1 md:flex" aria-label="Áreas do painel">
+        <nav className="ml-2 hidden flex-1 items-center gap-0.5 lg:flex" aria-label="Áreas do painel">
           {itens.map((i) => (
             <LinkArea key={i.chave} item={i} ativo={i.chave === atual} />
           ))}
@@ -50,7 +54,7 @@ export default async function Moldura({ atual }: { atual: Secao }) {
       </div>
 
       {/* no celular as áreas viram abas compactas, ícone sobre o nome, que cabem lado a lado */}
-      <nav className="border-t border-linha/70 md:hidden" aria-label="Áreas do painel">
+      <nav className="p-rolagem border-t border-linha/70 lg:hidden" aria-label="Áreas do painel">
         <div className="flex gap-1 px-2 py-1.5">
           {itens.map((i) => {
             const ativo = i.chave === atual;
@@ -59,7 +63,7 @@ export default async function Moldura({ atual }: { atual: Secao }) {
                 key={i.chave}
                 href={i.href}
                 aria-current={ativo ? "page" : undefined}
-                className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] font-semibold ${
+                className={`flex min-w-16 flex-1 shrink-0 flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[11px] font-semibold ${
                   ativo ? "bg-verde text-papel" : "text-cafe active:bg-creme"
                 }`}
               >
@@ -68,6 +72,7 @@ export default async function Moldura({ atual }: { atual: Secao }) {
               </Link>
             );
           })}
+          <RolarAtivo />
         </div>
       </nav>
     </header>
@@ -79,7 +84,7 @@ function LinkArea({ item, ativo }: { item: Item; ativo: boolean }) {
     <Link
       href={item.href}
       aria-current={ativo ? "page" : undefined}
-      className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
+      className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold transition-colors ${
         ativo ? "bg-verde text-papel" : "text-cafe hover:bg-creme hover:text-tinta"
       }`}
     >

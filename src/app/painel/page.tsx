@@ -33,6 +33,27 @@ const BLOCOS: Bloco[] = [
     descricao: "A taxa de serviço do dia dividida com a equipe, por turno, com o consumo descontado.",
   },
   {
+    area: "operacao",
+    href: "/operacao",
+    nome: "Ao vivo",
+    icone: "operacao",
+    descricao: "Mesas abertas e pedidos de delivery, com os que estão passando do tempo em destaque.",
+  },
+  {
+    area: "estoque",
+    href: "/estoque",
+    nome: "Contagem de estoque",
+    icone: "estoque",
+    descricao: "A contagem semanal do estoque, por categoria, pelo celular ou pelo computador.",
+  },
+  {
+    master: true,
+    href: "/cmv",
+    nome: "CMV",
+    icone: "cmv",
+    descricao: "Faturamento, custo da mercadoria e margem da semana e do mês, direto das vendas.",
+  },
+  {
     master: true,
     href: "/acessos",
     nome: "Acessos",
