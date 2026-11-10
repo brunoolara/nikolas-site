@@ -12,6 +12,22 @@ body:has(.painel) {
 html:has(.painel) {
   scrollbar-gutter: stable;
 }
+/* no celular o rodapé fixo cobre o fim da página: abre espaço para ele */
+@media (max-width: 1023px) {
+  .painel:has(.p-barra) {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+}
+@keyframes p-gaveta-entra {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes p-folha-entra {
+  from {
+    transform: translateY(100%);
+  }
+}
 
 /* ------------------------------------------------------------------------
    Sistema visual do painel (redesenho de 10/11/2026)
@@ -329,6 +345,104 @@ html:has(.painel) {
     color: var(--color-papel);
   }
 
+  /* Rodapé do celular: cinco botões fixos, como num aplicativo */
+  .p-barra {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: end;
+    padding: 0.25rem 0.25rem calc(0.25rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-linha);
+    background: #fff;
+  }
+  .p-barra-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.15rem;
+    min-height: 3.5rem;
+    padding: 0.35rem 0.125rem 0.3rem;
+    border-radius: var(--p-raio-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--color-cafe);
+    text-decoration: none;
+  }
+  .p-barra-item[aria-current="page"] {
+    color: var(--color-verde);
+  }
+  .p-barra-item:active {
+    background: var(--color-creme);
+  }
+  .p-barra-criar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    margin-top: -1.25rem;
+    border-radius: 999px;
+    background: var(--color-verde);
+    color: var(--color-papel);
+    box-shadow: 0 0 0 4px #fff, var(--p-sombra-alta);
+  }
+  .p-contador {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.55rem;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: var(--p-vermelho);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.1rem;
+    text-align: center;
+  }
+
+  /* Menu lateral (☰) e a folha do Criar: <dialog> com fundo escurecido */
+  .p-gaveta,
+  .p-folha {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    max-width: none;
+    max-height: none;
+    background: #fff;
+    color: var(--color-tinta);
+  }
+  .p-gaveta::backdrop,
+  .p-folha::backdrop {
+    background: rgb(27 23 16 / 0.4);
+  }
+  .p-gaveta {
+    inset: 0 auto 0 0;
+    width: min(20rem, 85vw);
+    height: 100dvh;
+    box-shadow: var(--p-sombra-alta);
+  }
+  .p-folha {
+    inset: auto 0 0 0;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+  }
+  .p-folha-corpo {
+    padding: 0.6rem 1rem calc(1rem + env(safe-area-inset-bottom));
+  }
+  /* entram deslizando — movimento que responde ao toque, curto */
+  .p-gaveta[open] {
+    animation: p-gaveta-entra 0.2s ease-out;
+  }
+  .p-folha[open] {
+    animation: p-folha-entra 0.2s ease-out;
+  }
+
   /* Faixa rolável sem barra aparente (dias, abas no celular) */
   .p-rolagem {
     overflow-x: auto;
@@ -353,4 +467,9 @@ html:has(.painel) {
 .painel .p-aba[aria-current="page"]:focus-visible,
 .painel .p-aba[aria-selected="true"]:focus-visible {
   box-shadow: inset 0 0 0 2px var(--color-papel);
+}
+/* o foco vai para o próprio menu ao abrir; sem anel em volta dele inteiro */
+.painel .p-gaveta:focus-visible,
+.painel .p-folha:focus-visible {
+  outline: none;
 }

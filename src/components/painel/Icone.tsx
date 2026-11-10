@@ -19,7 +19,11 @@ export type NomeIcone =
   | "cmv"
   | "moto"
   | "mesa"
-  | "alerta";
+  | "alerta"
+  | "menu"
+  | "fechar"
+  | "sino"
+  | "perfil";
 
 const TRACOS: Record<NomeIcone, React.ReactNode> = {
   inicio: (
@@ -113,6 +117,20 @@ const TRACOS: Record<NomeIcone, React.ReactNode> = {
   mesa: (
     <>
       <path d="M3 9h18M5 9v11M19 9v11M8 9V5h8v4" />
+    </>
+  ),
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  fechar: <path d="M6 6l12 12M18 6 6 18" />,
+  sino: (
+    <>
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+    </>
+  ),
+  perfil: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
     </>
   ),
   alerta: (

@@ -21,6 +21,8 @@ const INTERNAS = [
   "/cmv",
   "/acessos",
   "/imprimir",
+  "/avisos",
+  "/perfil",
   "/painel",
 ];
 const ANTIGAS: [string, string][] = [["/admin", "/alterar-cardapio"]];

@@ -43,7 +43,7 @@ export default function Consumos({ data, fechado, equipe, consumos }: Props) {
   const total = consumos.reduce((s, c) => s + c.valor, 0);
 
   return (
-    <section className="p-cartao mt-6 p-5">
+    <section id="consumo" className="p-cartao mt-6 scroll-mt-24 p-5">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="p-cartao-titulo">Consumo da equipe</h3>
         {consumos.length ? <span className="p-selo tabular-nums">{reais(total)}</span> : null}

@@ -48,3 +48,6 @@ next-env.d.ts
 
 # o exemplo (sem segredos) deve ir para o repositório
 !.env.example
+
+# Superdesign (contexto local de design)
+.superdesign/
