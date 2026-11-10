@@ -30,7 +30,7 @@ export default function SeletorMes({ pedido, hoje, anos }: Props) {
     router.push(destino === hoje ? "/posts" : `/posts?dia=${destino}`);
   }
 
-  const campo = "rounded border border-linha bg-white px-2 py-1.5 text-sm";
+  const campo = "p-campo w-auto";
   return (
     <div className="mt-4 flex justify-center gap-2">
       <select aria-label="Mês" value={mes} onChange={(e) => ir(ano, Number(e.target.value))} className={campo}>

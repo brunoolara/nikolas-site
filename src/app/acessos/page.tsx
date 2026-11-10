@@ -1,7 +1,8 @@
 // Lista dos funcionários e formulário para cadastrar mais um.
 
 import Link from "next/link";
-import Sair from "@/components/painel/Sair";
+import Cabecalho from "@/components/painel/Cabecalho";
+import Icone from "@/components/painel/Icone";
 import { MASTER, lerUsuarios } from "@/lib/acessos/usuarios";
 import LinhaUsuario from "./LinhaUsuario";
 import NovoUsuario from "./NovoUsuario";
@@ -13,34 +14,26 @@ export default async function Acessos() {
   const usuarios = (await lerUsuarios()).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linha pb-4">
-        <div>
-          <Link href="/" className="text-sm text-cafe underline">
-            ← Painel
-          </Link>
-          <h1 className="font-display text-3xl">Acessos</h1>
-          <p className="mt-1 text-sm text-cafe">
-            Você entra como <strong>{MASTER}</strong> e vê tudo.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/acessos/registro" className="rounded border border-verde px-3 py-2 text-sm font-semibold text-verde hover:bg-verde hover:text-papel">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+      <Cabecalho
+        titulo="Acessos"
+        descricao={
+          <>
+            Quem entra no painel e o que cada um pode abrir. Você entra como <strong className="text-tinta">{MASTER}</strong> e vê
+            tudo.
+          </>
+        }
+        acoes={
+          <Link href="/acessos/registro" className="p-btn p-btn-secundario">
+            <Icone nome="registro" className="h-4 w-4" />
             Registro
           </Link>
-          <Link href="/alterar-cardapio" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
-            Cardápio
-          </Link>
-          <Link href="/posts" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
-            Posts
-          </Link>
-          <Sair />
-        </div>
-      </header>
+        }
+      />
 
       <section className="mt-8">
         <h2 className="font-display text-2xl">Funcionários</h2>
-        <p className="text-sm text-cafe">
+        <p className="mt-1 text-sm text-cafe">
           As senhas não ficam guardadas de forma legível: se alguém esquecer, defina uma nova.
         </p>
         <div className="mt-3 grid gap-3">
@@ -49,7 +42,7 @@ export default async function Acessos() {
               <LinhaUsuario key={u.usuario} usuario={u.usuario} nome={u.nome} areas={u.areas} ativo={u.ativo} />
             ))
           ) : (
-            <p className="rounded border border-dashed border-linha p-4 text-sm text-cafe">Ninguém cadastrado ainda.</p>
+            <p className="rounded-[var(--p-raio)] border border-dashed border-linha bg-white/60 p-6 text-center text-sm text-cafe">Ninguém cadastrado ainda.</p>
           )}
         </div>
       </section>

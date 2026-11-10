@@ -4,6 +4,7 @@
 import type { Metadata } from "next";
 import { exigir } from "@/lib/acessos/sessao";
 import SemAcesso from "@/components/painel/SemAcesso";
+import Moldura from "@/components/painel/Moldura";
 import "@/components/painel/painel.css";
 
 export const metadata: Metadata = {
@@ -15,5 +16,16 @@ export const dynamic = "force-dynamic";
 
 export default async function LayoutCardapio({ children }: { children: React.ReactNode }) {
   const { sessao, liberado } = await exigir("cardapio");
-  return <div className="painel">{liberado ? children : <SemAcesso nome={sessao.nome} />}</div>;
+  return (
+    <div className="painel">
+      {liberado ? (
+        <>
+          <Moldura atual="cardapio" />
+          {children}
+        </>
+      ) : (
+        <SemAcesso nome={sessao.nome} />
+      )}
+    </div>
+  );
 }

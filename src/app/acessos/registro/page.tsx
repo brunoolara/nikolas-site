@@ -3,7 +3,7 @@
 // voltar do celular desfazer o filtro.
 
 import Link from "next/link";
-import Sair from "@/components/painel/Sair";
+import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
 import { lerRegistro, type Evento } from "@/lib/registro";
 
@@ -82,26 +82,19 @@ export default async function Registro({
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linha pb-4">
-        <div>
-          <Link href="/acessos" className="text-sm text-cafe underline">
-            ← Acessos
-          </Link>
-          <h1 className="font-display text-3xl">Registro</h1>
-          <p className="mt-1 text-sm text-cafe">Últimos três meses. Horários de Brasília.</p>
-        </div>
-        <Sair />
-      </header>
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+      <Cabecalho
+        voltar={{ href: "/acessos", rotulo: "Acessos" }}
+        titulo="Registro"
+        descricao="O que mudou no cardápio e quem entrou no painel, nos últimos três meses (horário de Brasília)."
+      />
 
       <nav className="mt-6 flex flex-wrap gap-2">
         {ABAS.map((a) => (
           <Link
             key={a.chave}
             href={link({ ver: a.chave })}
-            className={`rounded border px-3 py-2 text-sm ${
-              a.chave === aba ? "border-verde bg-verde text-papel" : "border-linha text-cafe hover:bg-creme"
-            }`}
+            className={`p-btn ${a.chave === aba ? "p-btn-primario" : "p-btn-secundario"}`}
           >
             {a.nome}
           </Link>
@@ -112,7 +105,7 @@ export default async function Registro({
         <nav className="mt-3 flex flex-wrap gap-1.5 text-sm">
           <Link
             href={link({ pessoa: "" })}
-            className={`rounded-full border px-3 py-1 ${!pessoa ? "border-verde text-verde" : "border-linha text-cafe"}`}
+            className={`rounded-full border px-3 py-1 font-medium ${!pessoa ? "border-verde bg-verde/10 text-verde" : "border-linha bg-white text-cafe hover:border-verde"}`}
           >
             Todos
           </Link>
@@ -120,8 +113,8 @@ export default async function Registro({
             <Link
               key={usuario}
               href={link({ pessoa: usuario })}
-              className={`rounded-full border px-3 py-1 ${
-                pessoa === usuario ? "border-verde text-verde" : "border-linha text-cafe"
+              className={`rounded-full border px-3 py-1 font-medium ${
+                pessoa === usuario ? "border-verde bg-verde/10 text-verde" : "border-linha bg-white text-cafe hover:border-verde"
               }`}
             >
               {nome}
@@ -131,7 +124,7 @@ export default async function Registro({
       ) : null}
 
       {porDia.size === 0 ? (
-        <p className="mt-8 rounded border border-dashed border-linha p-4 text-sm text-cafe">
+        <p className="mt-8 rounded-[var(--p-raio)] border border-dashed border-linha bg-white/60 p-6 text-center text-sm text-cafe">
           Nada registrado {aba === "cardapio" ? "no cardápio " : ""}neste período.
         </p>
       ) : null}
@@ -139,9 +132,9 @@ export default async function Registro({
       {[...porDia.entries()].map(([dia, lista]) => (
         <section key={dia} className="mt-8">
           <h2 className="font-display text-xl first-letter:uppercase">{rotuloDia(dia)}</h2>
-          <ul className="mt-2 divide-y divide-linha rounded border border-linha">
+          <ul className="p-cartao mt-3 divide-y divide-linha/70 overflow-hidden">
             {lista.map((e, i) => (
-              <li key={i} className={`px-4 py-3 text-sm ${e.tipo === "falhou" ? "bg-red-50" : ""}`}>
+              <li key={i} className={`px-4 py-3 text-sm ${e.tipo === "falhou" ? "bg-[var(--p-vermelho-fundo)]" : ""}`}>
                 <div className="flex gap-3">
                   <span className="w-12 shrink-0 tabular-nums text-cafe">{hora(e.quando)}</span>
                   <div className="min-w-0 flex-1">

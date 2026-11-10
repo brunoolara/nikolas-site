@@ -7,3 +7,255 @@ body:has(.painel) > *:not(main) {
 body:has(.painel) {
   padding-bottom: 0;
 }
+
+/* ------------------------------------------------------------------------
+   Sistema visual do painel (redesenho de 10/11/2026)
+
+   Mesma marca do site: papel, tinta, verde-garrafa, âmbar do chope só como
+   acento, Fraunces nos títulos e Figtree no resto. Superfícies brancas sobre
+   o papel separam o que é conteúdo do que é fundo.
+
+   Componentes (use estas classes, não estilos soltos):
+   - .p-btn + .p-btn-primario | -secundario | -fantasma | -perigo, e .p-btn-sm
+       primário: a ação principal da tela (uma por área visível);
+       secundário: ações de apoio; fantasma: links de ação dentro de cartões;
+       perigo: excluir/remover, sempre com confirmação.
+   - .p-campo: input, select e textarea. .p-rotulo: o texto acima do campo.
+   - .p-cartao: bloco branco. .p-cartao-titulo: título dentro dele.
+   - .p-aviso + -info | -alerta | -erro | -ok: mensagens na página.
+   - .p-tabela: tabelas de valores (números à direita, tabulares).
+   - .p-selo: etiqueta pequena de status.
+   Ficam em @layer components para que uma utilidade do Tailwind na mesma
+   tag (mt-4, w-full...) sempre ganhe.
+   ------------------------------------------------------------------------ */
+
+.painel {
+  --p-raio: 10px;
+  --p-raio-sm: 8px;
+  --p-sombra: 0 1px 2px rgb(27 23 16 / 0.05), 0 1px 1px rgb(27 23 16 / 0.03);
+  --p-sombra-alta: 0 8px 24px rgb(27 23 16 / 0.08), 0 2px 4px rgb(27 23 16 / 0.04);
+  --p-foco: 0 0 0 3px rgb(30 75 57 / 0.25);
+  --p-vermelho: #a8321f;
+  --p-vermelho-fundo: #fbeeea;
+  --p-ambar-fundo: #fbf3e2;
+  --p-ambar-texto: #7a5414;
+  --p-verde-fundo: #e9f1ec;
+  min-height: 100dvh;
+}
+
+@layer components {
+  /* Botões */
+  .p-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--p-raio-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s,
+      color 0.15s,
+      box-shadow 0.15s;
+  }
+  .p-btn:disabled,
+  .p-btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .p-btn-sm {
+    min-height: 2rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8125rem;
+  }
+  .p-btn-primario {
+    background: var(--color-verde);
+    color: var(--color-papel);
+  }
+  .p-btn-primario:not(:disabled):hover {
+    background: var(--color-verde-escuro);
+  }
+  .p-btn-secundario {
+    background: #fff;
+    border-color: var(--color-linha);
+    color: var(--color-tinta);
+    box-shadow: var(--p-sombra);
+  }
+  .p-btn-secundario:not(:disabled):hover {
+    border-color: var(--color-verde);
+    color: var(--color-verde);
+  }
+  .p-btn-fantasma {
+    background: transparent;
+    color: var(--color-verde);
+    padding-inline: 0.6rem;
+  }
+  .p-btn-fantasma:not(:disabled):hover {
+    background: var(--p-verde-fundo);
+  }
+  .p-btn-perigo {
+    background: #fff;
+    border-color: #e8c7bf;
+    color: var(--p-vermelho);
+  }
+  .p-btn-perigo:not(:disabled):hover {
+    background: var(--p-vermelho-fundo);
+  }
+
+  /* Campos */
+  .p-rotulo {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-tinta);
+  }
+  .p-ajuda {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--color-cafe);
+  }
+  .p-campo {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--color-linha);
+    border-radius: var(--p-raio-sm);
+    background: #fff;
+    color: var(--color-tinta);
+    font-size: 0.9375rem;
+    transition:
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+  .p-campo::placeholder {
+    color: #a39888;
+  }
+  .p-campo:hover {
+    border-color: #cfc4b1;
+  }
+  .p-campo:focus {
+    outline: none;
+    border-color: var(--color-verde);
+    box-shadow: var(--p-foco);
+  }
+  .p-campo:disabled {
+    background: var(--color-creme);
+    color: var(--color-cafe);
+  }
+
+  /* Superfícies */
+  .p-cartao {
+    background: #fff;
+    border: 1px solid var(--color-linha);
+    border-radius: var(--p-raio);
+    box-shadow: var(--p-sombra);
+  }
+  .p-cartao-titulo {
+    font-family: var(--font-display);
+    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
+    letter-spacing: -0.015em;
+    font-size: 1.375rem;
+    line-height: 1.2;
+  }
+
+  /* Avisos */
+  .p-aviso {
+    border: 1px solid;
+    border-radius: var(--p-raio-sm);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+  .p-aviso-info {
+    background: var(--color-creme);
+    border-color: var(--color-linha);
+    color: var(--color-tinta);
+  }
+  .p-aviso-alerta {
+    background: var(--p-ambar-fundo);
+    border-color: #ecd4a3;
+    color: var(--p-ambar-texto);
+  }
+  .p-aviso-erro {
+    background: var(--p-vermelho-fundo);
+    border-color: #e8c7bf;
+    color: var(--p-vermelho);
+  }
+  .p-aviso-ok {
+    background: var(--p-verde-fundo);
+    border-color: #c4d9cd;
+    color: var(--color-verde-escuro);
+  }
+
+  /* Selo de status */
+  .p-selo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    padding: 0.1rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--color-creme);
+    color: var(--color-cafe);
+  }
+  .p-selo-verde {
+    background: var(--p-verde-fundo);
+    color: var(--color-verde-escuro);
+  }
+  .p-selo-vermelho {
+    background: var(--p-vermelho-fundo);
+    color: var(--p-vermelho);
+  }
+
+  /* Tabelas de valores */
+  .p-tabela {
+    width: 100%;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+  }
+  .p-tabela th {
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--color-linha);
+    color: var(--color-cafe);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .p-tabela td {
+    padding: 0.6rem;
+    border-bottom: 1px solid #efe9de;
+    vertical-align: top;
+  }
+  .p-tabela .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .p-tabela tfoot td {
+    border-bottom: 0;
+    font-weight: 700;
+  }
+
+  /* Faixa rolável sem barra aparente (dias, abas no celular) */
+  .p-rolagem {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .p-rolagem::-webkit-scrollbar {
+    display: none;
+  }
+}

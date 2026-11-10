@@ -30,12 +30,12 @@ export default function LinhaUsuario({ usuario, nome, areas, ativo }: Props) {
   }
 
   return (
-    <article className={`rounded border p-4 ${ativo ? "border-linha" : "border-dashed border-linha opacity-60"}`}>
+    <article className={`p-cartao p-4 ${ativo ? "" : "border-dashed opacity-60 shadow-none"}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-semibold">
           {nome} <span className="font-normal text-cafe">· {usuario}</span>
         </h3>
-        {ativo ? null : <span className="text-sm text-red-700">Desativado</span>}
+        {ativo ? null : <span className="p-selo p-selo-vermelho">Desativado</span>}
       </div>
 
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
@@ -61,25 +61,25 @@ export default function LinhaUsuario({ usuario, nome, areas, ativo }: Props) {
             onChange={(e) => setNovaSenha(e.target.value)}
             placeholder="Nova senha (6 ou mais)"
             autoComplete="new-password"
-            className="rounded border border-linha bg-white px-3 py-2 text-sm"
+            className="p-campo w-auto"
           />
           <button
             type="button"
             disabled={ocupado}
             onClick={() => alterar({ senha: novaSenha }, () => setNovaSenha(null))}
-            className="rounded bg-verde px-3 py-2 text-sm font-semibold text-papel"
+            className="p-btn p-btn-primario"
           >
             Salvar senha
           </button>
-          <button type="button" onClick={() => setNovaSenha(null)} className="text-sm text-cafe underline">
+          <button type="button" onClick={() => setNovaSenha(null)} className="p-btn p-btn-fantasma">
             Cancelar
           </button>
         </div>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap gap-3 text-sm">
+      <div className="mt-3 flex flex-wrap gap-2 border-t border-linha/70 pt-3">
         {novaSenha === null ? (
-          <button type="button" onClick={() => setNovaSenha("")} className="text-verde underline">
+          <button type="button" onClick={() => setNovaSenha("")} className="p-btn p-btn-secundario p-btn-sm">
             Trocar senha
           </button>
         ) : null}
@@ -87,11 +87,11 @@ export default function LinhaUsuario({ usuario, nome, areas, ativo }: Props) {
           type="button"
           disabled={ocupado}
           onClick={() => alterar({ ativo: !ativo })}
-          className="text-cafe underline"
+          className="p-btn p-btn-secundario p-btn-sm"
         >
           {ativo ? "Desativar" : "Reativar"}
         </button>
-        <button type="button" disabled={ocupado} onClick={excluir} className="text-red-700 underline">
+        <button type="button" disabled={ocupado} onClick={excluir} className="p-btn p-btn-perigo p-btn-sm ml-auto">
           Excluir
         </button>
       </div>

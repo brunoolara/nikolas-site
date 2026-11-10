@@ -7,10 +7,12 @@ import { useEffect, useState, useTransition } from "react";
 import { acaoSalvar } from "../acoes";
 import Mover, { mover } from "../Mover";
 import { DIAS, ROTULO_DIA, type Dia, type Item, type MenuExecutivo } from "@/lib/menu/tipos";
+import Cabecalho from "@/components/painel/Cabecalho";
+import Icone from "@/components/painel/Icone";
 
 type Props = { menu: MenuExecutivo; atualizadoEm: string; atualizadoPor: string };
 
-const campo = "w-full rounded border border-linha bg-white px-2.5 py-1.5";
+const campo = "p-campo";
 
 function precoParaTexto(p: number | null): string {
   return p === null ? "" : String(p).replace(".", ",");
@@ -37,50 +39,57 @@ function LinhasItens({
   return (
     <div className="mt-3 space-y-3">
       {itens.map((item, i) => (
-        <div key={i} className="rounded border border-linha bg-creme/40 p-3">
-          <div className="flex flex-wrap gap-2">
-            <Mover
-              indice={i}
-              total={itens.length}
-              aoMover={(para) => aoMudar(mover(itens, i, para))}
-              oQue="prato"
-            />
+        <div key={i} className="p-cartao flex gap-3 p-3">
+          <Mover
+            indice={i}
+            total={itens.length}
+            aoMover={(para) => aoMudar(mover(itens, i, para))}
+            oQue="prato"
+          />
+          <div className="grid min-w-0 flex-1 grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_7rem_auto]">
             <input
-              className={`${campo} min-w-48 flex-1`}
+              className={`${campo} col-span-2 sm:col-span-1`}
               placeholder="Nome do prato"
+              aria-label="Nome do prato"
               value={item.nome}
               onChange={(e) => mudar(i, { nome: e.target.value })}
             />
-            <input
-              className="w-28 rounded border border-linha bg-white px-2.5 py-1.5 text-right"
-              placeholder="0,00"
-              inputMode="decimal"
-              value={precoParaTexto(item.preco)}
-              onChange={(e) => mudar(i, { preco: textoParaPreco(e.target.value) })}
-            />
+            <label className="relative">
+              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-cafe">R$</span>
+              <input
+                className={`${campo} pl-9 text-right tabular-nums`}
+                placeholder="0,00"
+                aria-label="Preço"
+                inputMode="decimal"
+                value={precoParaTexto(item.preco)}
+                onChange={(e) => mudar(i, { preco: textoParaPreco(e.target.value) })}
+              />
+            </label>
             <button
               type="button"
               title="Remover este prato"
               onClick={() => aoMudar(itens.filter((_, k) => k !== i))}
-              className="shrink-0 rounded border border-linha px-3 text-cafe hover:bg-white"
+              className="p-btn p-btn-perigo"
             >
               Remover
             </button>
+            <input
+              className={`${campo} col-span-2 text-sm sm:col-span-3`}
+              placeholder="Acompanhamentos (opcional) — ex.: Salada, arroz e fritas."
+              aria-label="Acompanhamentos"
+              value={item.desc ?? ""}
+              onChange={(e) => mudar(i, { desc: e.target.value })}
+            />
           </div>
-          <input
-            className={`${campo} mt-2 text-sm`}
-            placeholder="Acompanhamentos (opcional) — ex.: Salada, arroz e fritas."
-            value={item.desc ?? ""}
-            onChange={(e) => mudar(i, { desc: e.target.value })}
-          />
         </div>
       ))}
       <button
         type="button"
         onClick={() => aoMudar([...itens, { nome: "", preco: null }])}
-        className="rounded border border-dashed border-cafe/50 px-3 py-1.5 text-sm text-cafe hover:bg-creme"
+        className="p-btn w-full border-dashed border-cafe/40 text-cafe hover:border-verde hover:bg-white hover:text-verde"
       >
-        + {rotuloNovo}
+        <Icone nome="mais" className="h-4 w-4" />
+        {rotuloNovo}
       </button>
     </div>
   );
@@ -127,50 +136,41 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-32 pt-8">
-      <header className="flex flex-wrap items-baseline justify-between gap-3 border-b border-linha pb-4">
-        <div>
-          <h1 className="font-display text-3xl">Menu executivo</h1>
-          <p className="mt-1 text-sm text-cafe">
-            Última alteração por {atualizadoPor} em{" "}
-            {new Date(atualizadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <a
-            href="/imprimir/executivo"
-            target="_blank"
-            className="rounded border border-verde px-3 py-2 text-sm font-semibold text-verde hover:bg-verde hover:text-papel"
-          >
+      <Cabecalho
+        voltar={{ href: "/alterar-cardapio", rotulo: "Cardápio" }}
+        titulo="Menu executivo"
+        descricao={`Última alteração por ${atualizadoPor} em ${new Date(atualizadoEm).toLocaleString("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+          timeZone: "America/Sao_Paulo",
+        })}`}
+        acoes={
+          <a href="/imprimir/executivo" target="_blank" className="p-btn p-btn-secundario">
+            <Icone nome="imprimir" className="h-4 w-4" />
             Ver e imprimir
           </a>
-          <a
-            href="/alterar-cardapio"
-            className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme"
-          >
-            Voltar
-          </a>
-        </div>
-      </header>
+        }
+      />
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2">
+      <section className="p-cartao mt-8 grid gap-4 p-5 sm:grid-cols-2">
         <label className="block">
-          <span className="text-sm font-semibold">Título da peça</span>
-          <input className={`${campo} mt-1`} value={menu.titulo} onChange={(e) => mudar({ titulo: e.target.value })} />
+          <span className="p-rotulo">Título da peça</span>
+          <input className={campo} value={menu.titulo} onChange={(e) => mudar({ titulo: e.target.value })} />
         </label>
         <label className="block">
-          <span className="text-sm font-semibold">Dias e horário</span>
+          <span className="p-rotulo">Dias e horário</span>
           <input
-            className={`${campo} mt-1`}
+            className={campo}
             value={menu.horario}
             onChange={(e) => mudar({ horario: e.target.value })}
           />
-          <span className="mt-1 block text-xs text-cafe">
+          <span className="p-ajuda">
             Aparece na capa e no alto do verso. Ex.: Segunda a domingo · 11h às 14h
           </span>
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-sm font-semibold">Frase da capa</span>
-          <input className={`${campo} mt-1`} value={menu.frase} onChange={(e) => mudar({ frase: e.target.value })} />
+          <span className="p-rotulo">Frase da capa</span>
+          <input className={campo} value={menu.frase} onChange={(e) => mudar({ frase: e.target.value })} />
         </label>
       </section>
 
@@ -205,8 +205,8 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
           Dia sem prato não é impresso — deixe vazio o que não tiver.
         </p>
         {DIAS.map((dia) => (
-          <div key={dia} className="mt-6 rounded border border-linha p-4">
-            <h3 className="font-semibold">{ROTULO_DIA[dia]}</h3>
+          <div key={dia} className="mt-6 rounded-[var(--p-raio)] border border-linha bg-creme/50 p-4">
+            <h3 className="font-display text-xl">{ROTULO_DIA[dia]}</h3>
             <LinhasItens
               itens={itensDoDia(dia)}
               rotuloNovo={`Acrescentar prato de ${ROTULO_DIA[dia].toLowerCase()}`}
@@ -217,17 +217,12 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
       </section>
 
       {/* barra fixa: salvar nunca fica longe */}
-      <div className="fixed inset-x-0 bottom-0 border-t border-linha bg-papel/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-linha bg-papel/95 shadow-[0_-4px_16px_rgb(27_23_16/0.06)] backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
-          <button
-            type="button"
-            onClick={salvar}
-            disabled={salvando}
-            className="rounded bg-verde px-5 py-2.5 font-semibold text-papel hover:bg-verde-escuro disabled:opacity-60"
-          >
+          <button type="button" onClick={salvar} disabled={salvando} className="p-btn p-btn-primario min-w-32">
             {salvando ? "Salvando…" : "Salvar"}
           </button>
-          {sujo ? <span className="text-sm text-cafe">Há alterações não salvas.</span> : null}
+          {sujo ? <span className="p-selo">Há alterações não salvas</span> : null}
           {aviso ? <span className="text-sm font-medium">{aviso}</span> : null}
         </div>
       </div>

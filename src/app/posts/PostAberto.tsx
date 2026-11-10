@@ -92,10 +92,10 @@ export default function PostAberto({ post, master, fechar }: Props) {
     >
       <article
         onClick={(e) => e.stopPropagation()}
-        className="max-h-full w-full max-w-lg overflow-y-auto rounded-t-lg bg-papel p-4 sm:rounded-lg"
+        className="max-h-full w-full max-w-lg overflow-y-auto rounded-t-2xl bg-papel p-5 shadow-[var(--p-sombra-alta)] sm:rounded-2xl"
       >
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-semibold">{post.titulo}</h3>
+          <h3 className="font-display text-xl">{post.titulo}</h3>
           <div className="flex shrink-0 items-center gap-3">
             {master ? (
               <Link href={`/posts/${post.id}`} className="text-sm text-verde underline">
@@ -106,7 +106,7 @@ export default function PostAberto({ post, master, fechar }: Props) {
               type="button"
               onClick={fechar}
               aria-label="Fechar"
-              className="rounded border border-linha px-2.5 py-1 text-lg leading-none text-cafe hover:bg-creme"
+              className="p-btn p-btn-secundario h-9 w-9 p-0 text-lg"
             >
               ×
             </button>
@@ -136,18 +136,18 @@ export default function PostAberto({ post, master, fechar }: Props) {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {estado === "baixando" ? (
-            <span className="rounded bg-creme px-4 py-2.5 text-sm text-cafe">Preparando a foto…</span>
+            <span className="p-btn bg-creme text-cafe">Preparando a foto…</span>
           ) : estado === "pronto" ? (
             <button
               type="button"
               onClick={compartilhar}
-              className="rounded bg-verde px-4 py-2.5 text-sm font-semibold text-papel hover:bg-verde-escuro"
+              className="p-btn p-btn-primario"
             >
               Postar no status do WhatsApp
             </button>
           ) : null}
           {post.legenda ? (
-            <button type="button" onClick={copiar} className="rounded border border-linha px-3 py-2 text-sm">
+            <button type="button" onClick={copiar} className="p-btn p-btn-secundario">
               Copiar legenda
             </button>
           ) : null}
@@ -156,7 +156,7 @@ export default function PostAberto({ post, master, fechar }: Props) {
               key={nome}
               href={src(nome)}
               download={arquivo(nome, i)}
-              className="rounded border border-linha px-3 py-2 text-sm"
+              className="p-btn p-btn-secundario"
             >
               {post.imagens.length > 1 ? `Baixar foto ${i + 1}` : "Baixar foto"}
             </a>
@@ -166,7 +166,7 @@ export default function PostAberto({ post, master, fechar }: Props) {
               type="button"
               disabled={marcando}
               onClick={() => marcar(true)}
-              className="px-3 py-2 text-sm text-cafe underline"
+              className="p-btn p-btn-fantasma"
             >
               Desfazer
             </button>
@@ -175,7 +175,7 @@ export default function PostAberto({ post, master, fechar }: Props) {
               type="button"
               disabled={marcando}
               onClick={() => marcar()}
-              className="rounded border border-verde px-3 py-2 text-sm font-semibold text-verde"
+              className="p-btn p-btn-secundario"
             >
               {marcando ? "Marcando…" : "Marcar como publicado"}
             </button>

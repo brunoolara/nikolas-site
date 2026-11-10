@@ -16,8 +16,8 @@ export function mover<T>(lista: T[], de: number, para: number): T[] {
 }
 
 const botao =
-  "flex h-[19px] w-7 items-center justify-center rounded border border-linha text-xs text-cafe " +
-  "hover:bg-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent";
+  "flex h-8 w-9 items-center justify-center rounded-md border border-linha bg-white text-xs text-cafe " +
+  "hover:border-verde hover:text-verde disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-linha disabled:hover:text-cafe";
 
 export default function Mover({
   indice,
@@ -32,7 +32,7 @@ export default function Mover({
   oQue?: string;
 }) {
   return (
-    <div className="flex shrink-0 flex-col gap-px" aria-label={`Mudar o ${oQue} de lugar`}>
+    <div className="flex shrink-0 flex-col gap-1.5" aria-label={`Mudar o ${oQue} de lugar`}>
       <button
         type="button"
         className={botao}

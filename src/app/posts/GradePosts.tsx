@@ -79,7 +79,7 @@ export default function GradePosts({ posts, master, porTipo = false, vazio }: Pr
             return (
               <li key={p.id}>
                 <button type="button" onClick={() => abrir(p.id)} className="group block w-full text-left">
-                  <span className="relative block overflow-hidden rounded border border-linha group-hover:border-verde">
+                  <span className="relative block overflow-hidden rounded-[var(--p-raio-sm)] border border-linha bg-white shadow-[var(--p-sombra)] transition-shadow group-hover:border-verde group-hover:shadow-[var(--p-sombra-alta)]">
                     {/* eslint-disable-next-line @next/next/no-img-element -- foto privada, servida pela nossa rota */}
                     <img
                       src={`/posts/imagem/${p.imagens[0]}?mini=1`}
@@ -105,7 +105,7 @@ export default function GradePosts({ posts, master, porTipo = false, vazio }: Pr
           })}
         </ul>
       ) : (
-        <p className="mt-3 rounded border border-dashed border-linha p-4 text-sm text-cafe">{vazio}</p>
+        <p className="mt-4 rounded-[var(--p-raio)] border border-dashed border-linha bg-white/60 p-6 text-center text-sm text-cafe">{vazio}</p>
       )}
 
       {aberto ? <PostAberto post={aberto} master={master} fechar={fechar} /> : null}

@@ -6,7 +6,7 @@ import { AREAS, ROTULO_AREA } from "@/lib/acessos/areas";
 import { acaoCriarUsuario } from "./acoes";
 
 const INICIAL: Resultado = { ok: false, mensagem: "" };
-const campo = "mt-1 w-full rounded border border-linha bg-white px-3 py-2.5";
+const campo = "p-campo mt-1";
 
 export default function NovoUsuario() {
   const [estado, enviar, enviando] = useActionState(acaoCriarUsuario, INICIAL);
@@ -17,8 +17,8 @@ export default function NovoUsuario() {
   }, [estado]);
 
   return (
-    <form ref={form} action={enviar} className="mt-10 rounded border border-linha p-5">
-      <h2 className="font-display text-2xl">Cadastrar funcionário</h2>
+    <form ref={form} action={enviar} className="p-cartao mt-10 p-5 sm:p-6">
+      <h2 className="p-cartao-titulo">Cadastrar funcionário</h2>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block text-sm font-semibold">
@@ -53,13 +53,13 @@ export default function NovoUsuario() {
       </fieldset>
 
       {estado.mensagem ? (
-        <p className={`mt-4 text-sm font-medium ${estado.ok ? "text-verde" : "text-red-700"}`}>{estado.mensagem}</p>
+        <p className={`p-aviso mt-4 ${estado.ok ? "p-aviso-ok" : "p-aviso-erro"}`}>{estado.mensagem}</p>
       ) : null}
 
       <button
         type="submit"
         disabled={enviando}
-        className="mt-5 rounded bg-verde px-5 py-3 font-semibold text-papel hover:bg-verde-escuro disabled:opacity-60"
+        className="p-btn p-btn-primario mt-5 min-h-11 px-6"
       >
         {enviando ? "Cadastrando…" : "Cadastrar"}
       </button>

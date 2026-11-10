@@ -78,7 +78,7 @@ export default function NovaCategoria({
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="mt-10 w-full rounded border border-dashed border-verde/50 px-4 py-3 font-semibold text-verde hover:bg-creme"
+        className="p-btn mt-10 w-full min-h-12 border-dashed border-verde/50 text-verde hover:bg-white"
       >
         + Acrescentar categoria
       </button>
@@ -86,13 +86,13 @@ export default function NovaCategoria({
   }
 
   return (
-    <section className="mt-10 rounded border border-verde p-5">
+    <section className="p-cartao mt-10 border-verde/60 p-5">
       <h2 className="font-display text-2xl">Nova categoria</h2>
 
       <label className="mt-4 block">
-        <span className="text-sm font-semibold">Nome</span>
+        <span className="p-rotulo">Nome</span>
         <input
-          className="mt-1 w-full rounded border border-linha bg-white px-2.5 py-1.5"
+          className="p-campo mt-1"
           placeholder="Ex.: Sobremesas"
           value={nome}
           autoFocus
@@ -103,9 +103,9 @@ export default function NovaCategoria({
 
       {destinoFixo ? null : (
       <label className="mt-4 block">
-        <span className="text-sm font-semibold">Em qual folha ela entra</span>
+        <span className="p-rotulo">Em qual folha ela entra</span>
         <select
-          className="mt-1 w-full rounded border border-linha bg-white px-2.5 py-2"
+          className="p-campo mt-1"
           value={onde}
           onChange={(e) => setOnde(e.target.value)}
         >
@@ -138,14 +138,14 @@ export default function NovaCategoria({
           type="button"
           onClick={criar}
           disabled={!nome.trim()}
-          className="rounded bg-verde px-4 py-2 font-semibold text-papel hover:bg-verde-escuro disabled:opacity-50"
+          className="p-btn p-btn-primario"
         >
           Criar categoria
         </button>
         <button
           type="button"
           onClick={() => setAberto(false)}
-          className="rounded border border-linha px-4 py-2 text-cafe hover:bg-creme"
+          className="p-btn p-btn-secundario"
         >
           Cancelar
         </button>

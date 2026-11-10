@@ -82,9 +82,9 @@ export default function EditorPost({ post }: { post?: Post }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <header className="flex items-center justify-between gap-3 border-b border-linha pb-4">
-        <h1 className="font-display text-3xl">{post ? "Editar post" : "Novo post"}</h1>
-        <Link href="/posts" className="text-sm text-cafe underline">
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-3xl sm:text-4xl">{post ? "Editar post" : "Novo post"}</h1>
+        <Link href="/posts" className="p-btn p-btn-secundario">
           Voltar
         </Link>
       </header>
@@ -97,7 +97,7 @@ export default function EditorPost({ post }: { post?: Post }) {
         value={titulo}
         onChange={(e) => setTitulo(e.target.value)}
         placeholder="Ex.: Feijoada de sábado"
-        className="mt-1 w-full rounded border border-linha bg-white px-3 py-2.5"
+        className="p-campo mt-1"
       />
 
       <fieldset className="mt-6">
@@ -112,7 +112,7 @@ export default function EditorPost({ post }: { post?: Post }) {
               setData(e.target.value);
               setNoBanco(false);
             }}
-            className="rounded border border-linha bg-white px-2 py-1.5"
+            className="p-campo w-auto"
           />
         </label>
         <label className="mt-2 flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function EditorPost({ post }: { post?: Post }) {
       <p className="text-sm text-cafe">Na ordem em que vão aparecer no status. Formato em pé (9:16) fica melhor.</p>
       <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {imagens.map((nome, i) => (
-          <div key={nome} className="rounded border border-linha p-2">
+          <div key={nome} className="p-cartao p-2">
             {/* eslint-disable-next-line @next/next/no-img-element -- foto privada, servida pela nossa rota */}
             <img src={`/posts/imagem/${nome}`} alt={`Foto ${i + 1}`} className="aspect-[9/16] w-full rounded object-cover" />
             <div className="mt-2 flex items-center justify-between">
@@ -140,7 +140,7 @@ export default function EditorPost({ post }: { post?: Post }) {
             </div>
           </div>
         ))}
-        <label className="flex aspect-[9/16] cursor-pointer items-center justify-center rounded border border-dashed border-linha p-2 text-center text-sm text-cafe hover:border-verde">
+        <label className="flex aspect-[9/16] cursor-pointer items-center justify-center rounded-[var(--p-raio)] border-2 border-dashed border-linha bg-white/60 p-2 text-center text-sm text-cafe hover:border-verde hover:text-verde">
           {enviando ? `Enviando ${enviando}…` : "+ Adicionar fotos"}
           <input
             type="file"
@@ -163,22 +163,22 @@ export default function EditorPost({ post }: { post?: Post }) {
         value={legenda}
         onChange={(e) => setLegenda(e.target.value)}
         rows={3}
-        className="mt-1 w-full rounded border border-linha bg-white px-3 py-2.5"
+        className="p-campo mt-1"
       />
 
-      {aviso ? <p className="mt-4 text-sm font-medium text-red-700">{aviso}</p> : null}
+      {aviso ? <p className="p-aviso p-aviso-erro mt-4">{aviso}</p> : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={salvar}
           disabled={salvando || enviando > 0}
-          className="rounded bg-verde px-5 py-3 font-semibold text-papel hover:bg-verde-escuro disabled:opacity-60"
+          className="p-btn p-btn-primario min-h-11 px-6"
         >
           {salvando ? "Salvando…" : "Salvar post"}
         </button>
         {post ? (
-          <button type="button" onClick={excluir} disabled={salvando} className="text-sm text-red-700 underline">
+          <button type="button" onClick={excluir} disabled={salvando} className="p-btn p-btn-perigo">
             Excluir post
           </button>
         ) : null}

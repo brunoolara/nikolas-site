@@ -10,9 +10,11 @@ import Link from "next/link";
 import { exigir, sessaoAtual } from "@/lib/acessos/sessao";
 import { lerPosts } from "@/lib/posts/armazem";
 import { DATA, hoje, rotuloCurto, rotuloData, somarDias } from "@/lib/posts/tipos";
-import Sair from "@/components/painel/Sair";
+import Cabecalho from "@/components/painel/Cabecalho";
+import Icone from "@/components/painel/Icone";
 import GradePosts from "./GradePosts";
 import SeletorMes from "./SeletorMes";
+import FaixaDias from "./FaixaDias";
 
 export default async function Posts({ searchParams }: PageProps<"/posts">) {
   // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
@@ -41,40 +43,21 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
 
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linha pb-4">
-        <div>
-          <Link href="/" className="text-sm text-cafe underline">
-            ← Painel
-          </Link>
-          <h1 className="font-display text-3xl">Posts do status</h1>
-          <p className="mt-1 text-sm text-cafe">{sessao?.nome}</p>
-        </div>
-        <div className="flex gap-2">
-          {master ? (
-            <>
-              <Link href="/acessos" className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme">
-                Acessos
-              </Link>
-              <Link
-                href="/alterar-cardapio"
-                className="rounded border border-linha px-3 py-2 text-sm text-cafe hover:bg-creme"
-              >
-                Cardápio
-              </Link>
-              <Link
-                href="/posts/novo"
-                className="rounded bg-verde px-3 py-2 text-sm font-semibold text-papel hover:bg-verde-escuro"
-              >
-                Novo post
-              </Link>
-            </>
-          ) : null}
-          <Sair />
-        </div>
-      </header>
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+      <Cabecalho
+        titulo="Posts do status"
+        descricao="Os posts de cada dia para a equipe compartilhar no status do WhatsApp."
+        acoes={
+          master ? (
+            <Link href="/posts/novo" className="p-btn p-btn-primario">
+              <Icone nome="mais" className="h-4 w-4" />
+              Novo post
+            </Link>
+          ) : null
+        }
+      />
 
-      <div className="mt-6 grid grid-cols-2 rounded border border-linha p-1" role="tablist">
+      <div className="mt-6 grid grid-cols-2 gap-1 rounded-[var(--p-raio)] border border-linha bg-white p-1 shadow-[var(--p-sombra)]" role="tablist">
         {(
           [
             ["agenda", "Agenda", "/posts"],
@@ -86,8 +69,8 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
             href={href}
             role="tab"
             aria-selected={aba === chave}
-            className={`rounded px-3 py-2 text-center text-sm font-semibold ${
-              aba === chave ? "bg-verde text-papel" : "text-cafe hover:bg-creme"
+            className={`rounded-[var(--p-raio-sm)] px-3 py-2 text-center text-sm font-semibold transition-colors ${
+              aba === chave ? "bg-verde text-papel" : "text-cafe hover:bg-creme hover:text-tinta"
             }`}
           >
             {nome}
@@ -103,20 +86,20 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
       ) : (
         <>
           {ehHoje && atrasados.length ? (
-            <details className="mt-6 rounded border border-red-300 bg-red-50 p-3">
-              <summary className="cursor-pointer text-sm font-semibold text-red-800">
+            <details className="p-aviso p-aviso-alerta mt-6">
+              <summary className="cursor-pointer font-semibold">
                 {atrasados.length} {atrasados.length > 1 ? "posts ficaram" : "post ficou"} para trás
               </summary>
-              <p className="mt-1 text-xs text-red-800">Eram de dias anteriores e ninguém marcou como publicado.</p>
+              <p className="mt-1 text-xs">Eram de dias anteriores e ninguém marcou como publicado.</p>
               <GradePosts posts={atrasados} master={master} vazio="" />
             </details>
           ) : null}
 
-          <nav className="mt-6" aria-label="Escolher o dia">
+          <nav className="p-cartao mt-6 p-4" aria-label="Escolher o dia">
             <div className="flex items-center justify-between gap-2">
               <Link
                 href={linkDia(somarDias(pedido, -1))}
-                className="rounded border border-linha px-3 py-2 text-lg leading-none text-cafe hover:bg-creme"
+                className="p-btn p-btn-secundario h-10 w-10 p-0 text-lg"
                 aria-label="Dia anterior"
               >
                 ‹
@@ -133,7 +116,7 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
               </div>
               <Link
                 href={linkDia(somarDias(pedido, 1))}
-                className="rounded border border-linha px-3 py-2 text-lg leading-none text-cafe hover:bg-creme"
+                className="p-btn p-btn-secundario h-10 w-10 p-0 text-lg"
                 aria-label="Próximo dia"
               >
                 ›
@@ -142,7 +125,7 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
 
             <SeletorMes pedido={pedido} hoje={dia} anos={anos} />
 
-            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1" aria-label="Dias do mês">
+            <FaixaDias>
               {faixa.map((d) => {
                 const { semana, dia: num } = rotuloCurto(d);
                 const n = quantos.get(d) ?? 0;
@@ -152,8 +135,8 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
                     key={d}
                     href={linkDia(d)}
                     aria-current={atual ? "date" : undefined}
-                    className={`flex min-w-12 shrink-0 flex-col items-center rounded border px-2 py-1.5 text-xs ${
-                      atual ? "border-verde bg-verde text-papel" : "border-linha text-cafe hover:bg-creme"
+                    className={`flex min-w-12 shrink-0 flex-col items-center rounded-[var(--p-raio-sm)] border px-2 py-1.5 text-xs transition-colors ${
+                      atual ? "border-verde bg-verde text-papel" : "border-linha bg-white text-cafe hover:border-verde"
                     }`}
                   >
                     <span>{semana}</span>
@@ -162,7 +145,7 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
                   </Link>
                 );
               })}
-            </div>
+            </FaixaDias>
           </nav>
 
           <GradePosts
