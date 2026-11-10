@@ -4,7 +4,7 @@
 
 import "server-only";
 import { get, put } from "@vercel/blob";
-import { takeatGet } from "@/lib/takeat/cliente";
+import { ErroTakeat, takeatGet } from "@/lib/takeat/cliente";
 import { categoriaPeloNome, type ItemContagem } from "./categorias";
 import type { Ajustes } from "./armazem";
 
@@ -24,11 +24,10 @@ const VALIDADE = 15 * 60_000;
 async function buscarTodos(): Promise<Insumo[]> {
   const todos: Insumo[] = [];
   for (let offset = 0; offset < 2000; offset += 100) {
-    const corpo = await takeatGet<Bruto[] | { data?: Bruto[]; pagination?: { has_more?: boolean } }>(
-      "/v1/inventory/inputs",
-      { offset },
-    );
-    const pagina = Array.isArray(corpo) ? corpo : (corpo.data ?? []);
+    // contrato ManagedInventoryPage: { items, total, count, remaining, offset, limit }
+    const corpo = await takeatGet<{ items?: Bruto[]; remaining?: number }>("/v1/inventory/inputs", { offset });
+    if (!Array.isArray(corpo.items)) throw new ErroTakeat("A Takeat devolveu os insumos num formato inesperado.");
+    const pagina = corpo.items;
     for (const b of pagina)
       todos.push({
         id: b.id,
@@ -37,8 +36,7 @@ async function buscarTodos(): Promise<Insumo[]> {
         saldo: Number(b.quantidade) || 0,
         custo: Number(b.unitary_price) || 0,
       });
-    const temMais = Array.isArray(corpo) ? pagina.length === 100 : Boolean(corpo.pagination?.has_more);
-    if (!temMais) break;
+    if (!corpo.remaining || pagina.length === 0) break;
   }
   return todos;
 }
