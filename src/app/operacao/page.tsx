@@ -44,7 +44,7 @@ export default async function AoVivo({ searchParams }: PageProps<"/operacao">) {
         </p>
       ) : null}
 
-      <div className="mt-6 grid grid-cols-2 gap-1 rounded-[var(--p-raio)] border border-linha bg-white p-1 shadow-[var(--p-sombra)]" role="tablist">
+      <div className="p-abas mt-6" role="tablist">
         {(
           [
             ["mesas", "Mesas", "/operacao", mesas.abertas.length, mesas.paradas],
@@ -56,9 +56,7 @@ export default async function AoVivo({ searchParams }: PageProps<"/operacao">) {
             href={href}
             role="tab"
             aria-selected={aba === chave}
-            className={`flex items-center justify-center gap-2 rounded-[var(--p-raio-sm)] px-3 py-2 text-sm font-semibold transition-colors ${
-              aba === chave ? "bg-verde text-papel" : "text-cafe hover:bg-creme hover:text-tinta"
-            }`}
+            className="p-aba"
           >
             <Icone nome={chave === "mesas" ? "mesa" : "moto"} className="h-4 w-4" />
             {nome}

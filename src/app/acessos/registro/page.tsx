@@ -82,19 +82,20 @@ export default async function Registro({
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         voltar={{ href: "/acessos", rotulo: "Acessos" }}
         titulo="Registro"
         descricao="O que mudou no cardápio e quem entrou no painel, nos últimos três meses (horário de Brasília)."
       />
 
-      <nav className="mt-6 flex flex-wrap gap-2">
+      <nav className="p-abas mt-6" aria-label="O que ver">
         {ABAS.map((a) => (
           <Link
             key={a.chave}
             href={link({ ver: a.chave })}
-            className={`p-btn ${a.chave === aba ? "p-btn-primario" : "p-btn-secundario"}`}
+            aria-current={a.chave === aba ? "page" : undefined}
+            className="p-aba"
           >
             {a.nome}
           </Link>

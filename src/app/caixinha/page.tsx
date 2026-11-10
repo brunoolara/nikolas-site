@@ -45,7 +45,7 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
   const fechadoDepois = !fechado && Boolean(estado.ultimoFechado && estado.ultimoFechado > data);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Caixinha"
         descricao="90% da taxa de serviço de cada turno, dividida entre quem trabalhou, com o consumo descontado."

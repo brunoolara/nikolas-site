@@ -106,7 +106,7 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
   const anteriores = [...(estado.pagamentos ?? [])].reverse().slice(0, 8);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Caixinha"
         descricao="Escolha o primeiro e o último dia para pagar vários dias juntos. O consumo e o saldo de cada um contam no total do período."
@@ -208,7 +208,7 @@ async function PagamentoFeito({ id, master, ultimoFechado }: { id: string; maste
   );
   if (!pag)
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
         {voltar}
         <p className="p-aviso p-aviso-info mt-4">
           Este pagamento não existe mais (foi reaberto).{" "}
@@ -225,7 +225,7 @@ async function PagamentoFeito({ id, master, ultimoFechado }: { id: string; maste
   const consumo = pag.linhas.reduce((s, l) => s + l.consumo, 0);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       {voltar}
       <h2 className="mt-6 font-display text-2xl first-letter:uppercase">
         {pag.ini === pag.fim ? rotuloData(pag.ini) : `${rotuloData(pag.ini)} a ${rotuloData(pag.fim)}`}

@@ -7,6 +7,11 @@ body:has(.painel) > *:not(main) {
 body:has(.painel) {
   padding-bottom: 0;
 }
+/* reserva o lugar da barra de rolagem: tela curta e tela longa ficam com a
+   mesma largura, e nada "pula" para o lado ao trocar de tela */
+html:has(.painel) {
+  scrollbar-gutter: stable;
+}
 
 /* ------------------------------------------------------------------------
    Sistema visual do painel (redesenho de 10/11/2026)
@@ -25,6 +30,10 @@ body:has(.painel) {
    - .p-aviso + -info | -alerta | -erro | -ok: mensagens na página.
    - .p-tabela: tabelas de valores (números à direita, tabulares).
    - .p-selo: etiqueta pequena de status.
+   - .p-abas + .p-aba: abas de uma tela (a atual com aria-current="page"
+       ou aria-selected="true").
+   Toda página interna usa a mesma largura da barra de cima (max-w-5xl),
+   para nada mudar de tamanho ao trocar de tela.
    Ficam em @layer components para que uma utilidade do Tailwind na mesma
    tag (mt-4, w-full...) sempre ganhe.
    ------------------------------------------------------------------------ */
@@ -248,6 +257,55 @@ body:has(.painel) {
   .p-tabela tfoot td {
     border-bottom: 0;
     font-weight: 700;
+  }
+
+  /* Abas: uma régua só para todas as telas (Caixinha, Posts, Ao vivo,
+     Registro, CMV). Larguras iguais quando cabem, mesma altura dos botões,
+     e a troca de aba não anima, para a tela não "piscar" ao mudar. */
+  .p-abas {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid var(--color-linha);
+    border-radius: var(--p-raio);
+    background: #fff;
+    box-shadow: var(--p-sombra);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .p-abas::-webkit-scrollbar {
+    display: none;
+  }
+  .p-aba {
+    flex: 1 1 0%;
+    min-width: max-content;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: var(--p-raio-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--color-cafe);
+    text-decoration: none;
+  }
+  @media (max-width: 639px) {
+    .p-aba {
+      padding-inline: 0.6rem;
+    }
+  }
+  .p-aba:hover {
+    background: var(--color-creme);
+    color: var(--color-tinta);
+  }
+  .p-aba[aria-current="page"],
+  .p-aba[aria-selected="true"] {
+    background: var(--color-verde);
+    color: var(--color-papel);
   }
 
   /* Faixa rolável sem barra aparente (dias, abas no celular) */

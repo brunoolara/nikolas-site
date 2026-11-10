@@ -103,7 +103,7 @@ export default async function Relatorio({ searchParams }: PageProps<"/caixinha/r
   if (!liberado) return null;
   if (!sessao.master)
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
         <Cabecalho titulo="Caixinha" />
         <Abas atual="relatorio" master={false} />
         <p className="p-aviso p-aviso-info mt-4">O relatório da Caixinha é só para os donos.</p>

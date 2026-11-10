@@ -17,7 +17,7 @@ export default async function PaginaEquipe() {
     .map((p) => ({ id: p.id, nome: p.nome, ativo: p.ativo, saldo: estado.saldos[p.id] ?? 0 }));
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Equipe da caixinha"
         descricao="Todos os funcionários entram no rateio; sócios ficam de fora. Quem tem saldo negativo aparece com o valor que ainda deve."

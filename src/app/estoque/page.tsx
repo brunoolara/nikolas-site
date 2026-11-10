@@ -33,7 +33,7 @@ export default async function Estoque({ searchParams }: PageProps<"/estoque">) {
   const fechada = contagem.fechada;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Contagem de estoque"
         descricao="Conte o que tem de cada item, na unidade indicada. Pode contar aos poucos: cada número grava na hora."

@@ -43,7 +43,7 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
 
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Posts do status"
         descricao="Os posts de cada dia para a equipe compartilhar no status do WhatsApp."
@@ -57,7 +57,7 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
         }
       />
 
-      <div className="mt-6 grid grid-cols-2 gap-1 rounded-[var(--p-raio)] border border-linha bg-white p-1 shadow-[var(--p-sombra)]" role="tablist">
+      <div className="p-abas mt-6" role="tablist">
         {(
           [
             ["agenda", "Agenda", "/posts"],
@@ -69,9 +69,7 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
             href={href}
             role="tab"
             aria-selected={aba === chave}
-            className={`rounded-[var(--p-raio-sm)] px-3 py-2 text-center text-sm font-semibold transition-colors ${
-              aba === chave ? "bg-verde text-papel" : "text-cafe hover:bg-creme hover:text-tinta"
-            }`}
+            className="p-aba"
           >
             {nome}
           </Link>

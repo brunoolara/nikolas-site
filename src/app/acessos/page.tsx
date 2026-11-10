@@ -14,7 +14,7 @@ export default async function Acessos() {
   const usuarios = (await lerUsuarios()).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Acessos"
         descricao={

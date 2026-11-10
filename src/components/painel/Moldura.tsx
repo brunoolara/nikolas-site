@@ -84,7 +84,7 @@ function LinkArea({ item, ativo }: { item: Item; ativo: boolean }) {
     <Link
       href={item.href}
       aria-current={ativo ? "page" : undefined}
-      className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold transition-colors ${
+      className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold ${
         ativo ? "bg-verde text-papel" : "text-cafe hover:bg-creme hover:text-tinta"
       }`}
     >

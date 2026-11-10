@@ -119,7 +119,7 @@ export default async function Painel() {
             <Link
               key={b.href}
               href={b.href}
-              className="p-cartao group flex flex-col p-5 transition-shadow hover:border-verde/50 hover:shadow-[var(--p-sombra-alta)]"
+              className="p-cartao flex flex-col p-5 transition-[border-color,box-shadow] duration-150 hover:border-verde/50 hover:shadow-[var(--p-sombra-alta)]"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-verde/10 text-verde">
                 <Icone nome={b.icone} className="h-6 w-6" />
@@ -128,7 +128,7 @@ export default async function Painel() {
               <p className="mt-1 flex-1 text-sm text-cafe">{b.descricao}</p>
               <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-verde">
                 Abrir
-                <Icone nome="seta" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                <Icone nome="seta" className="h-4 w-4" />
               </span>
             </Link>
           ))}

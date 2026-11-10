@@ -137,11 +137,11 @@ export default async function Cmv({ searchParams }: PageProps<"/cmv">) {
         titulo="CMV"
         descricao="Quanto da venda vira custo de mercadoria, pelas fichas técnicas e pela contagem do estoque."
         acoes={
-          <div className="flex gap-1 rounded-[var(--p-raio-sm)] border border-linha bg-white p-1">
-            <Link href="/cmv" className={`p-btn p-btn-sm ${p.tipo === "semana" ? "p-btn-primario" : "p-btn-fantasma"}`}>
+          <div className="p-abas">
+            <Link href="/cmv" aria-current={p.tipo === "semana" ? "page" : undefined} className="p-aba">
               Semana
             </Link>
-            <Link href={`/cmv?mes=${hoje().slice(0, 7)}`} className={`p-btn p-btn-sm ${p.tipo === "mes" ? "p-btn-primario" : "p-btn-fantasma"}`}>
+            <Link href={`/cmv?mes=${hoje().slice(0, 7)}`} aria-current={p.tipo === "mes" ? "page" : undefined} className="p-aba">
               Mês
             </Link>
           </div>
