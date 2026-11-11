@@ -123,7 +123,7 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Numero titulo="Dias" valor={String(datas.length)} sub={`${rotuloData(ini)} a ${rotuloData(fim)}`} />
         <Numero titulo="Taxa de serviço" valor={reais(taxaTotal)} sub="almoço + jantar" />
-        <Numero titulo="Para a equipe" valor={reais(taxaTotal * PARTE_EQUIPE)} sub="90% da taxa" />
+        <Numero titulo="Para a equipe" valor={reais(taxaTotal * PARTE_EQUIPE)} sub="A parte da equipe na taxa" />
         <Numero titulo="A pagar" valor={reais(total)} sub="já sem consumo e saldo" destaque />
       </div>
 
