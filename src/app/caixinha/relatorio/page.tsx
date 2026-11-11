@@ -7,7 +7,7 @@ import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
 import { DATA, hoje, rotuloData, somarDias } from "@/lib/posts/tipos";
 import { lerDia, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
-import { diasEntre, PARTE_EQUIPE, reais, type Dia } from "@/lib/caixinha/tipos";
+import { diasEntre, reais, type Dia } from "@/lib/caixinha/tipos";
 import Abas from "../Abas";
 import EscolherPeriodo from "../EscolherPeriodo";
 
@@ -28,6 +28,8 @@ function apurar(dias: Dia[]) {
   let almoco = 0;
   let jantar = 0;
   let consumo = 0;
+  // o que a equipe recebeu de fato nos dias fechados (vale a regra do dia: 90% antes de 11/11, 95% depois)
+  let equipe = 0;
   let turnosComTaxa = { almoco: 0, jantar: 0 };
   let turnosPessoa = 0;
   const pessoas = new Map<string, { nome: string; almoco: number; jantar: number; turnosA: number; turnosJ: number; consumo: number }>();
@@ -42,6 +44,7 @@ function apurar(dias: Dia[]) {
       x.almoco += p.almoco;
       x.jantar += p.jantar;
       x.consumo += p.consumo;
+      equipe += p.almoco + p.jantar;
       consumo += p.consumo;
       pessoas.set(p.pessoa, x);
     }
@@ -57,7 +60,6 @@ function apurar(dias: Dia[]) {
     }
   }
   const taxa = almoco + jantar;
-  const equipe = taxa * PARTE_EQUIPE;
   return {
     fechados,
     // dia aberto só conta se teve alguém marcado ou consumo (dia vazio não pesa)
@@ -192,7 +194,7 @@ export default async function Relatorio({ searchParams }: PageProps<"/caixinha/r
           valor={reais(r.equipe)}
           sub={
             <>
-              <p>90% · casa fica com {reais(r.taxa - r.equipe)}</p>
+              <p>A casa fica com {reais(r.taxa - r.equipe)}</p>
               <p>Pago no período: {reais(pagoTotal)}</p>
             </>
           }

@@ -1,18 +1,19 @@
 // Caixinha: a taxa de serviço dividida com a equipe, paga todo dia.
 //
 // Regras do Nikola's (Bruno, 09/11/2026):
-// - 90% da taxa de cada turno vai para a equipe; os 10% restantes ficam com a casa.
+// - 95% da taxa de cada turno vai para a equipe; os 5% restantes ficam com a casa
+//   (era 90% até 11/11/2026; dias fechados antes guardam o que foi pago).
 // - Almoço e jantar são divididos separados, entre quem trabalhou em cada um.
 // - Cada pessoa tem um % no turno (100 = parte cheia, 50 = meia parte). A divisão
 //   é proporcional a esse %: o que alguém deixa de receber fica com os outros,
-//   e o total pago no turno é sempre os 90%.
+//   e o total pago no turno é sempre a parte da equipe.
 // - O consumo do funcionário na casa é descontado cheio; se o dia fechar
 //   negativo, o saldo passa para o próximo dia em que a pessoa receber.
 // - Sócios não entram (simplesmente não são cadastrados na equipe).
 //
 // Sem código de servidor aqui: as telas do navegador também usam.
 
-export const PARTE_EQUIPE = 0.9;
+export const PARTE_EQUIPE = 0.95;
 
 export type Turno = "almoco" | "jantar";
 export const TURNOS: Turno[] = ["almoco", "jantar"];
@@ -110,9 +111,9 @@ const centavos = (v: number) => Math.round(v * 100);
 export const arredondar = (v: number) => centavos(v) / 100;
 
 /**
- * Divide 90% da taxa entre os presentes, proporcional ao % de cada um.
+ * Divide a parte da equipe na taxa entre os presentes, proporcional ao % de cada um.
  * Trabalha em centavos e entrega os centavos que sobram do arredondamento
- * para as maiores frações, para a soma bater exatamente com os 90%.
+ * para as maiores frações, para a soma bater exatamente com essa parte.
  */
 export function repartir(taxa: number, presencas: Presenca[]): Map<string, number> {
   const resultado = new Map<string, number>();

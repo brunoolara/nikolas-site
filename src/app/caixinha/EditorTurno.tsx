@@ -4,7 +4,7 @@
 // de cada um. Cada mudança grava na hora; o % grava quando sai do campo.
 
 import { useState, useTransition } from "react";
-import { reais, ROTULO_TURNO, type Presenca, type Turno } from "@/lib/caixinha/tipos";
+import { PARTE_EQUIPE, reais, ROTULO_TURNO, type Presenca, type Turno } from "@/lib/caixinha/tipos";
 import { acaoPresenca, acaoTaxaManual, acaoTodosPresentes } from "./acoes";
 
 type Props = {
@@ -55,7 +55,7 @@ export default function EditorTurno(props: Props) {
       <div className="mt-3 rounded-[var(--p-raio-sm)] bg-creme/70 p-3 text-sm">
         <p>
           Taxa do turno: <strong className="tabular-nums">{reais(taxa)}</strong>
-          <span className="text-cafe"> · equipe recebe {reais(Math.round(taxa * 90) / 100)}</span>
+          <span className="text-cafe"> · equipe recebe {reais(Math.round(taxa * PARTE_EQUIPE * 100) / 100)}</span>
         </p>
         {fechado ? null : taxaManual !== null ? (
           <p className="mt-1 text-cafe">
