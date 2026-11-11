@@ -48,7 +48,7 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Caixinha"
-        descricao="90% da taxa de serviço de cada turno, dividida entre quem trabalhou, com o consumo descontado."
+        descricao="A taxa de serviço de cada turno, dividida entre quem trabalhou, com o consumo descontado."
       />
       <Abas atual="dia" master={sessao.master} />
 
