@@ -29,7 +29,7 @@ export const TIPOS = {
   deliveryNovo: { nome: "Novo pedido de delivery", descricao: "Assim que um pedido entra na Takeat." },
   deliveryAtrasado: {
     nome: "Delivery atrasado",
-    descricao: "Quando um pedido passa de 60 minutos sem sair para entrega.",
+    descricao: "Quando um pedido fica 1h30 ou mais em preparação.",
   },
 } as const;
 export type TipoAviso = keyof typeof TIPOS;

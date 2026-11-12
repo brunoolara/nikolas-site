@@ -3,7 +3,10 @@
 // guardada por 2 min, então as duas coisas juntas gastam uma consulta — e
 // avisa quem tem o Ao vivo e ligou o aviso:
 // - pedido novo: assim que aparece;
-// - atrasado: quando passa de 60 min sem sair para entrega.
+// - atrasado: só quando o pedido está há 1h30 ou mais "em preparação" (Bruno,
+//   12/11/2026). Pronto, saiu ou entregue não avisa mais: avisava pedido que já
+//   tinha saído e só não tinha sido marcado como saiu na Takeat. O tempo conta
+//   de quando o pedido foi aceito (ou da abertura, se não tiver o aceite).
 // Na primeira leitura (sem estado guardado) só anota o que já existe, para
 // não disparar uma enxurrada de "pedido novo" de coisas antigas.
 
@@ -36,6 +39,14 @@ const resumoItens = (p: PedidoDelivery) => {
 
 const quem = (p: PedidoDelivery) => [p.senha ? `#${p.senha}` : "", p.cliente].filter(Boolean).join(" ");
 
+const AVISO_PREPARO_MIN = 90;
+
+/** Minutos desde que o pedido entrou em preparação. */
+function minutosEmPreparo(p: PedidoDelivery, agora: number): number {
+  const desde = new Date(p.marcos.find((m) => m.rotulo === "Aceito")?.em || p.inicio).getTime();
+  return Math.max(0, Math.round((agora - desde) / 60_000));
+}
+
 export type Resultado = { pulou?: string; novos: number; atrasados: number; enviados: number };
 
 export async function vigiarDelivery(): Promise<Resultado> {
@@ -61,7 +72,7 @@ export async function vigiarDelivery(): Promise<Resultado> {
   const jaAtrasados = new Set(estado.atrasados);
   const novos = pedidos.filter((p) => !vistos.has(p.id) && p.etapa !== "finalizado" && p.etapa !== "saiu");
   const atrasados = pedidos.filter(
-    (p) => p.alerta === "atrasado" && (p.etapa === "preparo" || p.etapa === "pronto") && !jaAtrasados.has(p.id),
+    (p) => p.etapa === "preparo" && minutosEmPreparo(p, agora) >= AVISO_PREPARO_MIN && !jaAtrasados.has(p.id),
   );
 
   let enviados = 0;
@@ -81,7 +92,7 @@ export async function vigiarDelivery(): Promise<Resultado> {
     for (const p of atrasados) {
       enviados += await enviar(para, {
         title: "Delivery atrasado",
-        body: `${quem(p)}: ${p.minutos} min e ainda não saiu.`,
+        body: `${quem(p)}: ${minutosEmPreparo(p, agora)} min em preparação.`,
         tag: `atraso-${p.id}`,
         url: "/operacao?ver=delivery",
       });
