@@ -7,11 +7,18 @@ import { MASTER, lerUsuarios } from "@/lib/acessos/usuarios";
 import LinhaUsuario from "./LinhaUsuario";
 import NovoUsuario from "./NovoUsuario";
 import { exigir } from "@/lib/acessos/sessao";
+import { lerEquipe } from "@/lib/caixinha/armazem";
 
 export default async function Acessos() {
   // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
   if (!(await exigir("master")).liberado) return null;
-  const usuarios = (await lerUsuarios()).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const [todos, time] = await Promise.all([lerUsuarios(), lerEquipe()]);
+  const usuarios = todos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  // para ligar o login a alguém da equipe da Caixinha (Minha caixinha)
+  const equipe = time
+    .filter((p) => p.ativo || usuarios.some((u) => u.pessoa === p.id))
+    .map((p) => ({ id: p.id, nome: p.nome, login: usuarios.find((u) => u.pessoa === p.id)?.usuario ?? null }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
@@ -39,7 +46,15 @@ export default async function Acessos() {
         <div className="mt-3 grid gap-3">
           {usuarios.length ? (
             usuarios.map((u) => (
-              <LinhaUsuario key={u.usuario} usuario={u.usuario} nome={u.nome} areas={u.areas} ativo={u.ativo} />
+              <LinhaUsuario
+                key={u.usuario}
+                usuario={u.usuario}
+                nome={u.nome}
+                areas={u.areas}
+                ativo={u.ativo}
+                pessoa={u.pessoa ?? ""}
+                equipe={equipe}
+              />
             ))
           ) : (
             <p className="rounded-[var(--p-raio)] border border-dashed border-linha bg-white/60 p-6 text-center text-sm text-cafe">Ninguém cadastrado ainda.</p>
@@ -47,7 +62,7 @@ export default async function Acessos() {
         </div>
       </section>
 
-      <NovoUsuario />
+      <NovoUsuario equipe={equipe} />
     </div>
   );
 }

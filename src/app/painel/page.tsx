@@ -33,6 +33,13 @@ const BLOCOS: Bloco[] = [
     descricao: "A taxa de serviço do dia dividida com a equipe, por turno, com o consumo descontado.",
   },
   {
+    area: "minha-caixinha",
+    href: "/minha-caixinha",
+    nome: "Minha caixinha",
+    icone: "caixinha",
+    descricao: "Os turnos em que você trabalhou, a sua parte da taxa, o seu consumo e os pagamentos.",
+  },
+  {
     area: "operacao",
     href: "/operacao",
     nome: "Ao vivo",

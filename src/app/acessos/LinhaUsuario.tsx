@@ -6,9 +6,12 @@ import { useState, useTransition } from "react";
 import { AREAS, ROTULO_AREA, type Area } from "@/lib/acessos/areas";
 import { acaoAlterarUsuario, acaoExcluirUsuario, type Mudanca } from "./acoes";
 
-type Props = { usuario: string; nome: string; areas: Area[]; ativo: boolean };
+/** Alguém da equipe da Caixinha e o login ligado a ele, se houver. */
+export type DaEquipe = { id: string; nome: string; login: string | null };
 
-export default function LinhaUsuario({ usuario, nome, areas, ativo }: Props) {
+type Props = { usuario: string; nome: string; areas: Area[]; ativo: boolean; pessoa: string; equipe: DaEquipe[] };
+
+export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, equipe }: Props) {
   const [aviso, setAviso] = useState("");
   const [novaSenha, setNovaSenha] = useState<string | null>(null);
   const [ocupado, iniciar] = useTransition();
@@ -53,6 +56,24 @@ export default function LinhaUsuario({ usuario, nome, areas, ativo }: Props) {
           </label>
         ))}
       </div>
+
+      <label className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-cafe">Na equipe da Caixinha é</span>
+        <select
+          value={pessoa}
+          disabled={ocupado}
+          onChange={(e) => alterar({ pessoa: e.target.value || null })}
+          className="p-campo w-auto py-1.5"
+        >
+          <option value="">Ninguém</option>
+          {equipe.map((p) => (
+            <option key={p.id} value={p.id} disabled={Boolean(p.login && p.login !== usuario)}>
+              {p.nome}
+              {p.login && p.login !== usuario ? ` (login ${p.login})` : ""}
+            </option>
+          ))}
+        </select>
+      </label>
 
       {novaSenha !== null ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">

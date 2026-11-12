@@ -4,11 +4,12 @@ import { useActionState, useEffect, useRef } from "react";
 import type { Resultado } from "@/lib/acessos/acoes";
 import { AREAS, ROTULO_AREA } from "@/lib/acessos/areas";
 import { acaoCriarUsuario } from "./acoes";
+import type { DaEquipe } from "./LinhaUsuario";
 
 const INICIAL: Resultado = { ok: false, mensagem: "" };
 const campo = "p-campo mt-1";
 
-export default function NovoUsuario() {
+export default function NovoUsuario({ equipe }: { equipe: DaEquipe[] }) {
   const [estado, enviar, enviando] = useActionState(acaoCriarUsuario, INICIAL);
   const form = useRef<HTMLFormElement>(null);
 
@@ -39,6 +40,18 @@ export default function NovoUsuario() {
         <label className="block text-sm font-semibold">
           Senha
           <input name="senha" required minLength={6} autoComplete="new-password" className={campo} />
+        </label>
+        <label className="block text-sm font-semibold">
+          Na equipe da Caixinha é <span className="font-normal text-cafe">(para a Minha caixinha)</span>
+          <select name="pessoa" defaultValue="" className={campo}>
+            <option value="">Ninguém</option>
+            {equipe.map((p) => (
+              <option key={p.id} value={p.id} disabled={Boolean(p.login)}>
+                {p.nome}
+                {p.login ? ` (já é o login ${p.login})` : ""}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 

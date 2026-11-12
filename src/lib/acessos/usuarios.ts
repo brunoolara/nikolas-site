@@ -19,6 +19,8 @@ export type Usuario = {
   usuario: string;
   nome: string;
   areas: Area[];
+  /** Quem o login é na equipe da Caixinha (id da pessoa), para a "Minha caixinha". */
+  pessoa?: string;
   ativo: boolean;
   sal: string;
   hash: string;

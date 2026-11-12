@@ -16,6 +16,7 @@ const INTERNAS = [
   "/alterar-cardapio",
   "/posts",
   "/caixinha",
+  "/minha-caixinha",
   "/operacao",
   "/estoque",
   "/cmv",
