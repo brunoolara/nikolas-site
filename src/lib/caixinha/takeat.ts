@@ -72,7 +72,7 @@ const MINUTO = 60_000;
 /** A taxa de serviço de cada turno do dia `data` ("AAAA-MM-DD"). */
 export async function taxaDoDia(data: string, fresca = false): Promise<TaxaTakeat> {
   const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-  const validade = data >= somarDias(hoje, -1) ? 3 * MINUTO : 60 * MINUTO;
+  const validade = data >= somarDias(hoje, -1) ? 2 * MINUTO : 60 * MINUTO;
   const guardada = guardadas.get(data);
   if (!fresca && guardada?.taxa.ok && Date.now() - guardada.em < validade) return guardada.taxa;
 

@@ -11,7 +11,7 @@
 // não disparar uma enxurrada de "pedido novo" de coisas antigas.
 
 import "server-only";
-import { comandasAoVivo, casaFuncionando } from "@/lib/takeat/comandas";
+import { atualizaAgora, comandasAoVivo } from "@/lib/takeat/comandas";
 import { ehDelivery, instanteAtual, pedidoDelivery, inicioDoServico, type PedidoDelivery } from "@/lib/operacao/regras";
 import { MASTER, lerUsuarios } from "@/lib/acessos/usuarios";
 import {
@@ -50,7 +50,7 @@ function minutosEmPreparo(p: PedidoDelivery, agora: number): number {
 export type Resultado = { pulou?: string; novos: number; atrasados: number; enviados: number };
 
 export async function vigiarDelivery(): Promise<Resultado> {
-  if (!casaFuncionando()) return { pulou: "fora do horário da casa", novos: 0, atrasados: 0, enviados: 0 };
+  if (!atualizaAgora()) return { pulou: "pausa da madrugada", novos: 0, atrasados: 0, enviados: 0 };
   const leitura = await comandasAoVivo();
   if (leitura.erro) return { pulou: leitura.erro, novos: 0, atrasados: 0, enviados: 0 };
 

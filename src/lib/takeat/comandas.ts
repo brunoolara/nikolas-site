@@ -3,16 +3,15 @@
 //
 // Duas formas de ler:
 // - comandasAoVivo(): ontem e hoje, guardadas por 2 minutos num arquivo que
-//   todos os celulares abertos compartilham. Fora do horário da casa não
+//   todos os celulares abertos compartilham. Na pausa da madrugada não
 //   consulta a Takeat (mostra a última leitura).
 // - comandasDoPeriodo(): qualquer período, em fatias de 3 dias numa grade
-//   fixa. Fatia antiga fica guardada para sempre; a que tem hoje vale 10 min.
+//   fixa. Fatia antiga fica guardada para sempre; a que tem hoje vale 2 min.
 //
 // Guardamos só os campos que as telas usam (sem dados fiscais).
 
 import "server-only";
 import { get, put } from "@vercel/blob";
-import { turnosDoDia } from "@/data/restaurante";
 import { takeatGet, type Prioridade } from "./cliente";
 
 export type Pedido = {
@@ -170,20 +169,18 @@ export type AoVivo = { em: string; comandas: Comanda[]; erro?: string; foraDoHor
 const VALIDADE_AO_VIVO = 2 * 60_000;
 let emVoo: Promise<AoVivo> | null = null;
 
-/** Casa aberta agora, com folga de 30 min antes e 90 min depois de cada turno. */
-export function casaFuncionando(agora = new Date()): boolean {
-  const p = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Sao_Paulo",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(agora);
-  const pegar = (t: string) => p.find((x) => x.type === t)?.value ?? "";
-  const dia = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(pegar("weekday"));
-  const min = (Number(pegar("hour")) % 24) * 60 + Number(pegar("minute"));
-  const emMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3));
-  return turnosDoDia(dia).some(([abre, fecha]) => min >= emMin(abre) - 30 && min <= emMin(fecha) + 90);
+// Com a cota de 10.000 consultas por dia (Bruno, 12/11/2026), tudo atualiza a
+// cada 2 min o dia inteiro, menos de madrugada: das 2h às 6h a casa está
+// fechada e não há pedido, então a leitura pausa e a tela mostra a última.
+const PAUSA_INICIO_H = 2;
+const PAUSA_FIM_H = 6;
+
+/** Fora da pausa da madrugada (2h às 6h de Brasília)? */
+export function atualizaAgora(agora = new Date()): boolean {
+  const hora = Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }).format(agora),
+  ) % 24;
+  return hora < PAUSA_INICIO_H || hora >= PAUSA_FIM_H;
 }
 
 /** Comandas das últimas 30 h, no máximo a cada 2 min para todo mundo junto. */
@@ -192,7 +189,7 @@ export async function comandasAoVivo(forcar = false): Promise<AoVivo> {
   const guardado = await lerJson<AoVivo>(caminho);
   const idade = guardado ? Date.now() - new Date(guardado.em).getTime() : Infinity;
   if (guardado && idade < VALIDADE_AO_VIVO && !guardado.erro) return guardado;
-  if (!forcar && guardado && !casaFuncionando()) return { ...guardado, foraDoHorario: true };
+  if (!forcar && guardado && !atualizaAgora()) return { ...guardado, foraDoHorario: true };
 
   if (!emVoo)
     emVoo = (async () => {
@@ -225,7 +222,7 @@ const inicioDoDia = (data: string) => Date.UTC(+data.slice(0, 4), +data.slice(5,
 /**
  * Comandas abertas entre o início de `diaIni` e o fim de `diaFim` (dias de
  * Brasília, inclusive). Fatias antigas vêm do arquivo; só a fatia de hoje vai
- * à Takeat, e no máximo a cada 10 min.
+ * à Takeat, e no máximo a cada 2 min.
  */
 export async function comandasDoPeriodo(
   diaIni: string,
@@ -243,7 +240,7 @@ export async function comandasDoPeriodo(
     const caminho = `${PASTA}/comandas/${new Date(fatia).toISOString().slice(0, 10)}.json`;
     const guardada = await lerJson<{ em: string; fechada: boolean; comandas: Comanda[] }>(caminho);
     const valida =
-      guardada && (guardada.fechada || agora - new Date(guardada.em).getTime() < 10 * 60_000);
+      guardada && (guardada.fechada || agora - new Date(guardada.em).getTime() < 2 * 60_000);
     let comandas = guardada?.comandas ?? [];
     if (!valida) {
       comandas = await consultar(new Date(fatia).toISOString(), new Date(fimFatia).toISOString(), prioridade);

@@ -1,7 +1,7 @@
 // Cliente único da API pública da Takeat, só no servidor.
 //
 // A chave do restaurante (TAKEAT_API_KEY) pode fazer 10 consultas por minuto
-// e 500 por dia, somando todas as telas. Por isso toda consulta passa por
+// e 10.000 por dia (era 500 até 12/11/2026), somando todas as telas. Por isso toda consulta passa por
 // aqui: o access token de 15 min é reaproveitado, cada chamada é contada num
 // arquivo do dia, e a cota é dividida por prioridade — o "ao vivo" (mesas e
 // delivery) para antes, para nunca deixar a Caixinha e o fechamento sem cota.
@@ -20,8 +20,8 @@ import { forte } from "@/lib/etag";
 
 const BASE = "https://public-api.takeat.app";
 
-/** Quanto do dia cada prioridade pode usar (de 500). */
-const TETO: Record<Prioridade, number> = { "ao-vivo": 380, normal: 460, essencial: 490 };
+/** Quanto do dia cada prioridade pode usar (de 10.000). */
+const TETO: Record<Prioridade, number> = { "ao-vivo": 8500, normal: 9500, essencial: 9900 };
 
 export type Prioridade = "ao-vivo" | "normal" | "essencial";
 

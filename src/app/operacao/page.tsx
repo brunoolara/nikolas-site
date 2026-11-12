@@ -40,7 +40,7 @@ export default async function AoVivo({ searchParams }: PageProps<"/operacao">) {
       {leitura.erro ? <p className="p-aviso p-aviso-alerta mt-4">{leitura.erro} Mostrando a última leitura.</p> : null}
       {leitura.foraDoHorario ? (
         <p className="p-aviso p-aviso-info mt-4">
-          Fora do horário da casa: mostrando a última leitura, das {horaDe(leitura.em)}.
+          De madrugada (2h às 6h) a atualização pausa: mostrando a última leitura, das {horaDe(leitura.em)}.
         </p>
       ) : null}
 

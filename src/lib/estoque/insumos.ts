@@ -1,5 +1,5 @@
 // Cadastro de insumos da Takeat (GET /v1/inventory/inputs, paginado de 100
-// em 100): nome, unidade, saldo atual e custo unitário. Guardado por 15 min
+// em 100): nome, unidade, saldo atual e custo unitário. Guardado por 2 min
 // num arquivo, para a tela de contagem abrir rápido e sem gastar cota.
 
 import "server-only";
@@ -19,7 +19,7 @@ type Bruto = {
 };
 
 const ARQUIVO = process.env.NODE_ENV === "production" ? "takeat/insumos.json" : "takeat-teste/insumos.json";
-const VALIDADE = 15 * 60_000;
+const VALIDADE = 2 * 60_000;
 
 async function buscarTodos(): Promise<Insumo[]> {
   const todos: Insumo[] = [];

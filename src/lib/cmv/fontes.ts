@@ -98,12 +98,12 @@ export type Compra = { nota: number; emitidaEm: string; insumo: number; valor: n
 
 /**
  * Itens das NF-e recebidas emitidas entre os dias `ini` e `fim` (inclusive).
- * Semanas que já passaram ficam guardadas; a atual vale 30 min.
+ * Semanas que já passaram ficam guardadas; a atual vale 2 min.
  */
 export async function comprasDoPeriodo(ini: string, fim: string): Promise<Compra[]> {
   const caminho = `${PASTA}/compras/${ini}_${fim}.json`;
   const guardada = await lerJson<{ em: string; fechada: boolean; compras: Compra[] }>(caminho);
-  if (guardada && (guardada.fechada || Date.now() - new Date(guardada.em).getTime() < 30 * 60_000))
+  if (guardada && (guardada.fechada || Date.now() - new Date(guardada.em).getTime() < 2 * 60_000))
     return guardada.compras;
 
   const corpo = await takeatGet<
