@@ -23,6 +23,7 @@ import {
 import Abas from "../Abas";
 import EscolherPeriodo from "../EscolherPeriodo";
 import TabelaPagamento from "../TabelaPagamento";
+import Comprovantes from "../Comprovantes";
 import { FecharPeriodo, ReabrirPagamento } from "./Botoes";
 
 const linkDia = (d: string) => (d === hoje() ? "/caixinha" : `/caixinha?dia=${d}`);
@@ -246,6 +247,8 @@ async function PagamentoFeito({ id, master, ultimoFechado }: { id: string; maste
         <TabelaPagamento modo="pagamento" linhas={pag.linhas} pago />
         {ultimoFechado === pag.fim ? <ReabrirPagamento id={pag.id} dias={pag.dias.length} /> : null}
       </section>
+
+      <Comprovantes id={pag.id} linhas={pag.linhas} />
 
       <section className="p-cartao mt-6 p-5">
         <h3 className="p-cartao-titulo">Dias do pagamento</h3>

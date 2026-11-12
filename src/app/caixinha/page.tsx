@@ -14,6 +14,7 @@ import Consumos from "./Consumos";
 import BotaoFechar from "./BotaoFechar";
 import Abas from "./Abas";
 import TabelaPagamento from "./TabelaPagamento";
+import Comprovantes from "./Comprovantes";
 
 export default async function Caixinha({ searchParams }: PageProps<"/caixinha">) {
   // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
@@ -158,6 +159,8 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
           diasNoPagamento={pagamento?.dias.length ?? 1}
         />
       </section>
+
+      {pagamento && !variosDias ? <Comprovantes id={pagamento.id} linhas={pagamento.linhas} /> : null}
     </div>
   );
 }
