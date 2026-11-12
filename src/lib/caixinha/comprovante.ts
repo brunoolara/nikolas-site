@@ -1,24 +1,35 @@
-// Comprovante de uma pessoa num pagamento da Caixinha: os dias, o que ganhou
-// em cada um e o total recebido. Sai como texto (para o WhatsApp) e como PDF.
+// Comprovante de uma pessoa na Caixinha: os dias, o que ganhou em cada um e o
+// total. Sai como texto (para o WhatsApp) e como PDF. Vem de um pagamento já
+// fechado ou, antes de fechar, é uma prévia calculada na hora com os dias abertos.
 
 import "server-only";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { rotuloData } from "@/lib/posts/tipos";
-import { lerDia, lerPagamento } from "./armazem";
-import { reais, type LinhaPagamento } from "./tipos";
+import { lerDia, lerEquipe, lerEstado, lerPagamento } from "./armazem";
+import { taxasDoPeriodo } from "./takeat";
+import {
+  diasEntre,
+  MAX_DIAS_PAGAMENTO,
+  PAGAMENTO_ID,
+  partesDoDia,
+  reais,
+  somarPagamento,
+  TURNOS,
+  type LinhaPagamento,
+  type Turno,
+} from "./tipos";
 
 export type DiaComprovante = { data: string; almoco: number; jantar: number; consumo: number };
 
 export type Comprovante = {
-  idPagamento: string;
   nome: string;
   ini: string;
   fim: string;
   /** Só os dias em que a pessoa trabalhou ou consumiu. */
   dias: DiaComprovante[];
   linha: LinhaPagamento;
-  pagoEm: string;
-  pagoPor: string;
+  /** null = prévia: os dias ainda não foram fechados e os valores podem mudar. */
+  pago: { id: string; em: string; por: string } | null;
 };
 
 export async function lerComprovante(id: string, pessoa: string): Promise<Comprovante | null> {
@@ -31,7 +42,38 @@ export async function lerComprovante(id: string, pessoa: string): Promise<Compro
       return p ? { data: d.data, almoco: p.almoco, jantar: p.jantar, consumo: p.consumo } : null;
     })
     .filter((d): d is DiaComprovante => Boolean(d && (d.almoco || d.jantar || d.consumo)));
-  return { idPagamento: pag.id, nome: linha.nome, ini: pag.ini, fim: pag.fim, dias, linha, pagoEm: pag.em, pagoPor: pag.por };
+  return { nome: linha.nome, ini: pag.ini, fim: pag.fim, dias, linha, pago: { id: pag.id, em: pag.em, por: pag.por } };
+}
+
+/**
+ * A prévia de quem ainda não recebeu: de `ini` a `fim`, todos abertos, com a
+ * mesma conta do pagamento (taxa digitada ou da Takeat, consumo e saldo).
+ */
+export async function previaComprovante(ini: string, fim: string, pessoa: string): Promise<Comprovante | null> {
+  const datas = diasEntre(ini, fim);
+  if (!datas.length || datas.length > MAX_DIAS_PAGAMENTO) return null;
+  const [dias, equipe, estado] = await Promise.all([Promise.all(datas.map(lerDia)), lerEquipe(), lerEstado()]);
+  if (dias.some((d) => d.fechamento)) return null;
+  const precisam = dias.filter((d) => TURNOS.some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
+  const takeat = precisam.length ? await taxasDoPeriodo(precisam) : new Map();
+  const partes = dias.map((d) => {
+    const tk = takeat.get(d.data);
+    const taxa = {} as Record<Turno, number>;
+    for (const t of TURNOS) taxa[t] = d.turnos[t].taxaManual ?? (tk?.ok ? tk.taxa[t] : 0);
+    return { data: d.data, partes: partesDoDia(d, taxa, equipe) };
+  });
+  const linha = somarPagamento(
+    partes.map((p) => p.partes),
+    estado.saldos,
+  ).find((l) => l.pessoa === pessoa);
+  if (!linha) return null;
+  const porDia = partes
+    .map(({ data, partes }) => {
+      const p = partes.find((x) => x.pessoa === pessoa);
+      return p ? { data, almoco: p.almoco, jantar: p.jantar, consumo: p.consumo } : null;
+    })
+    .filter((d): d is DiaComprovante => Boolean(d && (d.almoco || d.jantar || d.consumo)));
+  return { nome: linha.nome, ini, fim, dias: porDia, linha, pago: null };
 }
 
 /** "10/11/2026" */
@@ -43,12 +85,23 @@ export const periodo = (c: Comprovante) =>
 const quando = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
 
+/** Quem pagou e quando, ou o aviso de que ainda é prévia. */
+export const rodape = (c: Comprovante) =>
+  c.pago
+    ? `Pago em ${quando(c.pago.em)} por ${c.pago.por}.`
+    : `Prévia de ${quando(new Date().toISOString())}. O valor pode mudar até o fechamento.`;
+
 export const totalDia = (d: DiaComprovante) => d.almoco + d.jantar - d.consumo;
 
 /** O comprovante em texto, com o negrito do WhatsApp. */
 export function textoComprovante(c: Comprovante): string {
   const l = c.linha;
-  const t: string[] = ["*Nikola's Restaurante*", "Comprovante da caixinha", "", `*${c.nome}*`];
+  const t: string[] = [
+    "*Nikola's Restaurante*",
+    c.pago ? "Comprovante da caixinha" : "Prévia da caixinha (ainda não fechada)",
+    "",
+    `*${c.nome}*`,
+  ];
   t.push(c.ini === c.fim ? `Dia: ${periodo(c)}` : `Período: ${periodo(c)}`);
   if (c.ini !== c.fim && c.dias.length) {
     t.push("");
@@ -66,9 +119,9 @@ export function textoComprovante(c: Comprovante): string {
   if (l.jantar) t.push(`Jantar: ${reais(l.jantar)}`);
   if (l.consumo) t.push(`Consumo descontado: - ${reais(l.consumo)}`);
   if (l.saldoAnterior) t.push(`Saldo anterior: - ${reais(-l.saldoAnterior)}`);
-  t.push(`*Recebe: ${reais(l.pagar)}*`);
+  t.push(`*${c.pago ? "Recebe" : "A receber"}: ${reais(l.pagar)}*`);
   if (l.novoSaldo < 0) t.push(`Fica para descontar no próximo pagamento: ${reais(-l.novoSaldo)}`);
-  t.push("", `Pago em ${quando(c.pagoEm)} por ${c.pagoPor}.`);
+  t.push("", rodape(c));
   return t.join("\n");
 }
 
@@ -79,7 +132,7 @@ export function nomeArquivo(c: Comprovante): string {
     .replace(/[^A-Za-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .toLowerCase();
-  return `caixinha-${nome || "pessoa"}-${c.ini === c.fim ? c.ini : `${c.ini}-a-${c.fim}`}.pdf`;
+  return `caixinha-${c.pago ? "" : "previa-"}${nome || "pessoa"}-${c.ini === c.fim ? c.ini : `${c.ini}-a-${c.fim}`}.pdf`;
 }
 
 // ---------- PDF ----------
@@ -127,7 +180,7 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
     pg.drawText(ch, { x, y: altura - 44, size: 24, font: marca, color: rgb(0.98, 0.97, 0.95) });
     x += marca.widthOfTextAtSize(ch, 24) + espaco;
   }
-  const sub = "COMPROVANTE DA CAIXINHA";
+  const sub = c.pago ? "COMPROVANTE DA CAIXINHA" : "PRÉVIA DA CAIXINHA · AINDA NÃO FECHADA";
   pg.drawText(sub, {
     x: (L - normal.widthOfTextAtSize(sub, 8)) / 2,
     y: altura - 62,
@@ -175,7 +228,7 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
 
   y -= 10;
   pg.drawRectangle({ x: M, y: y - 14, width: L - 2 * M, height: 38, color: CREME });
-  texto("Recebe", M + 12, y, negrito, 13, VERDE);
+  texto(c.pago ? "Recebe" : "A receber", M + 12, y, negrito, 13, VERDE);
   direita(reais(l.pagar), L - M - 12, y, negrito, 15, VERDE);
   y -= 40;
   if (l.novoSaldo < 0) {
@@ -183,8 +236,29 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
     y -= 20;
   }
 
-  texto(`Pago em ${quando(c.pagoEm)} por ${c.pagoPor}.`, M, 40, normal, 8.5, CAFE);
+  texto(rodape(c), M, 40, normal, 8.5, CAFE);
   texto("Taxa de serviço dividida entre a equipe que trabalhou em cada turno.", M, 27, normal, 8, CAFE);
 
   return doc.save();
 }
+
+// ---------- endereço ----------
+
+/** De onde vem o comprovante: um pagamento feito (id) ou um período aberto. */
+export type Fonte = { id: string } | { ini: string; fim: string };
+
+const DATA = /^\d{4}-\d{2}-\d{2}$/;
+
+export function fonteDe(busca: URLSearchParams): Fonte | null {
+  const id = busca.get("id");
+  if (id) return PAGAMENTO_ID.test(id) ? { id } : null;
+  const ini = busca.get("ini") ?? "";
+  const fim = busca.get("fim") ?? "";
+  return DATA.test(ini) && DATA.test(fim) && ini <= fim ? { ini, fim } : null;
+}
+
+export const consulta = (f: Fonte, pessoa: string) =>
+  `${"id" in f ? `id=${f.id}` : `ini=${f.ini}&fim=${f.fim}`}&pessoa=${encodeURIComponent(pessoa)}`;
+
+export const buscarComprovante = (f: Fonte, pessoa: string) =>
+  "id" in f ? lerComprovante(f.id, pessoa) : previaComprovante(f.ini, f.fim, pessoa);

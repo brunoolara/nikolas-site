@@ -1,12 +1,22 @@
-// O comprovante de uma pessoa num pagamento (?id=&pessoa=): o que ela vê no
+// O comprovante de uma pessoa: de um pagamento feito (?id=&pessoa=) ou a
+// prévia de dias ainda abertos (?ini=&fim=&pessoa=). Mostra o que ela vê no
 // WhatsApp, com os botões para mandar em texto ou PDF.
 
 import Link from "next/link";
 import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
 import { rotuloData } from "@/lib/posts/tipos";
-import { lerComprovante, nomeArquivo, periodo, textoComprovante, totalDia } from "@/lib/caixinha/comprovante";
-import { PAGAMENTO_ID, reais } from "@/lib/caixinha/tipos";
+import {
+  buscarComprovante,
+  consulta,
+  fonteDe,
+  nomeArquivo,
+  periodo,
+  rodape,
+  textoComprovante,
+  totalDia,
+} from "@/lib/caixinha/comprovante";
+import { reais } from "@/lib/caixinha/tipos";
 import Enviar from "./Enviar";
 
 export default async function PaginaComprovante({ searchParams }: PageProps<"/caixinha/comprovante">) {
@@ -14,16 +24,19 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
   const { liberado } = await exigir("caixinha");
   if (!liberado) return null;
   const busca = await searchParams;
-  const id = typeof busca.id === "string" && PAGAMENTO_ID.test(busca.id) ? busca.id : null;
-  const pessoa = typeof busca.pessoa === "string" ? busca.pessoa : "";
-  const c = id && pessoa ? await lerComprovante(id, pessoa) : null;
+  const params = new URLSearchParams();
+  for (const k of ["id", "ini", "fim", "pessoa"]) if (typeof busca[k] === "string") params.set(k, busca[k]);
+  const fonte = fonteDe(params);
+  const pessoa = params.get("pessoa") ?? "";
+  const c = fonte && pessoa ? await buscarComprovante(fonte, pessoa) : null;
 
   if (!c)
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
         <Cabecalho titulo="Comprovante" />
         <p className="p-aviso p-aviso-info mt-4">
-          Comprovante não encontrado (o pagamento pode ter sido reaberto).{" "}
+          Comprovante não encontrado. O pagamento pode ter sido reaberto, ou o dia já foi fechado e o comprovante
+          está no pagamento.{" "}
           <Link href="/caixinha/pagamento" className="font-semibold underline">
             Ver os pagamentos
           </Link>
@@ -33,14 +46,27 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
 
   const l = c.linha;
   const varios = c.ini !== c.fim && c.dias.length > 0;
-  const pdf = `/caixinha/comprovante/pdf?id=${c.idPagamento}&pessoa=${encodeURIComponent(pessoa)}`;
+  const pdf = `/caixinha/comprovante/pdf?${consulta(fonte!, pessoa)}`;
+  const voltar = c.pago
+    ? { href: `/caixinha/pagamento?id=${c.pago.id}`, nome: "Voltar ao pagamento" }
+    : c.ini === c.fim
+      ? { href: `/caixinha?dia=${c.ini}`, nome: "Voltar ao dia" }
+      : { href: `/caixinha/pagamento?ini=${c.ini}&fim=${c.fim}`, nome: "Voltar ao período" };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
-      <Link href={`/caixinha/pagamento?id=${c.idPagamento}`} className="text-sm font-semibold text-verde hover:underline">
-        ‹ Voltar ao pagamento
+      <Link href={voltar.href} className="text-sm font-semibold text-verde hover:underline">
+        ‹ {voltar.nome}
       </Link>
-      <Cabecalho titulo="Comprovante" descricao="Mande para a pessoa pelo WhatsApp, em texto ou em PDF." />
+      <Cabecalho
+        titulo={c.pago ? "Comprovante" : "Prévia do comprovante"}
+        descricao="Mande para a pessoa pelo WhatsApp, em texto ou em PDF."
+      />
+      {c.pago ? null : (
+        <p className="p-aviso p-aviso-info mt-4 max-w-xl">
+          Ainda não fechado: os valores podem mudar até o fechamento (taxa da Takeat, quem trabalhou, consumo).
+        </p>
+      )}
 
       <section className="p-cartao mt-6 max-w-xl p-5">
         <p className="font-display text-2xl">{c.nome}</p>
@@ -77,12 +103,14 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
           {l.saldoAnterior ? <Item rotulo="Saldo anterior" valor={`− ${reais(-l.saldoAnterior)}`} /> : null}
         </dl>
         <div className="mt-3 flex items-baseline justify-between rounded-[var(--p-raio-sm)] bg-[var(--p-verde-fundo)] px-3 py-2.5 text-verde">
-          <span className="font-semibold">Recebe</span>
+          <span className="font-semibold">{c.pago ? "Recebe" : "A receber"}</span>
           <span className="text-xl font-semibold tabular-nums">{reais(l.pagar)}</span>
         </div>
         {l.novoSaldo < 0 ? (
           <p className="mt-2 text-sm text-cafe">Fica para descontar no próximo pagamento: {reais(-l.novoSaldo)}</p>
         ) : null}
+
+        <p className="mt-3 text-xs text-cafe">{rodape(c)}</p>
 
         <Enviar texto={textoComprovante(c)} pdf={pdf} arquivo={nomeArquivo(c)} />
       </section>

@@ -171,6 +171,8 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
         ) : null}
       </section>
 
+      {!problemas.length && datas.length ? <Comprovantes fonte={{ ini, fim }} linhas={linhas} /> : null}
+
       {anteriores.length ? (
         <section className="p-cartao mt-6 p-5">
           <h3 className="p-cartao-titulo">Pagamentos feitos</h3>
@@ -248,7 +250,7 @@ async function PagamentoFeito({ id, master, ultimoFechado }: { id: string; maste
         {ultimoFechado === pag.fim ? <ReabrirPagamento id={pag.id} dias={pag.dias.length} /> : null}
       </section>
 
-      <Comprovantes id={pag.id} linhas={pag.linhas} />
+      <Comprovantes fonte={{ id: pag.id }} linhas={pag.linhas} />
 
       <section className="p-cartao mt-6 p-5">
         <h3 className="p-cartao-titulo">Dias do pagamento</h3>
