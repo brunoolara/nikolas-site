@@ -3,7 +3,8 @@
 // fechado ou, antes de fechar, é uma prévia calculada na hora com os dias abertos.
 
 import "server-only";
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
+import { MONOGRAMA_SVG, WORDMARK_SVG } from "./marca-svg";
 import { rotuloData } from "@/lib/posts/tipos";
 import { lerDia, lerEquipe, lerEstado, lerPagamento } from "./armazem";
 import { taxasDoPeriodo } from "./takeat";
@@ -123,9 +124,10 @@ export function textoComprovante(c: Comprovante): string {
     "*Nikola's Restaurante*",
     c.pago ? "Comprovante da caixinha" : "Prévia da caixinha (ainda não fechada)",
     "",
-    `*${c.nome}*`,
+    `Funcionário: *${c.nome}*`,
   ];
-  t.push(c.ini === c.fim ? `Dia: ${periodo(c)}` : `Período: ${periodo(c)}`);
+  const datas = c.ini === c.fim ? `Dia: ${rotuloData(c.ini)}/${c.ini.slice(0, 4)}` : `Período: ${dataCompleta(c.ini)} a ${dataCompleta(c.fim)}`;
+  t.push(c.turno ? `${datas} · *${ROTULO_TURNO[c.turno]}*` : datas);
   if (c.ini !== c.fim && c.dias.length) {
     t.push("");
     for (const d of c.dias) {
@@ -144,7 +146,7 @@ export function textoComprovante(c: Comprovante): string {
   if (l.saldoAnterior) t.push(`Saldo anterior: - ${reais(-l.saldoAnterior)}`);
   t.push(`*${c.pago ? "Recebe" : "A receber"}: ${reais(l.pagar)}*`);
   if (l.novoSaldo < 0) t.push(`Fica para descontar no próximo pagamento: ${reais(-l.novoSaldo)}`);
-  t.push("", rodape(c));
+  t.push("", RODAPE);
   return t.join("\n");
 }
 
@@ -164,10 +166,37 @@ const VERDE = rgb(0x1e / 255, 0x4b / 255, 0x39 / 255);
 const TINTA = rgb(0x1b / 255, 0x17 / 255, 0x10 / 255);
 const CAFE = rgb(0x6b / 255, 0x60 / 255, 0x55 / 255);
 const LINHA = rgb(0xe2 / 255, 0xda / 255, 0xcb / 255);
-const CREME = rgb(0xf1 / 255, 0xeb / 255, 0xdf / 255);
+const PRETO = rgb(0, 0, 0);
+const BRANCO = rgb(1, 1, 1);
+
+export const RODAPE = "Taxa de serviço dividida entre a equipe que trabalhou no período e turno.";
 
 /** As fontes padrão do PDF só têm o alfabeto latino básico (WinAnsi). */
 const seguro = (s: string) => s.replace(/−/g, "-").replace(/[^\x20-\x7e -ÿ·–—]/g, "");
+
+/**
+ * Desenha um SVG do logotipo (grupos com translate, paths e rects) em vetor,
+ * com `largura` pontos e o canto de cima à esquerda em (x, topo).
+ */
+function desenharSvg(pg: PDFPage, svg: string, x: number, topo: number, largura: number, cor: RGB) {
+  const [, , vbL] = svg.match(/viewBox="([^"]+)"/)![1].split(/\s+/).map(Number);
+  const s = largura / vbL;
+  for (const g of svg.matchAll(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">(.*?)<\/g>/g)) {
+    const tx = Number(g[1]);
+    const ty = Number(g[2]);
+    for (const p of g[3].matchAll(/ d="([^"]+)"/g))
+      pg.drawSvgPath(p[1], { x: x + tx * s, y: topo - ty * s, scale: s, color: cor, borderWidth: 0 });
+  }
+  for (const r of svg.matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)"/g)) {
+    const [rx, ry, rl, ra] = r.slice(1).map(Number);
+    pg.drawRectangle({ x: x + rx * s, y: topo - (ry + ra) * s, width: rl * s, height: ra * s, color: cor });
+  }
+}
+
+const altoSvg = (svg: string, largura: number) => {
+  const [, , l, a] = svg.match(/viewBox="([^"]+)"/)![1].split(/\s+/).map(Number);
+  return (a * largura) / l;
+};
 
 export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
@@ -175,48 +204,52 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
   doc.setAuthor("Nikola's Restaurante");
   const normal = await doc.embedFont(StandardFonts.Helvetica);
   const negrito = await doc.embedFont(StandardFonts.HelveticaBold);
-  const marca = await doc.embedFont(StandardFonts.TimesRomanBold);
 
   const L = 420; // largura (A5)
   const M = 32; // margem
+  const FAIXA = 112;
   const varios = c.ini !== c.fim && c.dias.length > 0;
   const l = c.linha;
-  const totais = [l.almoco, l.jantar, l.consumo, l.saldoAnterior].filter(Boolean).length + 1;
-  const altura = Math.max(595, 300 + (varios ? 40 + c.dias.length * 20 : 0) + totais * 22 + (l.novoSaldo < 0 ? 20 : 0));
+  const totais = [l.almoco, l.jantar, l.consumo, l.saldoAnterior].filter(Boolean).length;
+  const altura = Math.max(
+    595,
+    FAIXA + 150 + (varios ? 34 + c.dias.length * 20 : 0) + totais * 22 + 50 + (l.novoSaldo < 0 ? 20 : 0) + 90,
+  );
   const pg = doc.addPage([L, altura]);
 
+  const largura = (s: string, f: PDFFont, t: number) => f.widthOfTextAtSize(seguro(s), t);
   const texto = (s: string, x: number, y: number, f: PDFFont, t: number, cor = TINTA) =>
     pg.drawText(seguro(s), { x, y, size: t, font: f, color: cor });
   const direita = (s: string, x: number, y: number, f: PDFFont, t: number, cor = TINTA) =>
-    texto(s, x - f.widthOfTextAtSize(seguro(s), t), y, f, t, cor);
-  const traco = (y: number, p: PDFPage = pg) =>
-    p.drawLine({ start: { x: M, y }, end: { x: L - M, y }, thickness: 0.75, color: LINHA });
+    texto(s, x - largura(s, f, t), y, f, t, cor);
+  const traco = (y: number, cor = LINHA, espessura = 0.75) =>
+    pg.drawLine({ start: { x: M, y }, end: { x: L - M, y }, thickness: espessura, color: cor });
 
-  // faixa da marca
-  pg.drawRectangle({ x: 0, y: altura - 78, width: L, height: 78, color: VERDE });
-  const titulo = "NIKOLA'S";
-  const espaco = 3;
-  let largura = 0;
-  for (const ch of titulo) largura += marca.widthOfTextAtSize(ch, 24) + espaco;
-  let x = (L - largura + espaco) / 2;
-  for (const ch of titulo) {
-    pg.drawText(ch, { x, y: altura - 44, size: 24, font: marca, color: rgb(0.98, 0.97, 0.95) });
-    x += marca.widthOfTextAtSize(ch, 24) + espaco;
+  // faixa verde com o logotipo oficial (wordmark com o filete e "Restaurante · desde 1977")
+  pg.drawRectangle({ x: 0, y: altura - FAIXA, width: L, height: FAIXA, color: VERDE });
+  const LW = 190;
+  desenharSvg(pg, WORDMARK_SVG, (L - LW) / 2, altura - (FAIXA - altoSvg(WORDMARK_SVG, LW)) / 2, LW, BRANCO);
+
+  // o que é este papel
+  let y = altura - FAIXA - 26;
+  const tipo = c.pago ? "COMPROVANTE DA CAIXINHA" : "PRÉVIA DA CAIXINHA · AINDA NÃO FECHADA";
+  texto(tipo, M, y, negrito, 7.5, c.pago ? CAFE : VERDE);
+  y -= 30;
+
+  // funcionário e dia/período, com o turno em negrito
+  texto("Funcionário:", M, y, normal, 13, CAFE);
+  texto(c.nome, M + largura("Funcionário:", normal, 13) + 5, y, negrito, 17);
+  y -= 22;
+  const quando = `${c.ini === c.fim ? "Dia" : "Período"}: ${
+    c.ini === c.fim ? `${rotuloData(c.ini)}/${c.ini.slice(0, 4)}` : `${dataCompleta(c.ini)} a ${dataCompleta(c.fim)}`
+  }`;
+  texto(quando, M, y, normal, 12.5);
+  if (c.turno) {
+    const x = M + largura(quando, normal, 12.5);
+    texto(" · ", x, y, normal, 12.5, CAFE);
+    texto(ROTULO_TURNO[c.turno], x + largura(" · ", normal, 12.5), y, negrito, 12.5);
   }
-  const sub = c.pago ? "COMPROVANTE DA CAIXINHA" : "PRÉVIA DA CAIXINHA · AINDA NÃO FECHADA";
-  pg.drawText(sub, {
-    x: (L - normal.widthOfTextAtSize(sub, 8)) / 2,
-    y: altura - 62,
-    size: 8,
-    font: normal,
-    color: rgb(0.85, 0.9, 0.87),
-  });
-
-  let y = altura - 118;
-  texto(c.nome, M, y, negrito, 18);
-  y -= 18;
-  texto(`${c.ini === c.fim ? "Dia" : "Período"}: ${periodo(c)}`, M, y, normal, 10, CAFE);
-  y -= 24;
+  y -= 26;
 
   if (varios) {
     const col = [L - M - 210, L - M - 140, L - M - 70, L - M];
@@ -230,37 +263,37 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
       direita(d.almoco ? reais(d.almoco) : "—", col[0], y, normal, 9.5);
       direita(d.jantar ? reais(d.jantar) : "—", col[1], y, normal, 9.5);
       direita(d.consumo ? `- ${reais(d.consumo)}` : "—", col[2], y, normal, 9.5);
-      direita(reais(totalDia(d)), col[3], y, negrito, 9.5);
+      direita(reais(totalDia(d)), col[3], y, normal, 9.5);
       y -= 20;
     }
     y -= 6;
   }
 
   // totais
+  traco(y + 12);
+  y -= 6;
   const linhaTotal = (rotulo: string, valor: string) => {
     texto(rotulo, M, y, normal, 10.5, CAFE);
     direita(valor, L - M, y, normal, 10.5);
     y -= 22;
   };
-  traco(y + 12);
-  y -= 6;
   if (l.almoco) linhaTotal(varios ? "Almoço no período" : "Almoço", reais(l.almoco));
   if (l.jantar) linhaTotal(varios ? "Jantar no período" : "Jantar", reais(l.jantar));
   if (l.consumo) linhaTotal("Consumo descontado", `- ${reais(l.consumo)}`);
   if (l.saldoAnterior) linhaTotal("Saldo anterior", `- ${reais(-l.saldoAnterior)}`);
 
-  y -= 10;
-  pg.drawRectangle({ x: M, y: y - 14, width: L - 2 * M, height: 38, color: CREME });
-  texto(c.pago ? "Recebe" : "A receber", M + 12, y, negrito, 13, VERDE);
-  direita(reais(l.pagar), L - M - 12, y, negrito, 15, VERDE);
-  y -= 40;
-  if (l.novoSaldo < 0) {
-    texto(`Fica para descontar no próximo pagamento: ${reais(-l.novoSaldo)}`, M, y, normal, 9.5, CAFE);
-    y -= 20;
-  }
+  // o total: só um filete escuro em cima e o valor em negrito, sem caixa colorida
+  traco(y + 13, TINTA, 1);
+  y -= 6;
+  texto(c.pago ? "Recebe" : "A receber", M, y, negrito, 11.5);
+  direita(reais(l.pagar), L - M, y, negrito, 13);
+  y -= 26;
+  if (l.novoSaldo < 0) texto(`Fica para descontar no próximo pagamento: ${reais(-l.novoSaldo)}`, M, y, normal, 9.5, CAFE);
 
-  texto(rodape(c), M, 40, normal, 8.5, CAFE);
-  texto("Taxa de serviço dividida entre a equipe que trabalhou em cada turno.", M, 27, normal, 8, CAFE);
+  // rodapé: a frase e o monograma oficial no canto de baixo, à direita
+  const MW = 34;
+  desenharSvg(pg, MONOGRAMA_SVG, L - M - MW, 30 + MW, MW, PRETO);
+  texto(RODAPE, M, 36, normal, 8, CAFE);
 
   return doc.save();
 }

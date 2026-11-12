@@ -13,10 +13,11 @@ import {
   nomeArquivo,
   periodo,
   rodape,
+  RODAPE,
   textoComprovante,
   totalDia,
 } from "@/lib/caixinha/comprovante";
-import { reais } from "@/lib/caixinha/tipos";
+import { reais, ROTULO_TURNO } from "@/lib/caixinha/tipos";
 import Enviar from "./Enviar";
 
 export default async function PaginaComprovante({ searchParams }: PageProps<"/caixinha/comprovante">) {
@@ -69,9 +70,17 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
       )}
 
       <section className="p-cartao mt-6 max-w-xl p-5">
-        <p className="font-display text-2xl">{c.nome}</p>
-        <p className="text-sm text-cafe first-letter:uppercase">
-          {c.ini === c.fim ? "Dia" : "Período"}: {periodo(c)}
+        <p className="text-lg">
+          <span className="text-cafe">Funcionário:</span> <strong className="font-display text-2xl">{c.nome}</strong>
+        </p>
+        <p className="mt-1 text-base">
+          {c.ini === c.fim ? "Dia" : "Período"}: {periodo({ ...c, turno: undefined })}
+          {c.turno ? (
+            <>
+              <span className="text-cafe"> · </span>
+              <strong>{ROTULO_TURNO[c.turno]}</strong>
+            </>
+          ) : null}
         </p>
 
         {varios ? (
@@ -102,15 +111,16 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
           {l.consumo ? <Item rotulo="Consumo descontado" valor={`− ${reais(l.consumo)}`} /> : null}
           {l.saldoAnterior ? <Item rotulo="Saldo anterior" valor={`− ${reais(-l.saldoAnterior)}`} /> : null}
         </dl>
-        <div className="mt-3 flex items-baseline justify-between rounded-[var(--p-raio-sm)] bg-[var(--p-verde-fundo)] px-3 py-2.5 text-verde">
+        <div className="mt-3 flex items-baseline justify-between border-t border-tinta pt-2.5">
           <span className="font-semibold">{c.pago ? "Recebe" : "A receber"}</span>
-          <span className="text-xl font-semibold tabular-nums">{reais(l.pagar)}</span>
+          <span className="text-lg font-semibold tabular-nums">{reais(l.pagar)}</span>
         </div>
         {l.novoSaldo < 0 ? (
           <p className="mt-2 text-sm text-cafe">Fica para descontar no próximo pagamento: {reais(-l.novoSaldo)}</p>
         ) : null}
 
-        <p className="mt-3 text-xs text-cafe">{rodape(c)}</p>
+        <p className="mt-3 text-xs text-cafe">{RODAPE}</p>
+        <p className="mt-1 text-xs text-cafe">{rodape(c)} (só aqui na tela, não vai para a pessoa)</p>
 
         <Enviar texto={textoComprovante(c)} pdf={pdf} arquivo={nomeArquivo(c)} />
       </section>
