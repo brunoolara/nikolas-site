@@ -5,12 +5,22 @@ import Link from "next/link";
 import { consulta, type Fonte } from "@/lib/caixinha/comprovante";
 import { reais, type LinhaPagamento } from "@/lib/caixinha/tipos";
 
-export default function Comprovantes({ fonte, linhas }: { fonte: Fonte; linhas: LinhaPagamento[] }) {
+export default function Comprovantes({
+  fonte,
+  linhas,
+  titulo,
+}: {
+  fonte: Fonte;
+  linhas: LinhaPagamento[];
+  /** Complemento do título, ex. "do almoço". */
+  titulo?: string;
+}) {
   const previa = !("id" in fonte);
   if (!linhas.length) return null;
   return (
     <section className="p-cartao mt-6 p-5">
-      <h3 className="p-cartao-titulo">{previa ? "Prévia dos comprovantes" : "Comprovantes"}</h3>
+      <h3 className="p-cartao-titulo">{previa ? "Prévia dos comprovantes" : "Comprovantes"}
+        {titulo ? ` ${titulo}` : ""}</h3>
       <p className="mt-1 text-sm text-cafe">
         Abra o de cada pessoa para mandar no WhatsApp, em texto ou PDF.
         {previa ? " Ainda não fechado: os valores podem mudar até o fechamento." : ""}

@@ -3,6 +3,8 @@
 // Tudo que muda a Caixinha. Quem tem a área "caixinha" mexe; dia fechado não
 // muda mais até ser reaberto. Os dias se fecham num pagamento (um dia só ou
 // um período) e se fecham e reabrem em ordem, porque o saldo passa adiante.
+// Um turno também pode ser pago sozinho; aí só o outro turno segue aberto, e
+// pagar o outro fecha o dia. Só o último pagamento feito pode ser reaberto.
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -25,13 +27,17 @@ import {
   arredondar,
   diasEntre,
   idPagamento,
+  juntarPartes,
   MAX_DIAS_PAGAMENTO,
   PAGAMENTO_ID,
   partesDoDia,
   ROTULO_TURNO,
   somarPagamento,
   TURNOS,
+  turnoDoConsumo,
+  turnosAbertos,
   type Dia,
+  type Estado,
   type Turno,
 } from "@/lib/caixinha/tipos";
 
@@ -44,20 +50,33 @@ async function quem(): Promise<string | null> {
 
 const turnoValido = (t: string): t is Turno => (TURNOS as string[]).includes(t);
 
-/** Muda um dia aberto. */
-async function mexerNoDia(data: string, mudar: (dia: Dia) => Dia): Promise<Resultado> {
+/** Muda um dia aberto. Com `turno`, recusa se aquele turno já foi pago. */
+async function mexerNoDia(
+  data: string,
+  mudar: (dia: Dia) => Dia,
+  turno?: Turno | ((dia: Dia) => Turno | undefined),
+): Promise<Resultado> {
   if (!(await quem())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
   if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
   try {
     let fechado = false;
+    let pago: Turno | null = null;
     await atualizarDia(data, (dia) => {
       if (dia.fechamento) {
         fechado = true;
         return dia;
       }
+      const t = typeof turno === "function" ? turno(dia) : turno;
+      if (t && dia.turnoPago?.turno === t) {
+        pago = t;
+        return dia;
+      }
       return mudar(dia);
     });
     if (fechado) return { ok: false, mensagem: "Este dia já foi fechado. Reabra para mudar." };
+    const turnoPago = pago as Turno | null;
+    if (turnoPago)
+      return { ok: false, mensagem: `O ${ROTULO_TURNO[turnoPago].toLowerCase()} já foi pago. Reabra para mudar.` };
     revalidatePath("/caixinha", "layout");
     return { ok: true, mensagem: "" };
   } catch (erro) {
@@ -75,7 +94,7 @@ export async function acaoPresenca(data: string, turno: string, pessoa: string, 
     const lista = dia.turnos[turno].presencas.filter((p) => p.id !== pessoa);
     if (pct !== null) lista.push({ id: pessoa, pct: Math.round(pct) });
     return { ...dia, turnos: { ...dia.turnos, [turno]: { ...dia.turnos[turno], presencas: lista } } };
-  });
+  }, turno);
 }
 
 /** Põe no turno todos os ativos que ainda não estão, com 100%. */
@@ -89,7 +108,7 @@ export async function acaoTodosPresentes(data: string, turno: string) {
       ...dia,
       turnos: { ...dia.turnos, [turno]: { ...dia.turnos[turno], presencas: [...atuais, ...novos] } },
     };
-  });
+  }, turno);
 }
 
 /** Taxa do turno digitada à mão; null volta a usar a da Takeat. */
@@ -99,10 +118,11 @@ export async function acaoTaxaManual(data: string, turno: string, valor: number 
   return mexerNoDia(data, (dia) => ({
     ...dia,
     turnos: { ...dia.turnos, [turno]: { ...dia.turnos[turno], taxaManual: valor === null ? null : arredondar(valor) } },
-  }));
+  }), turno);
 }
 
-export async function acaoAdicionarConsumo(data: string, pessoa: string, valor: number, descricao: string) {
+export async function acaoAdicionarConsumo(data: string, pessoa: string, valor: number, descricao: string, turno: string) {
+  if (!turnoValido(turno)) return { ok: false, mensagem: "Escolha o turno do consumo." };
   if (!(Number.isFinite(valor) && valor > 0)) return { ok: false, mensagem: "Coloque o valor do consumo." };
   const equipe = await lerEquipe();
   if (!equipe.some((p) => p.id === pessoa)) return { ok: false, mensagem: "Escolha quem consumiu." };
@@ -110,31 +130,47 @@ export async function acaoAdicionarConsumo(data: string, pessoa: string, valor: 
     ...dia,
     consumos: [
       ...dia.consumos,
-      { id: randomUUID(), pessoa, valor: arredondar(valor), descricao: descricao.trim(), criadoEm: new Date().toISOString() },
+      {
+        id: randomUUID(),
+        pessoa,
+        valor: arredondar(valor),
+        descricao: descricao.trim(),
+        criadoEm: new Date().toISOString(),
+        turno,
+      },
     ],
-  }));
+  }), turno);
 }
 
 export async function acaoRemoverConsumo(data: string, id: string) {
-  return mexerNoDia(data, (dia) => ({ ...dia, consumos: dia.consumos.filter((c) => c.id !== id) }));
+  return mexerNoDia(
+    data,
+    (dia) => ({ ...dia, consumos: dia.consumos.filter((c) => c.id !== id) }),
+    (dia) => {
+      const c = dia.consumos.find((x) => x.id === id);
+      return c ? turnoDoConsumo(c) : undefined;
+    },
+  );
 }
 
 /**
  * A taxa de cada turno de cada dia, como vai no fechamento: a digitada, senão
- * a da Takeat; turno sem ninguém e sem taxa fica com zero. Devolve o motivo
- * se algum dia não puder fechar.
+ * a da Takeat; turno sem ninguém e sem taxa fica com zero. Só olha os turnos
+ * que vão ser pagos (os outros ficam com zero). Devolve o motivo se algum dia
+ * não puder fechar.
  */
 async function taxasParaFechar(
   dias: Dia[],
+  turnosDe: (dia: Dia) => Turno[] = turnosAbertos,
 ): Promise<{ ok: true; taxas: Map<string, Record<Turno, number>> } | { ok: false; mensagem: string }> {
-  const precisam = dias.filter((d) => TURNOS.some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
+  const precisam = dias.filter((d) => turnosDe(d).some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
   // no fechamento hoje e ontem são buscados de novo, sem a memória de alguns minutos
   const takeat = precisam.length ? await taxasDoPeriodo(precisam, true) : new Map<string, TaxaTakeat>();
   const taxas = new Map<string, Record<Turno, number>>();
   for (const dia of dias) {
     const tk = takeat.get(dia.data);
-    const taxa = {} as Record<Turno, number>;
-    for (const t of TURNOS) {
+    const taxa: Record<Turno, number> = { almoco: 0, jantar: 0 };
+    for (const t of turnosDe(dia)) {
       const manual = dia.turnos[t].taxaManual;
       const ninguem = !dia.turnos[t].presencas.some((p) => p.pct > 0);
       const quando = `${ROTULO_TURNO[t]} de ${rotuloData(dia.data)}`;
@@ -180,13 +216,10 @@ export async function acaoFecharPeriodo(ini: string, fim: string): Promise<Resul
 
     const id = idPagamento(ini, fim);
     const em = new Date().toISOString();
-    const partes = dias.map((d) => partesDoDia(d, r.taxas.get(d.data)!, equipe));
+    // dia com um turno já pago: entra só o outro turno
+    const partes = dias.map((d) => partesDoDia(d, r.taxas.get(d.data)!, equipe, turnosAbertos(d)));
     const linhas = somarPagamento(partes, estado.saldos);
-    const saldos = { ...estado.saldos };
-    for (const l of linhas) {
-      if (l.novoSaldo < 0) saldos[l.pessoa] = l.novoSaldo;
-      else delete saldos[l.pessoa];
-    }
+    const saldos = saldosDepois(estado, linhas);
 
     await gravarPagamento({
       id,
@@ -203,13 +236,16 @@ export async function acaoFecharPeriodo(ini: string, fim: string): Promise<Resul
     await Promise.all(
       dias.map((d, i) =>
         atualizarDia(d.data, (atual) => {
-          if (atual.fechamento) {
+          if (atual.fechamento || atual.turnoPago?.pagamento !== d.turnoPago?.pagamento) {
             corrida = true;
             return atual;
           }
+          const tp = atual.turnoPago;
+          const taxa = { ...r.taxas.get(d.data)! };
+          if (tp) taxa[tp.turno] = tp.taxa;
           return {
             ...atual,
-            fechamento: { em, por: nome, taxa: r.taxas.get(d.data)!, partes: partes[i], pagamento: id },
+            fechamento: { em, por: nome, taxa, partes: tp ? juntarPartes(tp.partes, partes[i]) : partes[i], pagamento: id },
           };
         }),
       ),
@@ -232,6 +268,80 @@ export async function acaoFecharDia(data: string): Promise<Resultado> {
   return acaoFecharPeriodo(data, data);
 }
 
+const saldosDepois = (estado: Estado, linhas: ReturnType<typeof somarPagamento>) => {
+  const saldos = { ...estado.saldos };
+  for (const l of linhas) {
+    if (l.novoSaldo < 0) saldos[l.pessoa] = l.novoSaldo;
+    else delete saldos[l.pessoa];
+  }
+  return saldos;
+};
+
+/**
+ * Fecha e paga um turno sozinho: congela a taxa e as partes do turno e o
+ * consumo lançado nele. Se o outro turno já foi pago, fecha o dia.
+ */
+export async function acaoFecharTurno(data: string, turno: string): Promise<Resultado> {
+  const nome = await quem();
+  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
+  if (!turnoValido(turno)) return { ok: false, mensagem: "Turno inválido." };
+  if (data > hoje()) return { ok: false, mensagem: "Não dá para pagar um dia que ainda não chegou." };
+
+  try {
+    const [dia, estado, equipe] = await Promise.all([lerDia(data), lerEstado(), lerEquipe()]);
+    if (dia.fechamento) return { ok: false, mensagem: "Este dia já foi fechado." };
+    if (dia.turnoPago?.turno === turno) return { ok: false, mensagem: `O ${ROTULO_TURNO[turno].toLowerCase()} já foi pago.` };
+    // o outro turno já foi pago: este é o resto do dia
+    if (dia.turnoPago) return acaoFecharPeriodo(data, data);
+    if (estado.ultimoFechado && estado.ultimoFechado >= data)
+      return { ok: false, mensagem: "Já existe um dia fechado depois deste. Os dias se fecham em ordem." };
+
+    const r = await taxasParaFechar([dia], () => [turno]);
+    if (!r.ok) return r;
+    const taxa = r.taxas.get(data)!;
+    const partes = partesDoDia(dia, taxa, equipe, [turno]);
+    const linhas = somarPagamento([partes], estado.saldos);
+    const id = idPagamento(data, data, turno);
+    const em = new Date().toISOString();
+
+    await gravarPagamento({
+      id,
+      ini: data,
+      fim: data,
+      dias: [data],
+      em,
+      por: nome,
+      linhas,
+      saldosAntes: estado.saldos,
+      fechadoAntes: estado.ultimoFechado,
+      turno,
+    });
+    let corrida = false;
+    await atualizarDia(data, (atual) => {
+      if (atual.fechamento || atual.turnoPago) {
+        corrida = true;
+        return atual;
+      }
+      return { ...atual, turnoPago: { turno, em, por: nome, taxa: taxa[turno], partes, pagamento: id } };
+    });
+    if (corrida) {
+      await apagarPagamento(id);
+      return { ok: false, mensagem: "Alguém pagou este dia agora há pouco. Confira antes de pagar." };
+    }
+    await gravarEstado({
+      saldos: saldosDepois(estado, linhas),
+      ultimoFechado: estado.ultimoFechado,
+      pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
+    });
+    revalidatePath("/caixinha", "layout");
+    return { ok: true, mensagem: `${ROTULO_TURNO[turno]} fechado e pago.` };
+  } catch (erro) {
+    console.error("caixinha: falha ao fechar o turno", erro);
+    return { ok: false, mensagem: FALHA };
+  }
+}
+
 /** Reabre o último pagamento: todos os dias dele voltam a abrir e os saldos voltam ao que eram. */
 export async function acaoReabrirPagamento(id: string): Promise<Resultado> {
   if (!(await quem())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
@@ -239,25 +349,36 @@ export async function acaoReabrirPagamento(id: string): Promise<Resultado> {
   try {
     const [pag, estado] = await Promise.all([lerPagamento(id), lerEstado()]);
     if (!pag) return { ok: true, mensagem: "" };
-    if (estado.ultimoFechado !== pag.fim)
+    const ultimo = estado.pagamentos?.at(-1);
+    if (ultimo ? ultimo !== id : estado.ultimoFechado !== pag.fim)
       return { ok: false, mensagem: "Só dá para reabrir o último pagamento. Reabra os pagamentos depois dele antes." };
     await Promise.all(
       pag.dias.map((d) =>
         atualizarDia(d, (atual) => {
           const copia = { ...atual };
-          delete copia.fechamento;
+          // pagamento de turno: só o turno volta a abrir; o turno pago antes continua pago
+          if (pag.turno) {
+            if (copia.turnoPago?.pagamento === id) delete copia.turnoPago;
+          } else delete copia.fechamento;
           return copia;
         }),
       ),
     );
     await gravarEstado({
       saldos: pag.saldosAntes,
-      ultimoFechado: pag.fechadoAntes,
+      ultimoFechado: pag.turno ? estado.ultimoFechado : pag.fechadoAntes,
       pagamentos: (estado.pagamentos ?? []).filter((p) => p !== id),
     });
     await apagarPagamento(id);
     revalidatePath("/caixinha", "layout");
-    return { ok: true, mensagem: pag.dias.length === 1 ? "Dia reaberto." : `${pag.dias.length} dias reabertos.` };
+    return {
+      ok: true,
+      mensagem: pag.turno
+        ? `${ROTULO_TURNO[pag.turno]} reaberto.`
+        : pag.dias.length === 1
+          ? "Dia reaberto."
+          : `${pag.dias.length} dias reabertos.`,
+    };
   } catch (erro) {
     console.error("caixinha: falha ao reabrir", erro);
     return { ok: false, mensagem: FALHA };
@@ -268,8 +389,9 @@ export async function acaoReabrirPagamento(id: string): Promise<Resultado> {
 export async function acaoReabrirDia(data: string): Promise<Resultado> {
   if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
   const dia = await lerDia(data);
-  if (!dia.fechamento) return { ok: true, mensagem: "" };
-  return acaoReabrirPagamento(dia.fechamento.pagamento);
+  const id = dia.fechamento?.pagamento ?? dia.turnoPago?.pagamento;
+  if (!id) return { ok: true, mensagem: "" };
+  return acaoReabrirPagamento(id);
 }
 
 export async function acaoAdicionarPessoa(nome: string): Promise<Resultado> {

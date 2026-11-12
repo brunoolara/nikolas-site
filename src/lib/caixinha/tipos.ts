@@ -10,6 +10,9 @@
 // - O consumo do funcionário na casa é descontado cheio; se o dia fechar
 //   negativo, o saldo passa para o próximo dia em que a pessoa receber.
 // - Sócios não entram (simplesmente não são cadastrados na equipe).
+// - Dá para fechar e pagar um turno sozinho (Bruno, 11/11/2026). O consumo é
+//   lançado num turno e descontado no pagamento dele. Quando o outro turno é
+//   pago, o dia fecha. Consumo antigo, sem turno, conta como do jantar.
 //
 // Sem código de servidor aqui: as telas do navegador também usam.
 
@@ -30,7 +33,17 @@ export type TurnoDia = {
   taxaManual: number | null;
 };
 
-export type Consumo = { id: string; pessoa: string; valor: number; descricao: string; criadoEm: string };
+export type Consumo = {
+  id: string;
+  pessoa: string;
+  valor: number;
+  descricao: string;
+  criadoEm: string;
+  /** Turno em que é descontado (sem turno = jantar). */
+  turno?: Turno;
+};
+
+export const turnoDoConsumo = (c: Consumo): Turno => c.turno ?? "jantar";
 
 export type LinhaPagamento = {
   pessoa: string;
@@ -52,7 +65,22 @@ export type LinhaPagamento = {
 /** O que cada pessoa ganhou e consumiu num dia, sem saldo (o saldo é do pagamento). */
 export type ParteDia = { pessoa: string; nome: string; almoco: number; jantar: number; consumo: number };
 
-/** Um dia fechado: a taxa usada, as partes do dia e o pagamento em que entrou. */
+/** Um turno pago sozinho, antes do dia fechar. Fica no dia mesmo depois de fechado. */
+export type TurnoPago = {
+  turno: Turno;
+  em: string;
+  por: string;
+  taxa: number;
+  /** Partes só deste turno (o outro com zero) e o consumo lançado nele. */
+  partes: ParteDia[];
+  pagamento: string;
+};
+
+/**
+ * Um dia fechado: a taxa usada, as partes do dia e o pagamento em que entrou.
+ * Se um turno foi pago antes, `partes` e `taxa` têm o dia inteiro (os dois
+ * turnos) e `pagamento` é o do turno que fechou o dia.
+ */
 export type Fechamento = {
   em: string;
   por: string;
@@ -78,10 +106,17 @@ export type Pagamento = {
   saldosAntes: Record<string, number>;
   /** Último dia fechado antes deste pagamento (null se for o primeiro). */
   fechadoAntes: string | null;
+  /** Pagamento de um turno só (ini = fim). */
+  turno?: Turno;
 };
 
-export const idPagamento = (ini: string, fim: string) => `${ini}_${fim}`;
-export const PAGAMENTO_ID = /^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/;
+export const idPagamento = (ini: string, fim: string, turno?: Turno) => `${ini}_${fim}${turno ? `_${turno}` : ""}`;
+export const PAGAMENTO_ID = /^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}(_(almoco|jantar))?$/;
+/** As partes de um id de pagamento. */
+export function lerIdPagamento(id: string): { ini: string; fim: string; turno?: Turno } {
+  const turno = id.slice(22);
+  return { ini: id.slice(0, 10), fim: id.slice(11, 21), ...(turno ? { turno: turno as Turno } : {}) };
+}
 /** Um pagamento cobre no máximo isto de dias. */
 export const MAX_DIAS_PAGAMENTO = 31;
 
@@ -89,8 +124,13 @@ export type Dia = {
   data: string;
   turnos: Record<Turno, TurnoDia>;
   consumos: Consumo[];
+  turnoPago?: TurnoPago;
   fechamento?: Fechamento;
 };
+
+/** Os turnos do dia que ainda não foram pagos. */
+export const turnosAbertos = (dia: Dia): Turno[] =>
+  dia.fechamento ? [] : TURNOS.filter((t) => dia.turnoPago?.turno !== t);
 
 export type Estado = {
   /** Saldo negativo de cada pessoa (só quem deve aparece). */
@@ -141,12 +181,22 @@ export function repartir(taxa: number, presencas: Presenca[]): Map<string, numbe
 
 const porNome = <T extends { nome: string }>(x: T, y: T) => x.nome.localeCompare(y.nome, "pt-BR");
 
-/** As partes de cada pessoa num dia, com as taxas já decididas. */
-export function partesDoDia(dia: Dia, taxa: Record<Turno, number>, equipe: Pessoa[]): ParteDia[] {
-  const almoco = repartir(taxa.almoco, dia.turnos.almoco.presencas);
-  const jantar = repartir(taxa.jantar, dia.turnos.jantar.presencas);
+/**
+ * As partes de cada pessoa num dia, com as taxas já decididas. Com `turnos`,
+ * conta só esses turnos (a taxa e o consumo lançado neles).
+ */
+export function partesDoDia(
+  dia: Dia,
+  taxa: Record<Turno, number>,
+  equipe: Pessoa[],
+  turnos: Turno[] = TURNOS,
+): ParteDia[] {
+  const vazio = new Map<string, number>();
+  const almoco = turnos.includes("almoco") ? repartir(taxa.almoco, dia.turnos.almoco.presencas) : vazio;
+  const jantar = turnos.includes("jantar") ? repartir(taxa.jantar, dia.turnos.jantar.presencas) : vazio;
   const consumo = new Map<string, number>();
-  for (const c of dia.consumos) consumo.set(c.pessoa, (consumo.get(c.pessoa) ?? 0) + c.valor);
+  for (const c of dia.consumos)
+    if (turnos.includes(turnoDoConsumo(c))) consumo.set(c.pessoa, (consumo.get(c.pessoa) ?? 0) + c.valor);
 
   // entra quem trabalhou e quem consumiu
   const ids = new Set<string>([...almoco.keys(), ...jantar.keys(), ...consumo.keys()]);
@@ -198,9 +248,56 @@ export function somarPagamento(dias: ParteDia[][], saldos: Record<string, number
     .sort(porNome);
 }
 
-/** O pagamento de um dia só, pessoa a pessoa. */
-export const calcularDia = (dia: Dia, taxa: Record<Turno, number>, equipe: Pessoa[], saldos: Record<string, number>) =>
-  somarPagamento([partesDoDia(dia, taxa, equipe)], saldos);
+/** O pagamento de um dia só (ou dos turnos dados), pessoa a pessoa. */
+export const calcularDia = (
+  dia: Dia,
+  taxa: Record<Turno, number>,
+  equipe: Pessoa[],
+  saldos: Record<string, number>,
+  turnos: Turno[] = TURNOS,
+) => somarPagamento([partesDoDia(dia, taxa, equipe, turnos)], saldos);
+
+/** Junta as partes de dois pagamentos do mesmo dia (turno pago antes + o resto). */
+export function juntarPartes(a: ParteDia[], b: ParteDia[]): ParteDia[] {
+  const soma = new Map<string, ParteDia>();
+  for (const p of [...a, ...b]) {
+    const s = soma.get(p.pessoa);
+    soma.set(
+      p.pessoa,
+      s
+        ? {
+            ...s,
+            almoco: arredondar(s.almoco + p.almoco),
+            jantar: arredondar(s.jantar + p.jantar),
+            consumo: arredondar(s.consumo + p.consumo),
+          }
+        : { ...p },
+    );
+  }
+  return [...soma.values()].sort(porNome);
+}
+
+/** As partes que entraram num pagamento, para um dia dele. */
+export function partesNoPagamento(dia: Dia, pagamento: string): ParteDia[] {
+  const tp = dia.turnoPago;
+  if (tp?.pagamento === pagamento) return tp.partes;
+  if (dia.fechamento?.pagamento !== pagamento) return [];
+  if (!tp) return dia.fechamento.partes;
+  // o dia inteiro menos o turno pago antes
+  return dia.fechamento.partes
+    .map((p) => {
+      const antes = tp.partes.find((x) => x.pessoa === p.pessoa);
+      return antes
+        ? {
+            ...p,
+            almoco: arredondar(p.almoco - antes.almoco),
+            jantar: arredondar(p.jantar - antes.jantar),
+            consumo: arredondar(p.consumo - antes.consumo),
+          }
+        : p;
+    })
+    .filter((p) => p.almoco || p.jantar || p.consumo);
+}
 
 /** Os dias de `ini` a `fim`, inclusive. */
 export function diasEntre(ini: string, fim: string): string[] {

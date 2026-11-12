@@ -25,7 +25,7 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
   if (!liberado) return null;
   const busca = await searchParams;
   const params = new URLSearchParams();
-  for (const k of ["id", "ini", "fim", "pessoa"]) if (typeof busca[k] === "string") params.set(k, busca[k]);
+  for (const k of ["id", "ini", "fim", "turno", "pessoa"]) if (typeof busca[k] === "string") params.set(k, busca[k]);
   const fonte = fonteDe(params);
   const pessoa = params.get("pessoa") ?? "";
   const c = fonte && pessoa ? await buscarComprovante(fonte, pessoa) : null;
@@ -50,7 +50,7 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
   const voltar = c.pago
     ? { href: `/caixinha/pagamento?id=${c.pago.id}`, nome: "Voltar ao pagamento" }
     : c.ini === c.fim
-      ? { href: `/caixinha?dia=${c.ini}`, nome: "Voltar ao dia" }
+      ? { href: `/caixinha?dia=${c.ini}${c.turno ? `&ver=${c.turno}` : ""}`, nome: "Voltar ao dia" }
       : { href: `/caixinha/pagamento?ini=${c.ini}&fim=${c.fim}`, nome: "Voltar ao período" };
 
   return (

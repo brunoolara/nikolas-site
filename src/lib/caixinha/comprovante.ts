@@ -12,9 +12,12 @@ import {
   MAX_DIAS_PAGAMENTO,
   PAGAMENTO_ID,
   partesDoDia,
+  partesNoPagamento,
   reais,
+  ROTULO_TURNO,
   somarPagamento,
   TURNOS,
+  turnosAbertos,
   type LinhaPagamento,
   type Turno,
 } from "./tipos";
@@ -25,6 +28,8 @@ export type Comprovante = {
   nome: string;
   ini: string;
   fim: string;
+  /** Comprovante de um turno só. */
+  turno?: Turno;
   /** Só os dias em que a pessoa trabalhou ou consumiu. */
   dias: DiaComprovante[];
   linha: LinhaPagamento;
@@ -38,29 +43,46 @@ export async function lerComprovante(id: string, pessoa: string): Promise<Compro
   if (!pag || !linha) return null;
   const dias = (await Promise.all(pag.dias.map(lerDia)))
     .map((d) => {
-      const p = d.fechamento?.partes.find((x) => x.pessoa === pessoa);
+      const p = partesNoPagamento(d, pag.id).find((x) => x.pessoa === pessoa);
       return p ? { data: d.data, almoco: p.almoco, jantar: p.jantar, consumo: p.consumo } : null;
     })
     .filter((d): d is DiaComprovante => Boolean(d && (d.almoco || d.jantar || d.consumo)));
-  return { nome: linha.nome, ini: pag.ini, fim: pag.fim, dias, linha, pago: { id: pag.id, em: pag.em, por: pag.por } };
+  return {
+    nome: linha.nome,
+    ini: pag.ini,
+    fim: pag.fim,
+    ...(pag.turno ? { turno: pag.turno } : {}),
+    dias,
+    linha,
+    pago: { id: pag.id, em: pag.em, por: pag.por },
+  };
 }
 
 /**
  * A prévia de quem ainda não recebeu: de `ini` a `fim`, todos abertos, com a
- * mesma conta do pagamento (taxa digitada ou da Takeat, consumo e saldo).
+ * mesma conta do pagamento (taxa digitada ou da Takeat, consumo e saldo). Só
+ * entram os turnos ainda não pagos; com `turno` (num dia só), só ele.
  */
-export async function previaComprovante(ini: string, fim: string, pessoa: string): Promise<Comprovante | null> {
+export async function previaComprovante(
+  ini: string,
+  fim: string,
+  pessoa: string,
+  turno?: Turno,
+): Promise<Comprovante | null> {
   const datas = diasEntre(ini, fim);
   if (!datas.length || datas.length > MAX_DIAS_PAGAMENTO) return null;
+  if (turno && ini !== fim) return null;
   const [dias, equipe, estado] = await Promise.all([Promise.all(datas.map(lerDia)), lerEquipe(), lerEstado()]);
   if (dias.some((d) => d.fechamento)) return null;
-  const precisam = dias.filter((d) => TURNOS.some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
+  const turnosDe = (d: (typeof dias)[number]) => (turno ? [turno] : turnosAbertos(d));
+  if (turno && !turnosAbertos(dias[0]).includes(turno)) return null;
+  const precisam = dias.filter((d) => turnosDe(d).some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
   const takeat = precisam.length ? await taxasDoPeriodo(precisam) : new Map();
   const partes = dias.map((d) => {
     const tk = takeat.get(d.data);
-    const taxa = {} as Record<Turno, number>;
-    for (const t of TURNOS) taxa[t] = d.turnos[t].taxaManual ?? (tk?.ok ? tk.taxa[t] : 0);
-    return { data: d.data, partes: partesDoDia(d, taxa, equipe) };
+    const taxa: Record<Turno, number> = { almoco: 0, jantar: 0 };
+    for (const t of turnosDe(d)) taxa[t] = d.turnos[t].taxaManual ?? (tk?.ok ? tk.taxa[t] : 0);
+    return { data: d.data, partes: partesDoDia(d, taxa, equipe, turnosDe(d)) };
   });
   const linha = somarPagamento(
     partes.map((p) => p.partes),
@@ -73,14 +95,15 @@ export async function previaComprovante(ini: string, fim: string, pessoa: string
       return p ? { data, almoco: p.almoco, jantar: p.jantar, consumo: p.consumo } : null;
     })
     .filter((d): d is DiaComprovante => Boolean(d && (d.almoco || d.jantar || d.consumo)));
-  return { nome: linha.nome, ini, fim, dias: porDia, linha, pago: null };
+  return { nome: linha.nome, ini, fim, ...(turno ? { turno } : {}), dias: porDia, linha, pago: null };
 }
 
 /** "10/11/2026" */
 export const dataCompleta = (d: string) => d.split("-").reverse().join("/");
 
 export const periodo = (c: Comprovante) =>
-  c.ini === c.fim ? `${rotuloData(c.ini)}/${c.ini.slice(0, 4)}` : `${dataCompleta(c.ini)} a ${dataCompleta(c.fim)}`;
+  (c.ini === c.fim ? `${rotuloData(c.ini)}/${c.ini.slice(0, 4)}` : `${dataCompleta(c.ini)} a ${dataCompleta(c.fim)}`) +
+  (c.turno ? ` · ${ROTULO_TURNO[c.turno]}` : "");
 
 const quando = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
@@ -132,7 +155,7 @@ export function nomeArquivo(c: Comprovante): string {
     .replace(/[^A-Za-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .toLowerCase();
-  return `caixinha-${c.pago ? "" : "previa-"}${nome || "pessoa"}-${c.ini === c.fim ? c.ini : `${c.ini}-a-${c.fim}`}.pdf`;
+  return `caixinha-${c.pago ? "" : "previa-"}${nome || "pessoa"}-${c.ini === c.fim ? c.ini : `${c.ini}-a-${c.fim}`}${c.turno ? `-${c.turno}` : ""}.pdf`;
 }
 
 // ---------- PDF ----------
@@ -244,8 +267,8 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
 
 // ---------- endereço ----------
 
-/** De onde vem o comprovante: um pagamento feito (id) ou um período aberto. */
-export type Fonte = { id: string } | { ini: string; fim: string };
+/** De onde vem o comprovante: um pagamento feito (id) ou um período aberto (ou um turno de um dia). */
+export type Fonte = { id: string } | { ini: string; fim: string; turno?: Turno };
 
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -254,11 +277,14 @@ export function fonteDe(busca: URLSearchParams): Fonte | null {
   if (id) return PAGAMENTO_ID.test(id) ? { id } : null;
   const ini = busca.get("ini") ?? "";
   const fim = busca.get("fim") ?? "";
-  return DATA.test(ini) && DATA.test(fim) && ini <= fim ? { ini, fim } : null;
+  const turno = busca.get("turno");
+  if (!(DATA.test(ini) && DATA.test(fim) && ini <= fim)) return null;
+  if (!turno) return { ini, fim };
+  return (TURNOS as string[]).includes(turno) && ini === fim ? { ini, fim, turno: turno as Turno } : null;
 }
 
 export const consulta = (f: Fonte, pessoa: string) =>
-  `${"id" in f ? `id=${f.id}` : `ini=${f.ini}&fim=${f.fim}`}&pessoa=${encodeURIComponent(pessoa)}`;
+  `${"id" in f ? `id=${f.id}` : `ini=${f.ini}&fim=${f.fim}${f.turno ? `&turno=${f.turno}` : ""}`}&pessoa=${encodeURIComponent(pessoa)}`;
 
 export const buscarComprovante = (f: Fonte, pessoa: string) =>
-  "id" in f ? lerComprovante(f.id, pessoa) : previaComprovante(f.ini, f.fim, pessoa);
+  "id" in f ? lerComprovante(f.id, pessoa) : previaComprovante(f.ini, f.fim, pessoa, f.turno);

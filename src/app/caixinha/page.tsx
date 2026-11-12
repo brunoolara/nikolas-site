@@ -10,10 +10,19 @@ import { exigir } from "@/lib/acessos/sessao";
 import { DATA, hoje, rotuloData, somarDias } from "@/lib/posts/tipos";
 import { lerDia, lerEquipe, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
 import { taxaDoDia } from "@/lib/caixinha/takeat";
-import { calcularDia, reais, ROTULO_TURNO, TURNOS, type Turno } from "@/lib/caixinha/tipos";
+import {
+  calcularDia,
+  partesDoDia,
+  reais,
+  ROTULO_TURNO,
+  TURNOS,
+  turnoDoConsumo,
+  turnosAbertos,
+  type Turno,
+} from "@/lib/caixinha/tipos";
 import EditorTurno from "./EditorTurno";
 import Consumos from "./Consumos";
-import BotaoFechar from "./BotaoFechar";
+import BotaoFechar, { BotaoTurno } from "./BotaoFechar";
 import Abas from "./Abas";
 import TabelaPagamento from "./TabelaPagamento";
 import Comprovantes from "./Comprovantes";
@@ -35,23 +44,37 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
 
   const [registro, equipe, estado] = await Promise.all([lerDia(data), lerEquipe(), lerEstado()]);
   const fechado = registro.fechamento;
-  const pagamento = fechado ? await lerPagamento(fechado.pagamento) : null;
+  // turno pago sozinho antes (fica registrado mesmo depois de o dia fechar)
+  const tp = registro.turnoPago;
+  const abertos = turnosAbertos(registro);
+  const [pagamento, pagTurno] = await Promise.all([
+    fechado ? lerPagamento(fechado.pagamento) : null,
+    tp ? lerPagamento(tp.pagamento) : null,
+  ]);
   // dia pago junto com outros: aqui aparece só a parte do dia, sem saldo
   const variosDias = Boolean(pagamento && pagamento.dias.length > 1);
-  const precisaTakeat = !fechado && TURNOS.some((t) => registro.turnos[t].taxaManual === null);
+  const precisaTakeat = abertos.some((t) => registro.turnos[t].taxaManual === null);
   const takeat = precisaTakeat ? await taxaDoDia(data) : null;
 
   const taxa = {} as Record<Turno, number>;
   for (const t of TURNOS) {
     taxa[t] = fechado
       ? fechado.taxa[t]
-      : (registro.turnos[t].taxaManual ?? (takeat?.ok ? takeat.taxa[t] : 0));
+      : tp?.turno === t
+        ? tp.taxa
+        : (registro.turnos[t].taxaManual ?? (takeat?.ok ? takeat.taxa[t] : 0));
   }
-  const linhas = fechado ? (pagamento?.linhas ?? []) : calcularDia(registro, taxa, equipe, estado.saldos);
-  const porTurno = fechado ? fechado.partes : linhas;
+  // dia aberto: o pagamento que falta (sem o turno já pago)
+  const linhas = fechado ? (pagamento?.linhas ?? []) : calcularDia(registro, taxa, equipe, estado.saldos, abertos);
+  // o turno pago tem as presenças travadas, então a conta dá o que foi pago
+  const porTurno = fechado ? fechado.partes : partesDoDia(registro, taxa, equipe);
   const ativos = equipe.filter((p) => p.ativo).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  const podeReabrir = Boolean(fechado) && estado.ultimoFechado === (pagamento?.fim ?? data);
+  const ultimoPag = estado.pagamentos?.at(-1);
+  const eUltimo = (id: string | undefined, fim: string) => (ultimoPag ? ultimoPag === id : estado.ultimoFechado === fim);
+  const podeReabrir = Boolean(fechado) && eUltimo(fechado?.pagamento, pagamento?.fim ?? data);
   const fechadoDepois = !fechado && Boolean(estado.ultimoFechado && estado.ultimoFechado > data);
+  const restante = tp && !fechado ? abertos[0] : null;
+  const hora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
@@ -117,6 +140,15 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
           )}
         </p>
       ) : null}
+      {tp ? (
+        <p className="p-aviso p-aviso-ok mt-4">
+          {ROTULO_TURNO[tp.turno]} pago à parte por {tp.por} em {hora(tp.em)}.{" "}
+          <Link href={`/caixinha/pagamento?id=${tp.pagamento}`} className="font-semibold underline">
+            Ver o pagamento do {ROTULO_TURNO[tp.turno].toLowerCase()}
+          </Link>
+          {restante ? ` O ${ROTULO_TURNO[restante].toLowerCase()} continua aberto.` : null}
+        </p>
+      ) : null}
       {takeat && !takeat.ok ? (
         <p className="p-aviso p-aviso-alerta mt-4">
           {takeat.motivo} Enquanto isso, digite a taxa de cada turno à mão.
@@ -138,22 +170,42 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
             key={t}
             data={data}
             turno={t}
-            fechado={Boolean(fechado)}
+            fechado={Boolean(fechado) || tp?.turno === t}
             pessoas={equipe
               .filter((p) => p.ativo || registro.turnos[t].presencas.some((x) => x.id === p.id))
               .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
               .map((p) => ({ id: p.id, nome: p.nome }))}
             presencas={registro.turnos[t].presencas}
             taxa={taxa[t]}
-            taxaManual={fechado ? null : registro.turnos[t].taxaManual}
-            takeat={takeat?.ok ? { taxa: takeat.taxa[t], comandas: takeat.comandas[t] } : null}
+            taxaManual={fechado || tp?.turno === t ? null : registro.turnos[t].taxaManual}
+            takeat={takeat?.ok && tp?.turno !== t ? { taxa: takeat.taxa[t], comandas: takeat.comandas[t] } : null}
             partes={Object.fromEntries(porTurno.map((l) => [l.pessoa, l[t]]))}
           />
         ))}
       </div>
 
       {ver ? (
-        <DivisaoTurno turno={ver} taxa={taxa[ver]} partes={porTurno.map((l) => ({ nome: l.nome, valor: l[ver] }))} />
+        <>
+          <DivisaoTurno turno={ver} taxa={taxa[ver]} partes={porTurno.map((l) => ({ nome: l.nome, valor: l[ver] }))}>
+            <BotaoTurno
+              data={data}
+              turno={ver}
+              pago={Boolean(fechado) || tp?.turno === ver}
+              fechaODia={Boolean(tp) && tp?.turno !== ver}
+              podeReabrir={!fechado && tp?.turno === ver && eUltimo(tp.pagamento, data)}
+              bloqueado={fechadoDepois}
+            />
+          </DivisaoTurno>
+          {tp?.turno === ver && pagTurno ? (
+            <Comprovantes fonte={{ id: pagTurno.id }} linhas={pagTurno.linhas} titulo={`do ${ROTULO_TURNO[ver].toLowerCase()}`} />
+          ) : !fechado && !fechadoDepois ? (
+            <Comprovantes
+              fonte={{ ini: data, fim: data, turno: ver }}
+              linhas={calcularDia(registro, taxa, equipe, estado.saldos, [ver])}
+              titulo={`do ${ROTULO_TURNO[ver].toLowerCase()}`}
+            />
+          ) : null}
+        </>
       ) : (
         <>
         <Consumos
@@ -162,12 +214,20 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
           equipe={ativos.map((p) => ({ id: p.id, nome: p.nome }))}
           consumos={registro.consumos.map((c) => ({
             ...c,
+            turno: turnoDoConsumo(c),
             nome: equipe.find((p) => p.id === c.pessoa)?.nome ?? "(removido)",
           }))}
+          turnoPago={tp?.turno ?? null}
         />
 
         <section className="p-cartao mt-6 p-5">
-          <h3 className="p-cartao-titulo">{variosDias ? "O que cada um ganhou no dia" : "Pagamento do dia"}</h3>
+          <h3 className="p-cartao-titulo">
+            {variosDias
+              ? "O que cada um ganhou no dia"
+              : tp
+                ? `Pagamento do ${ROTULO_TURNO[TURNOS.find((t) => t !== tp.turno)!].toLowerCase()}`
+                : "Pagamento do dia"}
+          </h3>
           {variosDias && fechado ? (
             <TabelaPagamento modo="dia" partes={fechado.partes} />
           ) : linhas.length ? (
@@ -182,13 +242,26 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
             podeReabrir={podeReabrir}
             bloqueado={fechadoDepois}
             diasNoPagamento={pagamento?.dias.length ?? 1}
+            restante={restante}
+            linksTurno={{ almoco: link(data, "almoco"), jantar: link(data, "jantar") }}
           />
         </section>
 
+        {tp && pagTurno ? (
+          <Comprovantes fonte={{ id: pagTurno.id }} linhas={pagTurno.linhas} titulo={`do ${ROTULO_TURNO[tp.turno].toLowerCase()}`} />
+        ) : null}
         {pagamento && !variosDias ? (
-          <Comprovantes fonte={{ id: pagamento.id }} linhas={pagamento.linhas} />
+          <Comprovantes
+            fonte={{ id: pagamento.id }}
+            linhas={pagamento.linhas}
+            titulo={tp ? `do ${ROTULO_TURNO[TURNOS.find((t) => t !== tp.turno)!].toLowerCase()}` : undefined}
+          />
         ) : !fechado && linhas.length ? (
-          <Comprovantes fonte={{ ini: data, fim: data }} linhas={linhas} />
+          <Comprovantes
+            fonte={{ ini: data, fim: data }}
+            linhas={linhas}
+            titulo={restante ? `do ${ROTULO_TURNO[restante].toLowerCase()}` : undefined}
+          />
         ) : null}
         </>
       )}
@@ -197,7 +270,17 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
 }
 
 /** A divisão de um turno em letra grande, para mostrar à equipe. */
-function DivisaoTurno({ turno, taxa, partes }: { turno: Turno; taxa: number; partes: { nome: string; valor: number }[] }) {
+function DivisaoTurno({
+  turno,
+  taxa,
+  partes,
+  children,
+}: {
+  turno: Turno;
+  taxa: number;
+  partes: { nome: string; valor: number }[];
+  children?: React.ReactNode;
+}) {
   const lista = partes.filter((p) => p.valor > 0);
   const total = lista.reduce((s, p) => s + p.valor, 0);
   return (
@@ -220,7 +303,8 @@ function DivisaoTurno({ turno, taxa, partes }: { turno: Turno; taxa: number; par
       ) : (
         <p className="mt-3 text-sm text-cafe">Marque quem trabalhou no turno para ver a divisão.</p>
       )}
-      <p className="mt-3 text-xs text-cafe">Consumo e saldo de cada um entram no Dia todo.</p>
+      <p className="mt-3 text-xs text-cafe">O consumo lançado no turno e o saldo entram no pagamento.</p>
+      {children}
     </section>
   );
 }

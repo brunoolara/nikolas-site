@@ -1,22 +1,37 @@
 "use client";
 
-// Consumo do funcionário no dia: entra cheio, descontado da caixinha.
+// Consumo do funcionário no dia: entra cheio, descontado da caixinha, no
+// pagamento do turno em que foi lançado (o turno já vem pelo horário).
 
 import { useState, useTransition } from "react";
-import { reais } from "@/lib/caixinha/tipos";
+import { reais, ROTULO_TURNO, TURNOS, type Turno } from "@/lib/caixinha/tipos";
 import { acaoAdicionarConsumo, acaoRemoverConsumo } from "./acoes";
 
 type Props = {
   data: string;
   fechado: boolean;
   equipe: { id: string; nome: string }[];
-  consumos: { id: string; nome: string; valor: number; descricao: string }[];
+  consumos: { id: string; nome: string; valor: number; descricao: string; turno: Turno }[];
+  /** Turno já pago: não aceita consumo novo nem tira os dele. */
+  turnoPago: Turno | null;
 };
+
+/** Até as 16h é almoço, no horário de Ouro Fino. */
+function turnoAgora(): Turno {
+  const hora = Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "numeric", hourCycle: "h23" }).format(new Date()),
+  );
+  return hora < 16 ? "almoco" : "jantar";
+}
 
 const numero = (texto: string) => Number(texto.replace(/\./g, "").replace(",", "."));
 
-export default function Consumos({ data, fechado, equipe, consumos }: Props) {
+export default function Consumos({ data, fechado, equipe, consumos, turnoPago }: Props) {
   const [pessoa, setPessoa] = useState("");
+  const [turno, setTurno] = useState<Turno>(() => {
+    const t = turnoAgora();
+    return t === turnoPago ? TURNOS.find((x) => x !== t)! : t;
+  });
   const [valor, setValor] = useState("");
   const [descricao, setDescricao] = useState("");
   const [aviso, setAviso] = useState("");
@@ -24,7 +39,7 @@ export default function Consumos({ data, fechado, equipe, consumos }: Props) {
 
   function adicionar() {
     iniciar(async () => {
-      const r = await acaoAdicionarConsumo(data, pessoa, numero(valor), descricao);
+      const r = await acaoAdicionarConsumo(data, pessoa, numero(valor), descricao, turno);
       setAviso(r.ok ? "" : r.mensagem);
       if (r.ok) {
         setValor("");
@@ -58,8 +73,9 @@ export default function Consumos({ data, fechado, equipe, consumos }: Props) {
                 {c.nome}
                 {c.descricao ? <span className="text-cafe"> · {c.descricao}</span> : null}
               </span>
+              <span className="p-selo">{ROTULO_TURNO[c.turno]}</span>
               <span className="tabular-nums">{reais(c.valor)}</span>
-              {fechado ? null : (
+              {fechado || c.turno === turnoPago ? null : (
                 <button
                   type="button"
                   disabled={ocupado}
@@ -77,7 +93,7 @@ export default function Consumos({ data, fechado, equipe, consumos }: Props) {
       )}
 
       {fechado ? null : (
-        <div className="mt-4 grid gap-2 rounded-[var(--p-raio-sm)] bg-creme/70 p-3 sm:grid-cols-[12rem_7rem_1fr_auto]">
+        <div className="mt-4 grid gap-2 rounded-[var(--p-raio-sm)] bg-creme/70 p-3 sm:grid-cols-[12rem_8rem_7rem_1fr_auto]">
           <select
             value={pessoa}
             onChange={(e) => setPessoa(e.target.value)}
@@ -88,6 +104,19 @@ export default function Consumos({ data, fechado, equipe, consumos }: Props) {
             {equipe.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nome}
+              </option>
+            ))}
+          </select>
+          <select
+            value={turno}
+            onChange={(e) => setTurno(e.target.value as Turno)}
+            className="p-campo"
+            aria-label="Turno do consumo"
+          >
+            {TURNOS.map((t) => (
+              <option key={t} value={t} disabled={t === turnoPago}>
+                {ROTULO_TURNO[t]}
+                {t === turnoPago ? " (já pago)" : ""}
               </option>
             ))}
           </select>

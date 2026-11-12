@@ -5,7 +5,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { acaoFecharPeriodo, acaoReabrirPagamento } from "../acoes";
-import { idPagamento } from "@/lib/caixinha/tipos";
+import { idPagamento, lerIdPagamento, ROTULO_TURNO } from "@/lib/caixinha/tipos";
 
 export function FecharPeriodo({ ini, fim, dias, total }: { ini: string; fim: string; dias: number; total: string }) {
   const [aviso, setAviso] = useState("");
@@ -42,12 +42,15 @@ export function ReabrirPagamento({ id, dias }: { id: string; dias: number }) {
   const router = useRouter();
 
   function reabrir() {
-    const texto = `Reabrir o pagamento? ${dias === 1 ? "O dia volta" : `Os ${dias} dias voltam`} a ficar aberto${dias === 1 ? "" : "s"} e os saldos voltam ao que eram.`;
+    const { ini, fim, turno } = lerIdPagamento(id);
+    const texto = turno
+      ? `Reabrir o pagamento? O ${ROTULO_TURNO[turno].toLowerCase()} volta a ficar aberto e os saldos voltam ao que eram.`
+      : `Reabrir o pagamento? ${dias === 1 ? "O dia volta" : `Os ${dias} dias voltam`} a ficar aberto${dias === 1 ? "" : "s"} e os saldos voltam ao que eram.`;
     if (!window.confirm(texto)) return;
     iniciar(async () => {
       const r = await acaoReabrirPagamento(id);
       setAviso(r.mensagem);
-      if (r.ok) router.push(`/caixinha/pagamento?ini=${id.slice(0, 10)}&fim=${id.slice(11)}`);
+      if (r.ok) router.push(turno ? `/caixinha?dia=${ini}&ver=${turno}` : `/caixinha/pagamento?ini=${ini}&fim=${fim}`);
     });
   }
 

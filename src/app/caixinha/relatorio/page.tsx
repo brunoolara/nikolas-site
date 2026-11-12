@@ -138,7 +138,7 @@ export default async function Relatorio({ searchParams }: PageProps<"/caixinha/r
   const a = apurar(diasAntes);
 
   const pagamentos = (
-    await Promise.all((estado.pagamentos ?? []).filter((p) => p.slice(11) >= ini && p.slice(11) <= fim).map(lerPagamento))
+    await Promise.all((estado.pagamentos ?? []).filter((p) => p.slice(11, 21) >= ini && p.slice(11, 21) <= fim).map(lerPagamento))
   ).filter((p) => p !== null);
   const pagoTotal = pagamentos.reduce((s, p) => s + p.linhas.reduce((x, l) => x + l.pagar, 0), 0);
 
