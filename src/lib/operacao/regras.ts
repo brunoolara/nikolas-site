@@ -5,6 +5,9 @@
 // - Delivery: o relógio de 1h conta da abertura do pedido até ele SAIR para
 //   entrega ("saiu para entrega" na Takeat). Retirada no balcão conta até
 //   ficar pronto. Passou de 1h, vermelho; a partir de 45 min, âmbar.
+// - (13/11/2026) No Nikola's o "Pronto" da Takeat é quando o pedido SAI: a
+//   equipe marca pronto na hora em que o motoboy leva, e depois finaliza. O
+//   kanban fica: em preparo → saiu → finalizado. O relógio para no pronto.
 // - Mesas: "sem pedir" conta do ÚLTIMO pedido válido (não da abertura).
 //   Passou de 30 min, a mesa fica em alerta.
 
@@ -58,7 +61,7 @@ function itensDe(c: Comanda): ItemPedido[] {
 
 // ------------------------------------------------------------------ delivery
 
-export type EtapaDelivery = "aguardando" | "preparo" | "pronto" | "saiu" | "finalizado" | "cancelado";
+export type EtapaDelivery = "aguardando" | "preparo" | "saiu" | "finalizado" | "cancelado";
 
 export type PedidoDelivery = {
   id: number;
@@ -86,9 +89,9 @@ function etapaDelivery(c: Comanda): EtapaDelivery {
   if (cancelada(c)) return "cancelado";
   if (c.status === "waiting_payment") return "aguardando";
   const t = c.status_timings;
-  if (t?.ongoing_at || t?.delivered_at) return finalizada(c) ? "finalizado" : "saiu";
   if (finalizada(c)) return "finalizado";
-  if (t?.ready_at) return "pronto";
+  // pronto na Takeat = já saiu (ver o topo do arquivo)
+  if (t?.ready_at || t?.ongoing_at || t?.delivered_at) return "saiu";
   return "preparo";
 }
 
@@ -99,14 +102,14 @@ export function pedidoDelivery(c: Comanda, agora: number): PedidoDelivery {
   const retirada = Boolean(c.with_withdrawal);
   const etapa = etapaDelivery(c);
   const inicio = ms(c.start_time);
-  // onde o relógio para: saída (ou entrega) no delivery; pronto na retirada;
-  // sem marca nenhuma, a finalização da comanda
+  // onde o relógio para: no pronto (que aqui é a saída); sem ele, saiu para
+  // entrega ou entregue; sem marca nenhuma, a finalização da comanda
   const fimRelogio = retirada
     ? ms(t?.ready_at) || ms(c.completed_at || c.end_time)
-    : ms(t?.ongoing_at) || ms(t?.delivered_at) || ms(c.completed_at || c.end_time);
+    : ms(t?.ready_at) || ms(t?.ongoing_at) || ms(t?.delivered_at) || ms(c.completed_at || c.end_time);
   const parado = Number.isFinite(fimRelogio) || etapa === "cancelado";
   const minutos = min(inicio, Number.isFinite(fimRelogio) ? fimRelogio : agora);
-  const ativo = etapa === "preparo" || etapa === "pronto" || etapa === "aguardando";
+  const ativo = etapa === "preparo" || etapa === "aguardando";
   const alerta: PedidoDelivery["alerta"] =
     etapa === "cancelado"
       ? "ok"
@@ -119,7 +122,7 @@ export function pedidoDelivery(c: Comanda, agora: number): PedidoDelivery {
   const marcos = [
     { rotulo: "Pedido", em: c.start_time },
     { rotulo: "Aceito", em: t?.accepted_at ?? "" },
-    { rotulo: "Pronto", em: t?.ready_at ?? "" },
+    { rotulo: retirada ? "Pronto" : "Pronto / saiu", em: t?.ready_at ?? "" },
     { rotulo: "Saiu para entrega", em: t?.ongoing_at ?? "" },
     { rotulo: "Entregue", em: t?.delivered_at ?? "" },
     { rotulo: "Finalizado", em: c.completed_at || c.end_time || "" },
@@ -149,7 +152,6 @@ export function pedidoDelivery(c: Comanda, agora: number): PedidoDelivery {
 
 export type PainelDelivery = {
   emPreparo: PedidoDelivery[];
-  prontos: PedidoDelivery[];
   saiu: PedidoDelivery[];
   finalizados: PedidoDelivery[];
   aguardando: PedidoDelivery[];
@@ -168,18 +170,17 @@ export function painelDelivery(comandas: Comanda[], agora: number): PainelDelive
     .filter(ehDelivery)
     .map((c) => pedidoDelivery(c, agora))
     // de dias anteriores, só o que ainda está em aberto
-    .filter((p) => ms(p.inicio) >= inicioDia || p.etapa === "preparo" || p.etapa === "pronto")
+    .filter((p) => ms(p.inicio) >= inicioDia || p.etapa === "preparo" || p.etapa === "saiu")
     .sort((a, b) => ms(a.inicio) - ms(b.inicio));
 
   const doDia = pedidos.filter((p) => ms(p.inicio) >= inicioDia && p.etapa !== "cancelado" && p.etapa !== "aguardando");
-  const sairam = doDia.filter((p) => p.parado && p.etapa !== "preparo" && p.etapa !== "pronto");
+  const sairam = doDia.filter((p) => p.parado && p.etapa !== "preparo");
   return {
     emPreparo: pedidos.filter((p) => p.etapa === "preparo"),
-    prontos: pedidos.filter((p) => p.etapa === "pronto"),
     saiu: pedidos.filter((p) => p.etapa === "saiu"),
     finalizados: pedidos.filter((p) => p.etapa === "finalizado" || p.etapa === "cancelado").reverse(),
     aguardando: pedidos.filter((p) => p.etapa === "aguardando"),
-    atrasados: pedidos.filter((p) => (p.etapa === "preparo" || p.etapa === "pronto") && p.alerta === "atrasado").length,
+    atrasados: pedidos.filter((p) => p.etapa === "preparo" && p.alerta === "atrasado").length,
     totalHoje: doDia.reduce((s, p) => s + p.valor, 0),
     pedidosHoje: doDia.length,
     mediaAteSair: sairam.length ? Math.round(sairam.reduce((s, p) => s + p.minutos, 0) / sairam.length) : null,

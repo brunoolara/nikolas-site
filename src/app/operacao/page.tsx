@@ -48,7 +48,7 @@ export default async function AoVivo({ searchParams }: PageProps<"/operacao">) {
         {(
           [
             ["mesas", "Mesas", "/operacao", mesas.abertas.length, mesas.paradas],
-            ["delivery", "Delivery", "/operacao?ver=delivery", delivery.emPreparo.length + delivery.prontos.length, delivery.atrasados],
+            ["delivery", "Delivery", "/operacao?ver=delivery", delivery.emPreparo.length, delivery.atrasados],
           ] as const
         ).map(([chave, nome, href, qtd, alertas]) => (
           <Link
@@ -189,8 +189,8 @@ function TelaDelivery({ p }: { p: ReturnType<typeof painelDelivery> }) {
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Numero
           rotulo="Em preparo"
-          valor={String(p.emPreparo.length + p.prontos.length)}
-          detalhe={`${p.prontos.length} pronto${p.prontos.length === 1 ? "" : "s"} para sair`}
+          valor={String(p.emPreparo.length)}
+          detalhe={`${p.saiu.length} ${p.saiu.length === 1 ? "saiu" : "saíram"}, falta finalizar`}
         />
         <Numero
           rotulo="Passaram de 1h"
@@ -207,8 +207,11 @@ function TelaDelivery({ p }: { p: ReturnType<typeof painelDelivery> }) {
       </div>
 
       <SecaoPedidos titulo="Em preparo" pedidos={p.emPreparo} vazio="Nenhum pedido em preparo." />
-      <SecaoPedidos titulo="Prontos, esperando sair" pedidos={p.prontos} vazio="Nenhum pedido esperando entregador." />
-      {p.saiu.length ? <SecaoPedidos titulo="Saíram para entrega" pedidos={p.saiu} vazio="" /> : null}
+      <SecaoPedidos
+        titulo="Saíram para entrega"
+        pedidos={p.saiu}
+        vazio="Nenhum pedido na rua. Os que saem aparecem aqui até serem finalizados."
+      />
       {p.aguardando.length ? (
         <SecaoPedidos titulo="Aguardando pagamento online" pedidos={p.aguardando} vazio="" />
       ) : null}
@@ -249,7 +252,6 @@ function SecaoPedidos({ titulo, pedidos, vazio }: { titulo: string; pedidos: Ped
 const ROTULO_ETAPA: Record<PedidoDelivery["etapa"], string> = {
   aguardando: "Aguardando pagamento",
   preparo: "Em preparo",
-  pronto: "Pronto",
   saiu: "Saiu",
   finalizado: "Finalizado",
   cancelado: "Cancelado",
@@ -279,7 +281,7 @@ function CartaoPedido({ x }: { x: PedidoDelivery }) {
         <div className="flex flex-wrap items-center gap-2">
           {x.ifood ? <span className="p-selo">iFood</span> : null}
           <span className={`p-selo ${x.etapa === "saiu" || x.etapa === "finalizado" ? "p-selo-verde" : ""}`}>
-            {ROTULO_ETAPA[x.etapa]}
+            {x.retirada && x.etapa === "saiu" ? "Pronto" : ROTULO_ETAPA[x.etapa]}
           </span>
           <span
             className={`min-w-16 text-right font-display text-xl tabular-nums ${
