@@ -3,7 +3,18 @@
 import { useState, useTransition } from "react";
 import { acaoAdicionarPessoa, acaoAlterarPessoa } from "../acoes";
 
-type Pessoa = { id: string; nome: string; ativo: boolean; saldoTexto: string };
+type Pessoa = {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  /** % com que entra no turno (100 = parte cheia). */
+  parte: number;
+  /** % no domingo; null = o mesmo de todo dia. */
+  parteDomingo: number | null;
+  saldoTexto: string;
+};
+
+const OPCOES = [100, 75, 50, 25];
 
 export default function Equipe({ pessoas }: { pessoas: Pessoa[] }) {
   const [novo, setNovo] = useState("");
@@ -80,6 +91,46 @@ export default function Equipe({ pessoas }: { pessoas: Pessoa[] }) {
                     {p.nome}
                     {p.ativo ? null : <span className="font-normal text-cafe"> · desativado</span>}
                     {p.saldoTexto ? <span className="block font-normal text-red-700">deve {p.saldoTexto}</span> : null}
+                  </span>
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-cafe">
+                    <label className="flex items-center gap-1.5">
+                      Parte
+                      <select
+                        value={p.parte}
+                        disabled={ocupado}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          rodar(() => acaoAlterarPessoa(p.id, { parte: v === 100 ? null : v }));
+                        }}
+                        className="p-campo w-auto py-1"
+                      >
+                        {OPCOES.map((o) => (
+                          <option key={o} value={o}>
+                            {o}%
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex items-center gap-1.5">
+                      Domingo
+                      <select
+                        value={p.parteDomingo ?? ""}
+                        disabled={ocupado}
+                        onChange={(e) =>
+                          rodar(() =>
+                            acaoAlterarPessoa(p.id, { parteDomingo: e.target.value ? Number(e.target.value) : null }),
+                          )
+                        }
+                        className="p-campo w-auto py-1"
+                      >
+                        <option value="">igual</option>
+                        {OPCOES.map((o) => (
+                          <option key={o} value={o}>
+                            {o}%
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </span>
                   <button type="button" className="p-btn p-btn-secundario p-btn-sm" onClick={() => setEditando({ id: p.id, nome: p.nome })}>
                     Renomear

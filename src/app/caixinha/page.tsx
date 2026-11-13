@@ -13,6 +13,7 @@ import { taxaDoDia } from "@/lib/caixinha/takeat";
 import {
   calcularDia,
   partesDoDia,
+  pctPadrao,
   reais,
   ROTULO_TURNO,
   TURNOS,
@@ -174,7 +175,7 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
             pessoas={equipe
               .filter((p) => p.ativo || registro.turnos[t].presencas.some((x) => x.id === p.id))
               .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-              .map((p) => ({ id: p.id, nome: p.nome }))}
+              .map((p) => ({ id: p.id, nome: p.nome, padrao: pctPadrao(p, data) }))}
             presencas={registro.turnos[t].presencas}
             taxa={taxa[t]}
             taxaManual={fechado || tp?.turno === t ? null : registro.turnos[t].taxaManual}

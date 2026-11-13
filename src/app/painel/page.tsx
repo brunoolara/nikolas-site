@@ -33,6 +33,13 @@ const BLOCOS: Bloco[] = [
     descricao: "A taxa de serviço do dia dividida com a equipe, por turno, com o consumo descontado.",
   },
   {
+    area: "caixinha-turno",
+    href: "/caixinha-turno",
+    nome: "Caixinha do turno",
+    icone: "caixinha",
+    descricao: "Para o PC do restaurante: marcar quem trabalhou no turno de agora e fechar e pagar.",
+  },
+  {
     area: "minha-caixinha",
     href: "/minha-caixinha",
     nome: "Minha caixinha",

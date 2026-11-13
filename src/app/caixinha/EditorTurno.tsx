@@ -11,7 +11,8 @@ type Props = {
   data: string;
   turno: Turno;
   fechado: boolean;
-  pessoas: { id: string; nome: string }[];
+  /** `padrao`: o % com que a pessoa entra quando é marcada. */
+  pessoas: { id: string; nome: string; padrao: number }[];
   presencas: Presenca[];
   taxa: number;
   taxaManual: number | null;
@@ -115,7 +116,7 @@ export default function EditorTurno(props: Props) {
                   aria-label={`${p.nome} trabalhou no ${ROTULO_TURNO[turno]}`}
                   checked={pct !== null}
                   disabled={fechado || ocupado}
-                  onChange={(e) => rodar(() => acaoPresenca(data, turno, p.id, e.target.checked ? 100 : null))}
+                  onChange={(e) => rodar(() => acaoPresenca(data, turno, p.id, e.target.checked ? p.padrao : null))}
                 />
                 <span className="truncate">{p.nome}</span>
               </label>
@@ -151,7 +152,7 @@ export default function EditorTurno(props: Props) {
           className="p-btn p-btn-fantasma p-btn-sm mt-2"
           onClick={() => rodar(() => acaoTodosPresentes(data, turno))}
         >
-          Marcar todos (100%)
+          Marcar todos
         </button>
       ) : null}
       {aviso ? <p className="p-aviso p-aviso-erro mt-3">{aviso}</p> : null}

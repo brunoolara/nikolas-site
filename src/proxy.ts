@@ -17,6 +17,7 @@ const INTERNAS = [
   "/posts",
   "/caixinha",
   "/minha-caixinha",
+  "/caixinha-turno",
   "/operacao",
   "/estoque",
   "/cmv",

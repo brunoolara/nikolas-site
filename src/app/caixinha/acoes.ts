@@ -5,6 +5,10 @@
 // um período) e se fecham e reabrem em ordem, porque o saldo passa adiante.
 // Um turno também pode ser pago sozinho; aí só o outro turno segue aberto, e
 // pagar o outro fecha o dia. Só o último pagamento feito pode ser reaberto.
+//
+// A tela do PC do restaurante (área "caixinha-turno") só chega às ações do
+// fim do arquivo: marcar presença e pagar o turno de agora, com o dia e o
+// turno conferidos aqui pelo relógio.
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -31,6 +35,8 @@ import {
   MAX_DIAS_PAGAMENTO,
   PAGAMENTO_ID,
   partesDoDia,
+  pctPadrao,
+  turnoAgora,
   ROTULO_TURNO,
   somarPagamento,
   TURNOS,
@@ -48,6 +54,12 @@ async function quem(): Promise<string | null> {
   return sessao?.areas.includes("caixinha") ? sessao.nome : null;
 }
 
+/** Quem está no PC do restaurante (ou alguém com a Caixinha inteira). */
+async function quemNoPc(): Promise<string | null> {
+  const sessao = await sessaoAtual();
+  return sessao?.areas.includes("caixinha") || sessao?.areas.includes("caixinha-turno") ? sessao.nome : null;
+}
+
 const turnoValido = (t: string): t is Turno => (TURNOS as string[]).includes(t);
 
 /** Muda um dia aberto. Com `turno`, recusa se aquele turno já foi pago. */
@@ -55,8 +67,9 @@ async function mexerNoDia(
   data: string,
   mudar: (dia: Dia) => Dia,
   turno?: Turno | ((dia: Dia) => Turno | undefined),
+  autorizado: () => Promise<string | null> = quem,
 ): Promise<Resultado> {
-  if (!(await quem())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  if (!(await autorizado())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
   if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
   try {
     let fechado = false;
@@ -78,6 +91,7 @@ async function mexerNoDia(
     if (turnoPago)
       return { ok: false, mensagem: `O ${ROTULO_TURNO[turnoPago].toLowerCase()} já foi pago. Reabra para mudar.` };
     revalidatePath("/caixinha", "layout");
+    revalidatePath("/caixinha-turno");
     return { ok: true, mensagem: "" };
   } catch (erro) {
     console.error("caixinha: falha ao gravar o dia", erro);
@@ -97,13 +111,13 @@ export async function acaoPresenca(data: string, turno: string, pessoa: string, 
   }, turno);
 }
 
-/** Põe no turno todos os ativos que ainda não estão, com 100%. */
+/** Põe no turno todos os ativos que ainda não estão, cada um com o % padrão dele. */
 export async function acaoTodosPresentes(data: string, turno: string) {
   if (!turnoValido(turno)) return { ok: false, mensagem: "Turno inválido." };
   const equipe = (await lerEquipe()).filter((p) => p.ativo);
   return mexerNoDia(data, (dia) => {
     const atuais = dia.turnos[turno].presencas;
-    const novos = equipe.filter((p) => !atuais.some((a) => a.id === p.id)).map((p) => ({ id: p.id, pct: 100 }));
+    const novos = equipe.filter((p) => !atuais.some((a) => a.id === p.id)).map((p) => ({ id: p.id, pct: pctPadrao(p, data) }));
     return {
       ...dia,
       turnos: { ...dia.turnos, [turno]: { ...dia.turnos[turno], presencas: [...atuais, ...novos] } },
@@ -198,6 +212,10 @@ async function taxasParaFechar(
 export async function acaoFecharPeriodo(ini: string, fim: string): Promise<Resultado> {
   const nome = await quem();
   if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  return fecharPeriodo(nome, ini, fim);
+}
+
+async function fecharPeriodo(nome: string, ini: string, fim: string): Promise<Resultado> {
   if (!DATA.test(ini) || !DATA.test(fim) || ini > fim) return { ok: false, mensagem: "Período inválido." };
   const datas = diasEntre(ini, fim);
   if (datas.length > MAX_DIAS_PAGAMENTO)
@@ -257,6 +275,7 @@ export async function acaoFecharPeriodo(ini: string, fim: string): Promise<Resul
       pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
     });
     revalidatePath("/caixinha", "layout");
+    revalidatePath("/caixinha-turno");
     return { ok: true, mensagem: datas.length === 1 ? "Dia fechado." : `${datas.length} dias fechados e pagos.` };
   } catch (erro) {
     console.error("caixinha: falha ao fechar", erro);
@@ -284,6 +303,10 @@ const saldosDepois = (estado: Estado, linhas: ReturnType<typeof somarPagamento>)
 export async function acaoFecharTurno(data: string, turno: string): Promise<Resultado> {
   const nome = await quem();
   if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  return fecharTurno(nome, data, turno);
+}
+
+async function fecharTurno(nome: string, data: string, turno: string): Promise<Resultado> {
   if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
   if (!turnoValido(turno)) return { ok: false, mensagem: "Turno inválido." };
   if (data > hoje()) return { ok: false, mensagem: "Não dá para pagar um dia que ainda não chegou." };
@@ -293,7 +316,7 @@ export async function acaoFecharTurno(data: string, turno: string): Promise<Resu
     if (dia.fechamento) return { ok: false, mensagem: "Este dia já foi fechado." };
     if (dia.turnoPago?.turno === turno) return { ok: false, mensagem: `O ${ROTULO_TURNO[turno].toLowerCase()} já foi pago.` };
     // o outro turno já foi pago: este é o resto do dia
-    if (dia.turnoPago) return acaoFecharPeriodo(data, data);
+    if (dia.turnoPago) return fecharPeriodo(nome, data, data);
     if (estado.ultimoFechado && estado.ultimoFechado >= data)
       return { ok: false, mensagem: "Já existe um dia fechado depois deste. Os dias se fecham em ordem." };
 
@@ -335,6 +358,7 @@ export async function acaoFecharTurno(data: string, turno: string): Promise<Resu
       pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
     });
     revalidatePath("/caixinha", "layout");
+    revalidatePath("/caixinha-turno");
     return { ok: true, mensagem: `${ROTULO_TURNO[turno]} fechado e pago.` };
   } catch (erro) {
     console.error("caixinha: falha ao fechar o turno", erro);
@@ -416,14 +440,34 @@ export async function acaoAdicionarPessoa(nome: string): Promise<Resultado> {
   }
 }
 
-export async function acaoAlterarPessoa(id: string, mudanca: { nome?: string; ativo?: boolean }): Promise<Resultado> {
+const pctValido = (v: number | null | undefined) => v == null || (Number.isInteger(v) && v >= 1 && v <= 100);
+
+export async function acaoAlterarPessoa(
+  id: string,
+  mudanca: { nome?: string; ativo?: boolean; parte?: number | null; parteDomingo?: number | null },
+): Promise<Resultado> {
   if (!(await quem())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
   const nome = mudanca.nome?.trim().replace(/\s+/g, " ");
   if (mudanca.nome !== undefined && !nome) return { ok: false, mensagem: "Coloque o nome." };
+  if (!pctValido(mudanca.parte) || !pctValido(mudanca.parteDomingo))
+    return { ok: false, mensagem: "O % vai de 1 a 100." };
+  // null tira a regra (volta a 100%, ou ao % de todo dia no domingo)
+  const comParte = <T extends { parte?: number; parteDomingo?: number }>(p: T): T => {
+    const novo = { ...p };
+    for (const k of ["parte", "parteDomingo"] as const) {
+      const v = mudanca[k];
+      if (v === undefined) continue;
+      if (v === null) delete novo[k];
+      else novo[k] = v;
+    }
+    return novo;
+  };
   try {
     await atualizarEquipe((equipe) =>
       equipe.map((p) =>
-        p.id === id ? { ...p, ...(nome ? { nome } : {}), ...(mudanca.ativo !== undefined ? { ativo: mudanca.ativo } : {}) } : p,
+        p.id === id
+          ? comParte({ ...p, ...(nome ? { nome } : {}), ...(mudanca.ativo !== undefined ? { ativo: mudanca.ativo } : {}) })
+          : p,
       ),
     );
     revalidatePath("/caixinha", "layout");
@@ -432,4 +476,47 @@ export async function acaoAlterarPessoa(id: string, mudanca: { nome?: string; at
     console.error("caixinha: falha ao gravar a equipe", erro);
     return { ok: false, mensagem: FALHA };
   }
+}
+
+// ---------------------------------------------------------------- PC do restaurante
+
+const MUDOU_O_TURNO = "O turno mudou desde que a tela abriu. A tela foi atualizada: confira antes de continuar.";
+
+/**
+ * Marca ou desmarca alguém no turno de agora, com o % padrão da pessoa. O %
+ * de quem já está marcado não muda (ajuste fino é só na tela da Caixinha).
+ */
+export async function acaoPcPresenca(data: string, turno: string, pessoa: string, presente: boolean): Promise<Resultado> {
+  const agora = turnoAgora();
+  if (data !== agora.data || turno !== agora.turno) {
+    revalidatePath("/caixinha-turno");
+    return { ok: false, mensagem: MUDOU_O_TURNO };
+  }
+  const p = (await lerEquipe()).find((x) => x.id === pessoa && x.ativo);
+  if (!p) return { ok: false, mensagem: "Essa pessoa não está na equipe." };
+  const t = agora.turno;
+  return mexerNoDia(
+    agora.data,
+    (dia) => {
+      const lista = dia.turnos[t].presencas;
+      const tem = lista.some((x) => x.id === pessoa);
+      if (presente === tem) return dia;
+      const nova = presente ? [...lista, { id: pessoa, pct: pctPadrao(p, agora.data) }] : lista.filter((x) => x.id !== pessoa);
+      return { ...dia, turnos: { ...dia.turnos, [t]: { ...dia.turnos[t], presencas: nova } } };
+    },
+    t,
+    quemNoPc,
+  );
+}
+
+/** Fecha e paga o turno de agora pelo PC do restaurante. */
+export async function acaoPcPagarTurno(data: string, turno: string): Promise<Resultado> {
+  const nome = await quemNoPc();
+  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  const agora = turnoAgora();
+  if (data !== agora.data || turno !== agora.turno) {
+    revalidatePath("/caixinha-turno");
+    return { ok: false, mensagem: MUDOU_O_TURNO };
+  }
+  return fecharTurno(nome, agora.data, agora.turno);
 }

@@ -14,13 +14,20 @@ export default async function PaginaEquipe() {
   const [equipe, estado] = await Promise.all([lerEquipe(), lerEstado()]);
   const pessoas = equipe
     .sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, "pt-BR"))
-    .map((p) => ({ id: p.id, nome: p.nome, ativo: p.ativo, saldo: estado.saldos[p.id] ?? 0 }));
+    .map((p) => ({
+      id: p.id,
+      nome: p.nome,
+      ativo: p.ativo,
+      parte: p.parte ?? 100,
+      parteDomingo: p.parteDomingo ?? null,
+      saldo: estado.saldos[p.id] ?? 0,
+    }));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Equipe da caixinha"
-        descricao="Todos os funcionários entram no rateio; sócios ficam de fora. Quem tem saldo negativo aparece com o valor que ainda deve."
+        descricao="Todos os funcionários entram no rateio; sócios ficam de fora. A parte é o % com que a pessoa entra no turno ao ser marcada (dá para mudar no dia). Quem tem saldo negativo aparece com o valor que ainda deve."
       />
       <Abas atual="equipe" master={sessao.master} />
       <Equipe pessoas={pessoas.map((p) => ({ ...p, saldoTexto: p.saldo < 0 ? reais(-p.saldo) : "" }))} />

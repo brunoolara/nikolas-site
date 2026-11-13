@@ -13,6 +13,9 @@
 // - Dá para fechar e pagar um turno sozinho (Bruno, 11/11/2026). O consumo é
 //   lançado num turno e descontado no pagamento dele. Quando o outro turno é
 //   pago, o dia fecha. Consumo antigo, sem turno, conta como do jantar.
+// - Cada pessoa pode ter um % padrão, usado quando ela é marcada no turno
+//   (Bruno, 12/11/2026): Maria Fernanda, Lorena e Andreia entram com meia
+//   parte (50%); a Maria Fernanda recebe parte cheia no domingo.
 //
 // Sem código de servidor aqui: as telas do navegador também usam.
 
@@ -22,7 +25,34 @@ export type Turno = "almoco" | "jantar";
 export const TURNOS: Turno[] = ["almoco", "jantar"];
 export const ROTULO_TURNO: Record<Turno, string> = { almoco: "Almoço", jantar: "Jantar" };
 
-export type Pessoa = { id: string; nome: string; ativo: boolean; criadoEm: string };
+export type Pessoa = {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  criadoEm: string;
+  /** % com que entra no turno ao ser marcada (sem = 100). */
+  parte?: number;
+  /** % no domingo, se for diferente (sem = o mesmo de `parte`). */
+  parteDomingo?: number;
+};
+
+const ehDomingo = (data: string) => new Date(`${data}T12:00:00Z`).getUTCDay() === 0;
+
+/** O % com que a pessoa entra num turno do dia `data`, pela regra dela. */
+export const pctPadrao = (p: Pick<Pessoa, "parte" | "parteDomingo">, data: string): number =>
+  (ehDomingo(data) ? (p.parteDomingo ?? p.parte) : p.parte) ?? 100;
+
+/**
+ * O dia de serviço e o turno de agora, no horário de Ouro Fino: almoço até as
+ * 16h; depois, jantar até as 5h do dia seguinte (o jantar que passa da
+ * meia-noite ainda é do dia anterior).
+ */
+export function turnoAgora(agora = new Date()): { data: string; turno: Turno } {
+  const brasil = new Date(agora.getTime() - 3 * 3_600_000);
+  const hora = brasil.getUTCHours();
+  if (hora < 5) brasil.setUTCDate(brasil.getUTCDate() - 1);
+  return { data: brasil.toISOString().slice(0, 10), turno: hora >= 5 && hora < 16 ? "almoco" : "jantar" };
+}
 
 /** Quem trabalhou no turno e com quanto da parte (1 a 100). */
 export type Presenca = { id: string; pct: number };

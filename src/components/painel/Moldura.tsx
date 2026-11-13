@@ -28,6 +28,13 @@ export const ITENS: Item[] = [
   { chave: "operacao", href: "/operacao", nome: "Ao vivo", icone: "operacao", area: "operacao" },
   { chave: "caixinha", href: "/caixinha", nome: "Caixinha", icone: "caixinha", area: "caixinha" },
   {
+    chave: "caixinha-turno",
+    href: "/caixinha-turno",
+    nome: "Turno",
+    icone: "caixinha",
+    area: "caixinha-turno",
+  },
+  {
     chave: "minha-caixinha",
     href: "/minha-caixinha",
     nome: "Minha caixinha",
