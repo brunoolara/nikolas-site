@@ -3,7 +3,7 @@
 // num arquivo, para a tela de contagem abrir rápido e sem gastar cota.
 
 import "server-only";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 import { ErroTakeat, takeatGet } from "@/lib/takeat/cliente";
 import { categoriaPeloNome, type ItemContagem } from "./categorias";
 import type { Ajustes } from "./armazem";

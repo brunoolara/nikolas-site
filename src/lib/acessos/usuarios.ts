@@ -9,7 +9,7 @@
 
 import "server-only";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 
 import { AREAS, type Area } from "./areas";
 

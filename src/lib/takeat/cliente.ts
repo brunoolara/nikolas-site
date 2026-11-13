@@ -15,7 +15,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 
 const BASE = "https://public-api.takeat.app";

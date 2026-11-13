@@ -9,7 +9,7 @@
 // "voltar para a semana passada" de graça.
 
 import "server-only";
-import { get, list, put } from "@vercel/blob";
+import { get, list, put } from "@/lib/loja";
 import { CARDAPIO_INICIAL } from "./inicial";
 import { comViradao } from "./viradao";
 import type { Cardapio } from "./tipos";

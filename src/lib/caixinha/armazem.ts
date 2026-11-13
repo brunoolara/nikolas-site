@@ -12,7 +12,7 @@
 // nada se perde (mesmo esquema do registro do painel).
 
 import "server-only";
-import { del, get, put } from "@vercel/blob";
+import { del, get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 import { diaVazio, type Dia, type Estado, type Pagamento, type Pessoa } from "./tipos";
 

@@ -7,7 +7,7 @@
 //   guardadas por semana.
 
 import "server-only";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 import { ErroTakeat, takeatGet } from "@/lib/takeat/cliente";
 import { itensDaNota, type Custos } from "./calculo";
 

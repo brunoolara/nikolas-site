@@ -6,7 +6,7 @@
 // some. Registrar nunca derruba quem chamou — no pior caso o evento se perde.
 
 import "server-only";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 
 export type TipoEvento = "entrou" | "falhou" | "saiu" | "visita" | "cardapio";

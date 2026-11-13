@@ -9,7 +9,7 @@
 // tempo não apagam o que a outra digitou.
 
 import "server-only";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 import type { Categoria } from "./categorias";
 

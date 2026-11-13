@@ -10,7 +10,7 @@
 // Caixinha e no Estoque.
 
 import "server-only";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 
 const PASTA = process.env.NODE_ENV === "production" ? "notificacoes" : "notificacoes-teste";

@@ -11,7 +11,7 @@
 // Guardamos só os campos que as telas usam (sem dados fiscais).
 
 import "server-only";
-import { get, put } from "@vercel/blob";
+import { get, put } from "@/lib/loja";
 import { takeatGet, type Prioridade } from "./cliente";
 
 export type Pedido = {
@@ -183,13 +183,21 @@ export function atualizaAgora(agora = new Date()): boolean {
   return hora < PAUSA_INICIO_H || hora >= PAUSA_FIM_H;
 }
 
-/** Comandas das últimas 30 h, no máximo a cada 2 min para todo mundo junto. */
+// A última leitura fica também na memória do servidor: a cada 2 min o relógio
+// e as telas pedem o Ao vivo, e reler o arquivo guardado toda vez gastaria a
+// cota de tráfego do Supabase à toa. O arquivo só é lido quando a memória
+// está vazia (servidor novo) e a Takeat falha ou está na pausa da madrugada.
+let memoria: AoVivo | null = null;
+
+/** Comandas das últimas 30 h, no máximo a cada 2 min. */
 export async function comandasAoVivo(forcar = false): Promise<AoVivo> {
   const caminho = `${PASTA}/ao-vivo.json`;
-  const guardado = await lerJson<AoVivo>(caminho);
-  const idade = guardado ? Date.now() - new Date(guardado.em).getTime() : Infinity;
-  if (guardado && idade < VALIDADE_AO_VIVO && !guardado.erro) return guardado;
-  if (!forcar && guardado && !atualizaAgora()) return { ...guardado, foraDoHorario: true };
+  const idade = memoria ? Date.now() - new Date(memoria.em).getTime() : Infinity;
+  if (memoria && idade < VALIDADE_AO_VIVO && !memoria.erro) return memoria;
+  if (!forcar && !atualizaAgora()) {
+    const guardado = memoria ?? (await lerJson<AoVivo>(caminho));
+    if (guardado) return { ...guardado, foraDoHorario: true };
+  }
 
   if (!emVoo)
     emVoo = (async () => {
@@ -198,10 +206,12 @@ export async function comandasAoVivo(forcar = false): Promise<AoVivo> {
         const inicio = new Date(fim.getTime() - 30 * 3_600_000);
         const comandas = await consultar(inicio.toISOString(), fim.toISOString(), "ao-vivo");
         const novo: AoVivo = { em: fim.toISOString(), comandas };
+        memoria = novo;
         await gravarJson(caminho, novo);
         return novo;
       } catch (erro) {
         const motivo = erro instanceof Error ? erro.message : "Não consegui falar com a Takeat agora.";
+        const guardado = memoria ?? (await lerJson<AoVivo>(caminho));
         return guardado ? { ...guardado, erro: motivo } : { em: new Date().toISOString(), comandas: [], erro: motivo };
       } finally {
         setTimeout(() => (emVoo = null), 0);

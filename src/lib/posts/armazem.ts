@@ -4,7 +4,7 @@
 // servidor, que confere a senha.
 
 import "server-only";
-import { del, get, put } from "@vercel/blob";
+import { del, get, put } from "@/lib/loja";
 import type { Post } from "./tipos";
 
 const LISTA = "posts/lista.json";
