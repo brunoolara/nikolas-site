@@ -56,7 +56,14 @@ export default function Notificacoes({ chavePublica, configurado, podeDelivery, 
       if (Notification.permission === "denied") return setSituacao("negado");
       const registro = await navigator.serviceWorker.getRegistration("/");
       const assinatura = await registro?.pushManager.getSubscription();
-      if (assinatura) setEndpoint(assinatura.endpoint);
+      if (assinatura) {
+        setEndpoint(assinatura.endpoint);
+        // o aparelho acha que está inscrito, mas o servidor pode ter perdido a
+        // inscrição (foi o que aconteceu na troca do Blob pelo Supabase, 12/11):
+        // reenvia a cada visita, sem mexer nas preferências
+        const json = assinatura.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+        void acaoInscrever(json, nomeDoAparelho()).catch(() => {});
+      }
       setSituacao(assinatura ? "ligado" : "desligado");
     })().catch(() => setSituacao("sem-suporte"));
   }, []);
