@@ -22,9 +22,11 @@ const BUCKET = "loja";
 const ehImagem = (caminho: string) => /\.(jpe?g|png)$/i.test(caminho);
 
 function config() {
-  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
-  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !chave) throw new Error("Falta configurar SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.");
+  const bruto = process.env.SUPABASE_URL?.trim();
+  const chave = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!bruto || !chave) throw new Error("Falta configurar SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY.");
+  // só o endereço do projeto: a tela do Supabase às vezes mostra a URL já com /rest/v1
+  const url = new URL(bruto).origin;
   // a chave nova do Supabase (sb_secret_...) vai só no apikey; a antiga
   // (service_role, um JWT) também no Authorization
   const cabecalhos: Record<string, string> = chave.startsWith("sb_secret_")
