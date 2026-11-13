@@ -36,6 +36,7 @@ export default async function CaixinhaDoTurno() {
   const pagamentoId = pagoNoTurno?.pagamento ?? dia.fechamento?.pagamento ?? null;
   const pago = pagoNoTurno ?? dia.fechamento ?? null;
   const presencas = dia.turnos[turno].presencas;
+  const encerrado = pago ? null : (dia.turnos[turno].encerrado ?? null);
 
   // a taxa: congelada se já foi pago; senão a digitada pelo Bruno ou a da Takeat
   let taxa: number | null;
@@ -89,7 +90,7 @@ export default async function CaixinhaDoTurno() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Caixinha do turno"
-        descricao="Marque quem trabalhou neste turno. No fim, feche e pague."
+        descricao="Marque quem trabalhou neste turno. No fim, feche e pague, ou marque que não foi pago no dia."
         acoes={<AutoAtualizar lidoEm={new Date().toISOString()} />}
       />
       <Tela
@@ -101,6 +102,7 @@ export default async function CaixinhaDoTurno() {
         origem={origem}
         pessoas={pessoas}
         pago={pago ? { em: hora(pago.em), por: pago.por } : null}
+        encerrado={encerrado ? { em: hora(encerrado.em), por: encerrado.por } : null}
       />
     </div>
   );

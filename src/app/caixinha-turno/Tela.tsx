@@ -5,7 +5,7 @@
 
 import { useState, useTransition } from "react";
 import { PARTE_EQUIPE, reais, ROTULO_TURNO, type Turno } from "@/lib/caixinha/tipos";
-import { acaoPcPagarTurno, acaoPcPresenca } from "@/app/caixinha/acoes";
+import { acaoPcNaoPago, acaoPcPagarTurno, acaoPcPresenca } from "@/app/caixinha/acoes";
 
 export type PessoaTela = {
   id: string;
@@ -28,16 +28,19 @@ type Props = {
   origem: string;
   pessoas: PessoaTela[];
   pago: { em: string; por: string } | null;
+  /** Encerrado sem pagamento ("Não pago no dia"). */
+  encerrado: { em: string; por: string } | null;
 };
 
 const rotuloPct = (pct: number) => (pct === 100 ? "" : pct === 50 ? "meia parte" : `${pct}% da parte`);
 
-export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, pessoas, pago }: Props) {
+export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, pessoas, pago, encerrado }: Props) {
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
   const [ocupado, iniciar] = useTransition();
   const presentes = pessoas.filter((p) => p.presente);
   const total = presentes.reduce((s, p) => s + p.recebe, 0);
   const nomeTurno = ROTULO_TURNO[turno].toLowerCase();
+  const travado = Boolean(pago || encerrado);
 
   function marcar(p: PessoaTela) {
     iniciar(async () => {
@@ -53,6 +56,17 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
     if (!window.confirm(texto)) return;
     iniciar(async () => {
       const r = await acaoPcPagarTurno(data, turno);
+      setAviso({ ok: r.ok, texto: r.mensagem });
+    });
+  }
+
+  function naoPago() {
+    const texto =
+      `Encerrar o ${nomeTurno} sem pagar?\n\n${presentes.length} ${presentes.length === 1 ? "pessoa fica marcada" : "pessoas ficam marcadas"} ` +
+      `e o valor fica a pagar pelo Bruno.\n\nDepois disso, só o Bruno consegue mudar.`;
+    if (!window.confirm(texto)) return;
+    iniciar(async () => {
+      const r = await acaoPcNaoPago(data, turno);
       setAviso({ ok: r.ok, texto: r.mensagem });
     });
   }
@@ -76,22 +90,26 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
           <p className="p-aviso p-aviso-ok mt-4 text-base">
             {ROTULO_TURNO[turno]} pago às {pago.em} por {pago.por}. Para mudar alguma coisa, fale com o Bruno.
           </p>
+        ) : encerrado ? (
+          <p className="p-aviso p-aviso-alerta mt-4 text-base">
+            {ROTULO_TURNO[turno]} encerrado sem pagamento às {encerrado.em} por {encerrado.por}. Fica a pagar pelo Bruno.
+          </p>
         ) : null}
       </section>
 
       <section className="mt-6">
         <h2 className="font-display text-2xl">
-          {pago ? "Quem trabalhou" : "Quem trabalhou? Toque no seu nome"}
+          {travado ? "Quem trabalhou" : "Quem trabalhou? Toque no seu nome"}
           <span className="ml-2 align-middle text-base font-normal text-cafe">
             {presentes.length} {presentes.length === 1 ? "pessoa" : "pessoas"}
           </span>
         </h2>
         <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(pago ? presentes : pessoas).map((p) => (
+          {(travado ? presentes : pessoas).map((p) => (
             <li key={p.id}>
               <button
                 type="button"
-                disabled={ocupado || Boolean(pago)}
+                disabled={ocupado || travado}
                 onClick={() => marcar(p)}
                 aria-pressed={p.presente}
                 className={`flex min-h-20 w-full items-center gap-3 rounded-[var(--p-raio)] border-2 p-4 text-left transition-colors duration-150 disabled:cursor-default ${
@@ -128,7 +146,7 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
         <p className={`p-aviso mt-5 text-base ${aviso.ok ? "p-aviso-ok" : "p-aviso-erro"}`}>{aviso.texto}</p>
       ) : null}
 
-      {pago ? null : (
+      {travado ? null : (
         <section className="p-cartao mt-6 flex flex-wrap items-center justify-between gap-4 p-5">
           <div>
             <p className="p-kpi-rotulo">Total a pagar no {nomeTurno}</p>
@@ -137,14 +155,24 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
               <p className="mt-1 text-sm text-cafe">Sem a taxa da Takeat não dá para pagar. Avise o Bruno.</p>
             ) : null}
           </div>
-          <button
-            type="button"
-            disabled={ocupado || taxa === null || !presentes.length}
-            onClick={pagar}
-            className="p-btn p-btn-primario min-h-14 px-8 text-lg"
-          >
-            {ocupado ? "Aguarde…" : `Fechar e pagar o ${nomeTurno}`}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={ocupado || !presentes.length}
+              onClick={naoPago}
+              className="p-btn p-btn-secundario min-h-14 px-6 text-lg"
+            >
+              Não pago no dia
+            </button>
+            <button
+              type="button"
+              disabled={ocupado || taxa === null || !presentes.length}
+              onClick={pagar}
+              className="p-btn p-btn-primario min-h-14 px-8 text-lg"
+            >
+              {ocupado ? "Aguarde…" : `Fechar e pagar o ${nomeTurno}`}
+            </button>
+          </div>
         </section>
       )}
     </div>

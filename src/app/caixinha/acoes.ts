@@ -481,6 +481,7 @@ export async function acaoAlterarPessoa(
 // ---------------------------------------------------------------- PC do restaurante
 
 const MUDOU_O_TURNO = "O turno mudou desde que a tela abriu. A tela foi atualizada: confira antes de continuar.";
+const ENCERRADO = "Este turno já foi encerrado. Para mudar alguma coisa, fale com o Bruno.";
 
 /**
  * Marca ou desmarca alguém no turno de agora, com o % padrão da pessoa. O %
@@ -495,9 +496,15 @@ export async function acaoPcPresenca(data: string, turno: string, pessoa: string
   const p = (await lerEquipe()).find((x) => x.id === pessoa && x.ativo);
   if (!p) return { ok: false, mensagem: "Essa pessoa não está na equipe." };
   const t = agora.turno;
+  if ((await lerDia(agora.data)).turnos[t].encerrado) {
+    revalidatePath("/caixinha-turno");
+    return { ok: false, mensagem: ENCERRADO };
+  }
   return mexerNoDia(
     agora.data,
     (dia) => {
+      // encerrado entre a leitura acima e a gravação: não mexe
+      if (dia.turnos[t].encerrado) return dia;
       const lista = dia.turnos[t].presencas;
       const tem = lista.some((x) => x.id === pessoa);
       if (presente === tem) return dia;
@@ -518,5 +525,67 @@ export async function acaoPcPagarTurno(data: string, turno: string): Promise<Res
     revalidatePath("/caixinha-turno");
     return { ok: false, mensagem: MUDOU_O_TURNO };
   }
+  // encerrado sem pagar: quem paga agora é o Bruno, na Caixinha
+  if ((await lerDia(agora.data)).turnos[agora.turno].encerrado) return { ok: false, mensagem: ENCERRADO };
   return fecharTurno(nome, agora.data, agora.turno);
+}
+
+/**
+ * "Não pago no dia": encerra o turno de agora pelo PC sem pagar. As presenças
+ * ficam como estão e o turno fica a pagar na Caixinha do Bruno.
+ */
+export async function acaoPcNaoPago(data: string, turno: string): Promise<Resultado> {
+  const nome = await quemNoPc();
+  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  const agora = turnoAgora();
+  if (data !== agora.data || turno !== agora.turno) {
+    revalidatePath("/caixinha-turno");
+    return { ok: false, mensagem: MUDOU_O_TURNO };
+  }
+  const t = agora.turno;
+  // a taxa que aparecia na tela, guardada só para referência
+  const manual = (await lerDia(agora.data)).turnos[t].taxaManual;
+  const tk = manual === null ? (await taxasDoPeriodo([agora.data])).get(agora.data) : undefined;
+  const taxa = manual ?? (tk?.ok ? tk.taxa[t] : null);
+  let vazio = false;
+  let jaEstava = false;
+  const r = await mexerNoDia(
+    agora.data,
+    (dia) => {
+      if (dia.turnos[t].encerrado) {
+        jaEstava = true;
+        return dia;
+      }
+      if (!dia.turnos[t].presencas.length) {
+        vazio = true;
+        return dia;
+      }
+      const encerrado = {
+        em: new Date().toISOString(),
+        por: nome,
+        taxa,
+      };
+      return { ...dia, turnos: { ...dia.turnos, [t]: { ...dia.turnos[t], encerrado } } };
+    },
+    t,
+    quemNoPc,
+  );
+  if (!r.ok) return r;
+  if (jaEstava) return { ok: false, mensagem: ENCERRADO };
+  if (vazio) return { ok: false, mensagem: "Marque quem trabalhou antes de encerrar." };
+  return { ok: true, mensagem: `${ROTULO_TURNO[t]} encerrado sem pagamento. Fica a pagar pelo Bruno.` };
+}
+
+/** Desfaz o "Não pago no dia": o PC volta a marcar presença nesse turno. */
+export async function acaoLiberarNoPc(data: string, turno: string): Promise<Resultado> {
+  if (!turnoValido(turno)) return { ok: false, mensagem: "Turno inválido." };
+  return mexerNoDia(
+    data,
+    (dia) => {
+      const copia = { ...dia.turnos[turno] };
+      delete copia.encerrado;
+      return { ...dia, turnos: { ...dia.turnos, [turno]: copia } };
+    },
+    turno,
+  );
 }

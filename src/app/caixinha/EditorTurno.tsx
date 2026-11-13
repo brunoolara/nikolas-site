@@ -5,7 +5,7 @@
 
 import { useState, useTransition } from "react";
 import { PARTE_EQUIPE, reais, ROTULO_TURNO, type Presenca, type Turno } from "@/lib/caixinha/tipos";
-import { acaoPresenca, acaoTaxaManual, acaoTodosPresentes } from "./acoes";
+import { acaoLiberarNoPc, acaoPresenca, acaoTaxaManual, acaoTodosPresentes } from "./acoes";
 
 type Props = {
   data: string;
@@ -18,12 +18,14 @@ type Props = {
   taxaManual: number | null;
   takeat: { taxa: number; comandas: number } | null;
   partes: Record<string, number>;
+  /** Encerrado no PC sem pagamento ("Não pago no dia"). */
+  encerrado: { em: string; por: string } | null;
 };
 
 const numero = (texto: string) => Number(texto.replace(/\./g, "").replace(",", "."));
 
 export default function EditorTurno(props: Props) {
-  const { data, turno, fechado, pessoas, presencas, taxa, taxaManual, takeat, partes } = props;
+  const { data, turno, fechado, pessoas, presencas, taxa, taxaManual, takeat, partes, encerrado } = props;
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
   const [digitando, setDigitando] = useState<string | null>(null);
@@ -48,6 +50,19 @@ export default function EditorTurno(props: Props) {
         </span>
       </div>
 
+      {encerrado ? (
+        <p className="p-aviso p-aviso-alerta mt-3">
+          Não pago no dia: encerrado no PC às {encerrado.em} por {encerrado.por}. Fica a pagar.{" "}
+          <button
+            type="button"
+            disabled={ocupado}
+            className="font-semibold text-verde hover:underline"
+            onClick={() => rodar(() => acaoLiberarNoPc(data, turno))}
+          >
+            Liberar de novo no PC
+          </button>
+        </p>
+      ) : null}
       {!fechado && taxa > 0 && !presencas.some((p) => p.pct > 0) ? (
         <p className="p-aviso p-aviso-alerta mt-3">
           Este turno teve taxa e ninguém marcado: o dia não fecha assim.

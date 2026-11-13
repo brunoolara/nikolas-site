@@ -181,6 +181,18 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
             taxaManual={fechado || tp?.turno === t ? null : registro.turnos[t].taxaManual}
             takeat={takeat?.ok && tp?.turno !== t ? { taxa: takeat.taxa[t], comandas: takeat.comandas[t] } : null}
             partes={Object.fromEntries(porTurno.map((l) => [l.pessoa, l[t]]))}
+            encerrado={
+              fechado || tp?.turno === t || !registro.turnos[t].encerrado
+                ? null
+                : {
+                    em: new Date(registro.turnos[t].encerrado!.em).toLocaleTimeString("pt-BR", {
+                      timeZone: "America/Sao_Paulo",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                    por: registro.turnos[t].encerrado!.por,
+                  }
+            }
           />
         ))}
       </div>

@@ -61,6 +61,12 @@ export type TurnoDia = {
   presencas: Presenca[];
   /** Taxa digitada à mão. null = usa a da Takeat. */
   taxaManual: number | null;
+  /**
+   * Encerrado no PC do restaurante sem pagar ("Não pago no dia"): o PC não
+   * mexe mais nas presenças e o turno fica a pagar pelo Bruno. `taxa` é a que
+   * aparecia na hora, só para referência.
+   */
+  encerrado?: { em: string; por: string; taxa: number | null };
 };
 
 export type Consumo = {
