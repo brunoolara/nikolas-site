@@ -133,7 +133,7 @@ export default async function Painel() {
             <Link
               key={b.href}
               href={b.href}
-              className="p-cartao flex flex-col p-5 transition-[border-color,box-shadow] duration-150 hover:border-verde/50 hover:shadow-[var(--p-sombra-alta)]"
+              className="p-cartao flex flex-col p-5 transition-[border-color,box-shadow,transform] duration-150 hover:border-verde/50 hover:shadow-[var(--p-sombra-alta)] active:scale-[0.98] motion-reduce:active:scale-100"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-verde/10 text-verde">
                 <Icone nome={b.icone} className="h-6 w-6" />

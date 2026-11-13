@@ -15,7 +15,7 @@ html:has(.painel) {
 /* no celular o rodapé fixo cobre o fim da página: abre espaço para ele */
 @media (max-width: 1023px) {
   .painel:has(.p-barra) {
-    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(6.25rem + env(safe-area-inset-bottom));
   }
 }
 @keyframes p-gaveta-entra {
@@ -66,6 +66,9 @@ html:has(.painel) {
   --p-ambar-texto: #7a5414;
   --p-verde-fundo: #e9f1ec;
   min-height: 100dvh;
+  /* toque de app: sem a espera do toque duplo e sem o quadrado azul do Android */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @layer components {
@@ -89,7 +92,11 @@ html:has(.painel) {
       background-color 0.15s,
       border-color 0.15s,
       color 0.15s,
-      box-shadow 0.15s;
+      box-shadow 0.15s,
+      transform 0.12s;
+  }
+  .p-btn:not(:disabled):active {
+    transform: scale(0.97);
   }
   .p-btn:disabled,
   .p-btn[aria-disabled="true"] {
@@ -345,50 +352,73 @@ html:has(.painel) {
     color: var(--color-papel);
   }
 
-  /* Rodapé do celular: cinco botões fixos, como num aplicativo */
+  /* Rodapé do celular: cinco botões numa cápsula de vidro que flutua acima
+     da borda da tela, como a barra de abas do iOS (13/11/2026). O item
+     atual ganha uma pílula verde-clara; o toque afunda o item. */
   .p-barra {
     position: fixed;
-    inset: auto 0 0 0;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(0.625rem + env(safe-area-inset-bottom));
     z-index: 40;
+    max-width: 30rem;
+    margin-inline: auto;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    align-items: end;
-    padding: 0.25rem 0.25rem calc(0.25rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--color-linha);
-    background: #fff;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0.375rem;
+    border: 1px solid rgb(255 255 255 / 0.7);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.94);
+    box-shadow:
+      0 12px 32px rgb(27 23 16 / 0.16),
+      0 2px 6px rgb(27 23 16 / 0.08),
+      inset 0 1px 0 rgb(255 255 255 / 0.8);
+  }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .p-barra {
+      background: rgb(255 255 255 / 0.68);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+    }
   }
   .p-barra-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    gap: 0.15rem;
-    min-height: 3.5rem;
-    padding: 0.35rem 0.125rem 0.3rem;
-    border-radius: var(--p-raio-sm);
-    font-size: 0.75rem;
+    justify-content: center;
+    gap: 0.125rem;
+    min-height: 3.375rem;
+    padding: 0.25rem 0.125rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
     font-weight: 600;
     line-height: 1.1;
     color: var(--color-cafe);
     text-decoration: none;
+    transition:
+      background-color 0.15s,
+      color 0.15s,
+      transform 0.12s;
   }
   .p-barra-item[aria-current="page"] {
+    background: var(--p-verde-fundo);
     color: var(--color-verde);
   }
   .p-barra-item:active {
-    background: var(--color-creme);
+    transform: scale(0.92);
   }
   .p-barra-criar {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    height: 3rem;
-    margin-top: -1.25rem;
+    width: 2.875rem;
+    height: 2.875rem;
     border-radius: 999px;
     background: var(--color-verde);
     color: var(--color-papel);
-    box-shadow: 0 0 0 4px #fff, var(--p-sombra-alta);
+    box-shadow: 0 4px 10px rgb(30 75 57 / 0.3);
   }
   .p-contador {
     position: absolute;
@@ -428,12 +458,15 @@ html:has(.painel) {
     box-shadow: var(--p-sombra-alta);
   }
   .p-folha {
-    inset: auto 0 0 0;
-    width: 100%;
-    border-radius: 16px 16px 0 0;
+    inset: auto 0.5rem calc(0.5rem + env(safe-area-inset-bottom)) 0.5rem;
+    width: auto;
+    max-width: 30rem;
+    margin-inline: auto;
+    border-radius: 24px;
+    box-shadow: var(--p-sombra-alta);
   }
   .p-folha-corpo {
-    padding: 0.6rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    padding: 0.6rem 1rem 1rem;
   }
   /* entram deslizando — movimento que responde ao toque, curto */
   .p-gaveta[open] {
@@ -441,6 +474,13 @@ html:has(.painel) {
   }
   .p-folha[open] {
     animation: p-folha-entra 0.2s ease-out;
+  }
+
+  /* Blocos de espera (Carregando.tsx): cinza que respira devagar */
+  .p-esqueleto {
+    border-radius: var(--p-raio);
+    background: rgb(27 23 16 / 0.07);
+    animation: p-respira 1.4s ease-in-out infinite;
   }
 
   /* Faixa rolável sem barra aparente (dias, abas no celular) */
@@ -503,4 +543,43 @@ html:has(.painel) {
 }
 .painel .p-chave:checked::after {
   transform: translateX(1.15rem);
+}
+
+@keyframes p-respira {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Dedo, não mouse: alvos de pelo menos 44 px e campo com 16 px de letra
+   (abaixo disso o iPhone dá zoom ao tocar no campo). Na camada de
+   componentes, para um min-h-14 da própria tela continuar valendo. */
+@layer components {
+@media (pointer: coarse) {
+  .p-btn {
+    min-height: 2.75rem;
+  }
+  .p-btn-sm {
+    min-height: 2.5rem;
+    padding-inline: 0.85rem;
+  }
+  .p-aba {
+    min-height: 2.75rem;
+  }
+  .p-campo {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* Quem pediu menos movimento: nada afunda nem respira */
+@media (prefers-reduced-motion: reduce) {
+  .p-btn:not(:disabled):active,
+  .p-barra-item:active {
+    transform: none;
+  }
+  .p-esqueleto {
+    animation: none;
+  }
+}
 }

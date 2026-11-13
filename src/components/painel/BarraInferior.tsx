@@ -58,11 +58,11 @@ export default function BarraInferior({
               onClick={() => janela.current?.showModal()}
               className="p-barra-item"
               aria-haspopup="dialog"
+              aria-label="Criar"
             >
               <span className="p-barra-criar">
                 <Icone nome="mais" className="h-6 w-6" />
               </span>
-              Criar
             </button>
           ) : (
             <Link
