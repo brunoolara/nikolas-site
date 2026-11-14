@@ -20,7 +20,7 @@ export const restaurante = {
     contato: "https://wa.me/5535997728359",
   },
   delivery: {
-    url: "https://nikolas.qrpedir.com/",
+    url: "https://pedido.takeat.app/nikolasrestaurante",
     nome: "cardápio digital",
   },
   instagram: {
