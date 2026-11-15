@@ -196,14 +196,15 @@ export default function FolhaSalao({
     );
   }
 
-  // ---- folha de domingo: abre com cabeçalho verde sangrado
+  // ---- folha de domingo: abre com cabeçalho centrado, sem área pintada — ela é
+  // impressa toda semana em impressora comum, que não imprime até a borda e
+  // mancha bloco de cor chapada
   if (folha.abre) {
     return (
       <section className={classes}>
         <Fundo cor="#fbf8f2" />
         <header className="abre">
-          <Fundo cor="#1e4b39" />
-          <img className="wm" src="/images/wordmark-branco.svg" alt="" />
+          <img className="wm" src="/images/wordmark-preto.svg" alt="" />
           <h2>{folha.titulo}</h2>
           {folha.eyebrow ? (
             <p className="eyebrow">

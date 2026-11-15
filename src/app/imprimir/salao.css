@@ -381,7 +381,7 @@
   font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
 }
 
-/* ---------- folha de domingo: cabeçalho verde sangrado ----------
+/* ---------- folha de domingo: cabeçalho centrado sobre o papel ----------
    Esta folha é uma só e tem de caber inteira, mas o número de pratos muda toda
    semana. Por isso aqui quase nada tem medida fixa: duas variáveis comandam a
    página e o Encaixe.tsx as regula depois de montar, medindo a folha.
@@ -400,29 +400,23 @@
   transition: none !important;
 }
 .domingo .abre {
-  position: relative;
-  color: var(--color-papel);
-  margin: -14mm -15mm 0;
-  padding: calc(6mm + 7mm * var(--e)) 15mm calc(5mm + 7mm * var(--e));
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-}
-.domingo .abre > *:not(.fundo) {
-  position: relative;
-  z-index: 1;
+  padding-bottom: calc(3.5mm + 3.5mm * var(--e));
+  border-bottom: 0.35mm solid var(--color-tinta);
 }
 .domingo .abre .wm {
-  width: calc(22mm + 14mm * var(--e));
+  width: calc(22mm + 10mm * var(--e));
   height: auto;
 }
 .domingo .abre h2 {
-  margin-top: calc(3mm + 8mm * var(--e));
-  font-size: calc(8.5mm + 6.5mm * var(--e));
+  margin-top: calc(3mm + 5mm * var(--e));
+  font-size: calc(8.5mm + 5mm * var(--e));
   line-height: 0.98;
   letter-spacing: -0.015em;
-  color: var(--color-papel);
+  color: var(--color-verde);
   max-width: 90mm;
   text-wrap: balance;
 }
@@ -431,26 +425,26 @@
   align-items: center;
   justify-content: center;
   gap: 4mm;
-  margin: calc(2.5mm + 4.5mm * var(--e)) 0 0;
+  margin: calc(2.5mm + 3mm * var(--e)) 0 0;
   font-weight: 600;
   font-size: 3.1mm;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--color-chope);
+  color: var(--color-verde);
 }
 .domingo .abre .eyebrow span {
   display: block;
   width: 15mm;
-  border-top: 0.35mm solid var(--color-chope);
+  border-top: 0.3mm solid var(--color-verde);
 }
 .domingo .abre .frase {
   font-family: var(--font-display);
   font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
   font-style: italic;
   font-weight: 400;
-  font-size: calc(3.5mm + 1.1mm * var(--e));
-  color: rgba(251, 248, 242, 0.75);
-  margin: calc(2mm + 3mm * var(--e)) 0 0;
+  font-size: calc(3.5mm + 0.9mm * var(--e));
+  color: var(--color-cafe);
+  margin: calc(2mm + 2mm * var(--e)) 0 0;
 }
 .domingo .miolo {
   margin-top: calc(4mm + 6mm * var(--e));
