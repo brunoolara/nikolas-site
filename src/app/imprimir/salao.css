@@ -408,7 +408,7 @@
   border-bottom: 0.35mm solid var(--color-tinta);
 }
 .domingo .abre .wm {
-  width: calc(22mm + 10mm * var(--e));
+  width: calc(32mm + 10mm * var(--e));
   height: auto;
 }
 .domingo .abre h2 {
