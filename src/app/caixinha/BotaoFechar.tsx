@@ -12,7 +12,6 @@ type Props = {
   data: string;
   fechado: boolean;
   podeReabrir: boolean;
-  bloqueado: boolean;
   diasNoPagamento: number;
   /** Um turno já foi pago: fechar agora paga só este e fecha o dia. */
   restante: Turno | null;
@@ -22,7 +21,7 @@ type Props = {
 const nome = (t: Turno) => ROTULO_TURNO[t].toLowerCase();
 
 export default function BotaoFechar(props: Props) {
-  const { data, fechado, podeReabrir, bloqueado, diasNoPagamento, restante, linksTurno } = props;
+  const { data, fechado, podeReabrir, diasNoPagamento, restante, linksTurno } = props;
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
 
@@ -53,14 +52,12 @@ export default function BotaoFechar(props: Props) {
         ) : (
           <p className="text-sm text-cafe">Para reabrir, reabra antes os pagamentos feitos depois deste.</p>
         )
-      ) : bloqueado ? (
-        <p className="text-sm text-cafe">Há um dia fechado depois deste; os dias se fecham em ordem.</p>
       ) : (
         <button type="button" disabled={ocupado} onClick={fechar} className="p-btn p-btn-primario min-h-11 px-6">
           {restante ? `Fechar o ${nome(restante)} e pagar` : "Fechar o dia e pagar"}
         </button>
       )}
-      {!fechado && !bloqueado && !restante ? (
+      {!fechado && !restante ? (
         <p className="text-sm text-cafe">
           ou{" "}
           {TURNOS.map((t, i) => (
@@ -90,10 +87,9 @@ type PropsTurno = {
   /** O outro turno já foi pago: pagar este fecha o dia. */
   fechaODia: boolean;
   podeReabrir: boolean;
-  bloqueado: boolean;
 };
 
-export function BotaoTurno({ data, turno, pago, fechaODia, podeReabrir, bloqueado }: PropsTurno) {
+export function BotaoTurno({ data, turno, pago, fechaODia, podeReabrir }: PropsTurno) {
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
 
@@ -120,8 +116,6 @@ export function BotaoTurno({ data, turno, pago, fechaODia, podeReabrir, bloquead
         ) : (
           <p className="text-sm text-cafe">O {nome(turno)} já foi pago.</p>
         )
-      ) : bloqueado ? (
-        <p className="text-sm text-cafe">Há um dia fechado depois deste; os dias se fecham em ordem.</p>
       ) : (
         <button type="button" disabled={ocupado} onClick={fechar} className="p-btn p-btn-primario min-h-11 px-6">
           Fechar o {nome(turno)} e pagar

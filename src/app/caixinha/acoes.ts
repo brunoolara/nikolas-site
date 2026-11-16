@@ -2,7 +2,10 @@
 
 // Tudo que muda a Caixinha. Quem tem a área "caixinha" mexe; dia fechado não
 // muda mais até ser reaberto. Os dias se fecham num pagamento (um dia só ou
-// um período) e se fecham e reabrem em ordem, porque o saldo passa adiante.
+// um período). Desde 15/11/2026 um dia ou turno esquecido pode ser fechado
+// depois de dias mais novos (pago hoje o que ficou de ontem): o saldo
+// negativo é descontado no pagamento que for feito primeiro. Reabrir segue
+// em ordem de pagamento: só o último feito.
 // Um turno também pode ser pago sozinho; aí só o outro turno segue aberto, e
 // pagar o outro fecha o dia. Só o último pagamento feito pode ser reaberto.
 //
@@ -226,8 +229,6 @@ async function fecharPeriodo(nome: string, ini: string, fim: string): Promise<Re
     const [dias, estado, equipe] = await Promise.all([Promise.all(datas.map(lerDia)), lerEstado(), lerEquipe()]);
     const jaFechado = dias.find((d) => d.fechamento);
     if (jaFechado) return { ok: false, mensagem: `${rotuloData(jaFechado.data)} já está fechado.` };
-    if (estado.ultimoFechado && estado.ultimoFechado >= ini)
-      return { ok: false, mensagem: "Já existe um dia fechado depois do início do período. Os dias se fecham em ordem." };
 
     const r = await taxasParaFechar(dias);
     if (!r.ok) return r;
@@ -271,7 +272,8 @@ async function fecharPeriodo(nome: string, ini: string, fim: string): Promise<Re
     if (corrida) return { ok: false, mensagem: "Alguém fechou um destes dias agora há pouco. Confira antes de pagar." };
     await gravarEstado({
       saldos,
-      ultimoFechado: fim,
+      // fechar um dia antigo não volta o "último dia fechado" para trás
+      ultimoFechado: estado.ultimoFechado && estado.ultimoFechado > fim ? estado.ultimoFechado : fim,
       pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
     });
     revalidatePath("/caixinha", "layout");
@@ -317,8 +319,6 @@ async function fecharTurno(nome: string, data: string, turno: string): Promise<R
     if (dia.turnoPago?.turno === turno) return { ok: false, mensagem: `O ${ROTULO_TURNO[turno].toLowerCase()} já foi pago.` };
     // o outro turno já foi pago: este é o resto do dia
     if (dia.turnoPago) return fecharPeriodo(nome, data, data);
-    if (estado.ultimoFechado && estado.ultimoFechado >= data)
-      return { ok: false, mensagem: "Já existe um dia fechado depois deste. Os dias se fecham em ordem." };
 
     const r = await taxasParaFechar([dia], () => [turno]);
     if (!r.ok) return r;

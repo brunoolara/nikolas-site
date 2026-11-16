@@ -73,7 +73,6 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
   const ultimoPag = estado.pagamentos?.at(-1);
   const eUltimo = (id: string | undefined, fim: string) => (ultimoPag ? ultimoPag === id : estado.ultimoFechado === fim);
   const podeReabrir = Boolean(fechado) && eUltimo(fechado?.pagamento, pagamento?.fim ?? data);
-  const fechadoDepois = !fechado && Boolean(estado.ultimoFechado && estado.ultimoFechado > data);
   const restante = tp && !fechado ? abertos[0] : null;
   const hora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
@@ -206,12 +205,11 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
               pago={Boolean(fechado) || tp?.turno === ver}
               fechaODia={Boolean(tp) && tp?.turno !== ver}
               podeReabrir={!fechado && tp?.turno === ver && eUltimo(tp.pagamento, data)}
-              bloqueado={fechadoDepois}
             />
           </DivisaoTurno>
           {tp?.turno === ver && pagTurno ? (
             <Comprovantes fonte={{ id: pagTurno.id }} linhas={pagTurno.linhas} titulo={`do ${ROTULO_TURNO[ver].toLowerCase()}`} />
-          ) : !fechado && !fechadoDepois ? (
+          ) : !fechado ? (
             <Comprovantes
               fonte={{ ini: data, fim: data, turno: ver }}
               linhas={calcularDia(registro, taxa, equipe, estado.saldos, [ver])}
@@ -253,7 +251,6 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
             data={data}
             fechado={Boolean(fechado)}
             podeReabrir={podeReabrir}
-            bloqueado={fechadoDepois}
             diasNoPagamento={pagamento?.dias.length ?? 1}
             restante={restante}
             linksTurno={{ almoco: link(data, "almoco"), jantar: link(data, "jantar") }}
