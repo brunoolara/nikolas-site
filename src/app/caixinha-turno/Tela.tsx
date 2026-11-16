@@ -56,7 +56,7 @@ export default function Tela(props: Props) {
 
   function pagar() {
     const texto =
-      `Fechar e pagar o ${nomeTurno}?\n\n${presentes.length} ${presentes.length === 1 ? "pessoa" : "pessoas"}, ` +
+      `Caixinha do ${nomeTurno} pago no dia?\n\n${presentes.length} ${presentes.length === 1 ? "pessoa" : "pessoas"}, ` +
       `${reais(total)} no total, pago por ${quem}.\n\nDepois de pago, só o Bruno consegue reabrir.`;
     if (!window.confirm(texto)) return;
     iniciar(async () => {
