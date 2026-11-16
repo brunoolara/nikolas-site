@@ -30,6 +30,7 @@ import {
   lerPagamento,
 } from "@/lib/caixinha/armazem";
 import { taxasDoPeriodo, type TaxaTakeat } from "@/lib/caixinha/takeat";
+import { porNoPc, responsaveis } from "@/lib/caixinha/responsaveis";
 import {
   arredondar,
   diasEntre,
@@ -516,10 +517,24 @@ export async function acaoPcPresenca(data: string, turno: string, pessoa: string
   );
 }
 
-/** Fecha e paga o turno de agora pelo PC do restaurante. */
-export async function acaoPcPagarTurno(data: string, turno: string): Promise<Resultado> {
-  const nome = await quemNoPc();
-  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+/**
+ * O nome de quem está fechando no PC, conferido contra a lista da tela
+ * (equipe e logins). null se não veio ou não está na lista.
+ */
+async function responsavelNoPc(escolhido: string): Promise<string | null> {
+  const sessao = await sessaoAtual();
+  if (!sessao || !(sessao.areas.includes("caixinha") || sessao.areas.includes("caixinha-turno"))) return null;
+  const nome = (await responsaveis(sessao.usuario)).find((n) => n === escolhido.trim());
+  return nome ? porNoPc(nome) : null;
+}
+
+const ESCOLHA_O_NOME = "Escolha o seu nome em \"Quem está fechando\" antes de continuar.";
+
+/** Fecha e paga o turno de agora pelo PC do restaurante, no nome de quem escolheu. */
+export async function acaoPcPagarTurno(data: string, turno: string, responsavel: string): Promise<Resultado> {
+  if (!(await quemNoPc())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  const nome = await responsavelNoPc(responsavel);
+  if (!nome) return { ok: false, mensagem: ESCOLHA_O_NOME };
   const agora = turnoAgora();
   if (data !== agora.data || turno !== agora.turno) {
     revalidatePath("/caixinha-turno");
@@ -534,9 +549,10 @@ export async function acaoPcPagarTurno(data: string, turno: string): Promise<Res
  * "Não pago no dia": encerra o turno de agora pelo PC sem pagar. As presenças
  * ficam como estão e o turno fica a pagar na Caixinha do Bruno.
  */
-export async function acaoPcNaoPago(data: string, turno: string): Promise<Resultado> {
-  const nome = await quemNoPc();
-  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+export async function acaoPcNaoPago(data: string, turno: string, responsavel: string): Promise<Resultado> {
+  if (!(await quemNoPc())) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  const nome = await responsavelNoPc(responsavel);
+  if (!nome) return { ok: false, mensagem: ESCOLHA_O_NOME };
   const agora = turnoAgora();
   if (data !== agora.data || turno !== agora.turno) {
     revalidatePath("/caixinha-turno");

@@ -8,6 +8,7 @@
 import Cabecalho from "@/components/painel/Cabecalho";
 import AutoAtualizar from "@/app/operacao/AutoAtualizar";
 import { exigir } from "@/lib/acessos/sessao";
+import { responsaveis } from "@/lib/caixinha/responsaveis";
 import { rotuloData } from "@/lib/posts/tipos";
 import { lerDia, lerEquipe, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
 import { taxaDoDia } from "@/lib/caixinha/takeat";
@@ -27,7 +28,8 @@ const hora = (iso: string) =>
 
 export default async function CaixinhaDoTurno() {
   // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
-  if (!(await exigir("caixinha-turno")).liberado) return null;
+  const { sessao, liberado } = await exigir("caixinha-turno");
+  if (!liberado) return null;
 
   const { data, turno } = turnoAgora();
   const [dia, equipe, estado] = await Promise.all([lerDia(data), lerEquipe(), lerEstado()]);
@@ -103,6 +105,7 @@ export default async function CaixinhaDoTurno() {
         pessoas={pessoas}
         pago={pago ? { em: hora(pago.em), por: pago.por } : null}
         encerrado={encerrado ? { em: hora(encerrado.em), por: encerrado.por } : null}
+        responsaveis={pago || encerrado ? [] : await responsaveis(sessao.usuario)}
       />
     </div>
   );

@@ -30,13 +30,18 @@ type Props = {
   pago: { em: string; por: string } | null;
   /** Encerrado sem pagamento ("Não pago no dia"). */
   encerrado: { em: string; por: string } | null;
+  /** Quem pode estar fechando (o gerente do dia escolhe o próprio nome). */
+  responsaveis: string[];
 };
 
 const rotuloPct = (pct: number) => (pct === 100 ? "" : pct === 50 ? "meia parte" : `${pct}% da parte`);
 
-export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, pessoas, pago, encerrado }: Props) {
+export default function Tela(props: Props) {
+  const { data, turno, titulo, taxa, equipeRecebe, origem, pessoas, pago, encerrado, responsaveis } = props;
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
   const [ocupado, iniciar] = useTransition();
+  // quem está fechando: escolhido a cada vez, para o pagamento ficar no nome certo
+  const [quem, setQuem] = useState("");
   const presentes = pessoas.filter((p) => p.presente);
   const total = presentes.reduce((s, p) => s + p.recebe, 0);
   const nomeTurno = ROTULO_TURNO[turno].toLowerCase();
@@ -52,10 +57,10 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
   function pagar() {
     const texto =
       `Fechar e pagar o ${nomeTurno}?\n\n${presentes.length} ${presentes.length === 1 ? "pessoa" : "pessoas"}, ` +
-      `${reais(total)} no total.\n\nDepois de pago, só o Bruno consegue reabrir.`;
+      `${reais(total)} no total, pago por ${quem}.\n\nDepois de pago, só o Bruno consegue reabrir.`;
     if (!window.confirm(texto)) return;
     iniciar(async () => {
-      const r = await acaoPcPagarTurno(data, turno);
+      const r = await acaoPcPagarTurno(data, turno, quem);
       setAviso({ ok: r.ok, texto: r.mensagem });
     });
   }
@@ -63,10 +68,10 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
   function naoPago() {
     const texto =
       `Encerrar o ${nomeTurno} sem pagar?\n\n${presentes.length} ${presentes.length === 1 ? "pessoa fica marcada" : "pessoas ficam marcadas"} ` +
-      `e o valor fica a pagar pelo Bruno.\n\nDepois disso, só o Bruno consegue mudar.`;
+      `e o valor fica a pagar pelo Bruno. Encerrado por ${quem}.\n\nDepois disso, só o Bruno consegue mudar.`;
     if (!window.confirm(texto)) return;
     iniciar(async () => {
-      const r = await acaoPcNaoPago(data, turno);
+      const r = await acaoPcNaoPago(data, turno, quem);
       setAviso({ ok: r.ok, texto: r.mensagem });
     });
   }
@@ -147,7 +152,7 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
       ) : null}
 
       {travado ? null : (
-        <section className="p-cartao mt-6 flex flex-wrap items-center justify-between gap-4 p-5">
+        <section className="p-cartao mt-6 flex flex-wrap items-end justify-between gap-4 p-5">
           <div>
             <p className="p-kpi-rotulo">Total a pagar no {nomeTurno}</p>
             <p className="p-kpi-valor tabular-nums">{reais(total)}</p>
@@ -155,10 +160,21 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
               <p className="mt-1 text-sm text-cafe">Sem a taxa da Takeat não dá para pagar. Avise o Bruno.</p>
             ) : null}
           </div>
+          <label className="w-full sm:w-auto sm:min-w-72">
+            <span className="p-rotulo text-base">Quem está fechando?</span>
+            <select value={quem} onChange={(e) => setQuem(e.target.value)} className="p-campo min-h-12 text-base">
+              <option value="">Escolha o seu nome</option>
+              {responsaveis.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              disabled={ocupado || !presentes.length}
+              disabled={ocupado || !presentes.length || !quem}
               onClick={naoPago}
               className="p-btn p-btn-secundario min-h-14 px-6 text-lg"
             >
@@ -166,7 +182,7 @@ export default function Tela({ data, turno, titulo, taxa, equipeRecebe, origem, 
             </button>
             <button
               type="button"
-              disabled={ocupado || taxa === null || !presentes.length}
+              disabled={ocupado || taxa === null || !presentes.length || !quem}
               onClick={pagar}
               className="p-btn p-btn-primario min-h-14 px-8 text-lg"
             >
