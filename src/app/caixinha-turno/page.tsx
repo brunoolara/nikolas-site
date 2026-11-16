@@ -92,7 +92,7 @@ export default async function CaixinhaDoTurno() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Caixinha do turno"
-        descricao="Marque quem trabalhou neste turno. No fim, feche e pague, ou marque que não foi pago no dia."
+        descricao="Marque quem trabalhou neste turno. No fim, marque se o caixinha foi pago no dia ou não."
         acoes={<AutoAtualizar lidoEm={new Date().toISOString()} />}
       />
       <Tela

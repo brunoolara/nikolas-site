@@ -186,7 +186,7 @@ export default function Tela(props: Props) {
               onClick={pagar}
               className="p-btn p-btn-primario min-h-14 px-8 text-lg"
             >
-              {ocupado ? "Aguarde…" : `Fechar e pagar o ${nomeTurno}`}
+              {ocupado ? "Aguarde…" : "Caixinha pago no dia"}
             </button>
           </div>
         </section>
