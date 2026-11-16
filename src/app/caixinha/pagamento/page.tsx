@@ -65,10 +65,6 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
 
   const problemas: string[] = [];
   if (datas.length > MAX_DIAS_PAGAMENTO) problemas.push(`Um pagamento cobre no máximo ${MAX_DIAS_PAGAMENTO} dias.`);
-  if (estado.ultimoFechado && ini <= estado.ultimoFechado)
-    problemas.push(
-      `O período começa num dia já pago: o último pagamento foi até ${rotuloData(estado.ultimoFechado)}. Comece em ${rotuloData(somarDias(estado.ultimoFechado, 1))}.`,
-    );
 
   const usados = datas.slice(0, MAX_DIAS_PAGAMENTO);
   const [dias, equipe] = await Promise.all([Promise.all(usados.map(lerDia)), lerEquipe()]);
