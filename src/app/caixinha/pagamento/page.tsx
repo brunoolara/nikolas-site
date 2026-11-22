@@ -6,34 +6,16 @@ import Link from "next/link";
 import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
 import { DATA, hoje, rotuloData, somarDias } from "@/lib/posts/tipos";
-import { lerDia, lerEquipe, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
-import { taxasDoPeriodo } from "@/lib/caixinha/takeat";
-import {
-  lerIdPagamento,
-  turnoDoConsumo,
-  turnosAbertos,
-  type Dia,
-  diasEntre,
-  MAX_DIAS_PAGAMENTO,
-  PAGAMENTO_ID,
-  PARTE_EQUIPE,
-  partesDoDia,
-  reais,
-  ROTULO_TURNO,
-  somarPagamento,
-  TURNOS,
-  type Turno,
-} from "@/lib/caixinha/tipos";
+import { lerDia, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
+import { curto, montarPeriodo, taxasNoPagamento } from "@/lib/caixinha/periodo";
+import { lerIdPagamento, PAGAMENTO_ID, PARTE_EQUIPE, reais, ROTULO_TURNO, TURNOS } from "@/lib/caixinha/tipos";
 import Abas from "../Abas";
 import EscolherPeriodo from "../EscolherPeriodo";
 import TabelaPagamento from "../TabelaPagamento";
 import Comprovantes from "../Comprovantes";
-import { FecharPeriodo, ReabrirPagamento } from "./Botoes";
+import { BotaoPdf, FecharPeriodo, ReabrirPagamento } from "./Botoes";
 
 const linkDia = (d: string) => (d === hoje() ? "/caixinha" : `/caixinha?dia=${d}`);
-
-/** "seg, 09/11" — para listas. */
-const curto = (d: string) => rotuloData(d).replace(/^(\S{3})\S*,/, "$1,");
 
 function segundaDe(d: string) {
   const [a, m, n] = d.split("-").map(Number);
@@ -61,49 +43,11 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
   let fim = typeof busca.fim === "string" && DATA.test(busca.fim) ? busca.fim : dia;
   if (fim > dia) fim = dia;
   if (ini > fim) [ini, fim] = [fim, ini];
-  const datas = diasEntre(ini, fim);
-
-  const problemas: string[] = [];
-  if (datas.length > MAX_DIAS_PAGAMENTO) problemas.push(`Um pagamento cobre no máximo ${MAX_DIAS_PAGAMENTO} dias.`);
-
-  const usados = datas.slice(0, MAX_DIAS_PAGAMENTO);
-  const [dias, equipe] = await Promise.all([Promise.all(usados.map(lerDia)), lerEquipe()]);
-  const abertos = dias.filter((d) => !d.fechamento);
-  const precisam = abertos.filter((d) => turnosAbertos(d).some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
-  const takeat = precisam.length && !problemas.length ? await taxasDoPeriodo(precisam) : new Map();
-
-  // dia a dia: taxa de cada turno, quem trabalhou e o que impede de fechar
-  const resumo = dias.map((d) => {
-    const tk = takeat.get(d.data);
-    const taxa = {} as Record<Turno, number>;
-    const avisos: string[] = [];
-    for (const t of TURNOS) {
-      // turno já pago à parte: não entra neste pagamento
-      if (!d.fechamento && d.turnoPago?.turno === t) {
-        taxa[t] = 0;
-        continue;
-      }
-      const manual = d.fechamento ? d.fechamento.taxa[t] : d.turnos[t].taxaManual;
-      const ninguem = !d.turnos[t].presencas.some((p) => p.pct > 0);
-      taxa[t] = manual ?? (tk?.ok ? tk.taxa[t] : 0);
-      if (d.fechamento) continue;
-      if (manual === null && !tk?.ok && !ninguem) avisos.push(`${ROTULO_TURNO[t]} sem a taxa da Takeat: digite à mão`);
-      if (ninguem && taxa[t] > 0) avisos.push(`${ROTULO_TURNO[t]} com taxa e ninguém marcado`);
-    }
-    return { dia: d, taxa, avisos, partes: partesDoDia(d, taxa, equipe, d.fechamento ? TURNOS : turnosAbertos(d)) };
-  });
-  const fechados = resumo.filter((r) => r.dia.fechamento);
-  if (fechados.length && !problemas.length)
-    problemas.push(`O período tem dia já pago (${fechados.map((r) => curto(r.dia.data)).join(", ")}).`);
-  const comAviso = resumo.filter((r) => r.avisos.length);
-
-  const linhas = somarPagamento(
-    resumo.map((r) => r.partes),
-    estado.saldos,
+  const { datas, problemas, resumo, comAviso, linhas, taxaTotal, total, podeFechar } = await montarPeriodo(
+    ini,
+    fim,
+    estado,
   );
-  const taxaTotal = resumo.reduce((s, r) => s + r.taxa.almoco + r.taxa.jantar, 0);
-  const total = linhas.reduce((s, l) => s + l.pagar, 0);
-  const podeFechar = !problemas.length && !comAviso.length && datas.length > 0;
 
   const ontem = somarDias(dia, -1);
   const atalhos = [
@@ -141,9 +85,7 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
         <h3 className="p-cartao-titulo">Dia a dia</h3>
         <ul className="mt-2 divide-y divide-linha/70 text-sm">
           {resumo.map((r) => {
-            const pessoas = new Set(TURNOS.flatMap((t) => r.dia.turnos[t].presencas.filter((p) => p.pct > 0).map((p) => p.id)));
-            const pagoAntes = r.dia.fechamento ? undefined : r.dia.turnoPago?.turno;
-            const consumo = r.dia.consumos.filter((c) => turnoDoConsumo(c) !== pagoAntes).reduce((s, c) => s + c.valor, 0);
+            const { pessoas, pagoAntes, consumo } = r;
             return (
               <li key={r.dia.data} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
                 <Link href={linkDia(r.dia.data)} className="font-semibold text-verde hover:underline first-letter:uppercase">
@@ -151,8 +93,8 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
                 </Link>
                 <span className="tabular-nums text-cafe">
                   {TURNOS.map((t) => `${ROTULO_TURNO[t]} ${t === pagoAntes ? "já pago" : reais(r.taxa[t])}`).join(" · ")} ·{" "}
-                  {pessoas.size}{" "}
-                  {pessoas.size === 1 ? "pessoa" : "pessoas"}
+                  {pessoas}{" "}
+                  {pessoas === 1 ? "pessoa" : "pessoas"}
                   {consumo ? ` · consumo ${reais(consumo)}` : ""}
                 </span>
                 {r.dia.fechamento ? (
@@ -174,7 +116,13 @@ export default async function Pagamento({ searchParams }: PageProps<"/caixinha/p
           <p className="mt-2 text-sm text-cafe">Ninguém marcado nesses dias ainda.</p>
         )}
         {podeFechar ? (
-          <FecharPeriodo ini={ini} fim={fim} dias={datas.length} total={reais(total)} />
+          <FecharPeriodo
+            ini={ini}
+            fim={fim}
+            dias={datas.length}
+            total={reais(total)}
+            pdf={`/caixinha/pagamento/pdf?ini=${ini}&fim=${fim}`}
+          />
         ) : comAviso.length && !problemas.length ? (
           <p className="mt-5 border-t border-linha/70 pt-4 text-sm text-cafe">
             Acerte os dias marcados em vermelho acima para poder fechar.
@@ -216,16 +164,6 @@ function Numero({ titulo, valor, sub, destaque }: { titulo: string; valor: strin
 function rotuloPagamento(id: string) {
   const { ini, fim, turno } = lerIdPagamento(id);
   return (ini === fim ? curto(ini) : `${curto(ini)} a ${curto(fim)}`) + (turno ? ` · ${ROTULO_TURNO[turno]}` : "");
-}
-
-/** A taxa de cada turno que entrou neste pagamento, num dia dele. */
-function taxasNoPagamento(d: Dia, id: string): Partial<Record<Turno, number>> {
-  const tp = d.turnoPago;
-  if (tp?.pagamento === id) return { [tp.turno]: tp.taxa };
-  if (d.fechamento?.pagamento !== id) return {};
-  const t = { ...d.fechamento.taxa } as Partial<Record<Turno, number>>;
-  if (tp) delete t[tp.turno];
-  return t;
 }
 
 async function PagamentoFeito({
@@ -288,7 +226,13 @@ async function PagamentoFeito({
       <section className="p-cartao mt-6 p-5">
         <h3 className="p-cartao-titulo">Quanto cada um recebeu</h3>
         <TabelaPagamento modo="pagamento" linhas={pag.linhas} pago />
-        {podeReabrir(pag) ? <ReabrirPagamento id={pag.id} dias={pag.dias.length} /> : null}
+        {podeReabrir(pag) ? (
+          <ReabrirPagamento id={pag.id} dias={pag.dias.length} pdf={`/caixinha/pagamento/pdf?id=${pag.id}`} />
+        ) : (
+          <div className="mt-5 border-t border-linha/70 pt-4">
+            <BotaoPdf href={`/caixinha/pagamento/pdf?id=${pag.id}`} />
+          </div>
+        )}
       </section>
 
       <Comprovantes fonte={{ id: pag.id }} linhas={pag.linhas} />

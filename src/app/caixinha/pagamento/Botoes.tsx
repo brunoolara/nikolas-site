@@ -1,13 +1,34 @@
 "use client";
 
-// Fechar e pagar o período escolhido, ou reabrir o último pagamento.
+// Fechar e pagar o período escolhido, ou reabrir o último pagamento; ao lado,
+// o PDF da tela (abre numa aba nova, de onde se baixa, imprime ou compartilha).
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { acaoFecharPeriodo, acaoReabrirPagamento } from "../acoes";
 import { idPagamento, lerIdPagamento, ROTULO_TURNO } from "@/lib/caixinha/tipos";
 
-export function FecharPeriodo({ ini, fim, dias, total }: { ini: string; fim: string; dias: number; total: string }) {
+export function BotaoPdf({ href }: { href: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener" className="p-btn p-btn-secundario min-h-11 px-6">
+      Gerar PDF
+    </a>
+  );
+}
+
+export function FecharPeriodo({
+  ini,
+  fim,
+  dias,
+  total,
+  pdf,
+}: {
+  ini: string;
+  fim: string;
+  dias: number;
+  total: string;
+  pdf: string;
+}) {
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
   const router = useRouter();
@@ -27,6 +48,7 @@ export function FecharPeriodo({ ini, fim, dias, total }: { ini: string; fim: str
       <button type="button" disabled={ocupado} onClick={fechar} className="p-btn p-btn-primario min-h-11 px-6">
         {ocupado ? "Fechando…" : dias === 1 ? "Fechar o dia e pagar" : `Fechar os ${dias} dias e pagar`}
       </button>
+      <BotaoPdf href={pdf} />
       {aviso ? (
         <p className="text-sm text-cafe" role="status">
           {aviso}
@@ -36,7 +58,7 @@ export function FecharPeriodo({ ini, fim, dias, total }: { ini: string; fim: str
   );
 }
 
-export function ReabrirPagamento({ id, dias }: { id: string; dias: number }) {
+export function ReabrirPagamento({ id, dias, pdf }: { id: string; dias: number; pdf: string }) {
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
   const router = useRouter();
@@ -56,6 +78,7 @@ export function ReabrirPagamento({ id, dias }: { id: string; dias: number }) {
 
   return (
     <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-linha/70 pt-4">
+      <BotaoPdf href={pdf} />
       <button type="button" disabled={ocupado} onClick={reabrir} className="p-btn p-btn-secundario">
         Reabrir o pagamento
       </button>

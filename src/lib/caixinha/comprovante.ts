@@ -162,23 +162,23 @@ export function nomeArquivo(c: Comprovante): string {
 
 // ---------- PDF ----------
 
-const VERDE = rgb(0x1e / 255, 0x4b / 255, 0x39 / 255);
-const TINTA = rgb(0x1b / 255, 0x17 / 255, 0x10 / 255);
-const CAFE = rgb(0x6b / 255, 0x60 / 255, 0x55 / 255);
-const LINHA = rgb(0xe2 / 255, 0xda / 255, 0xcb / 255);
+export const VERDE = rgb(0x1e / 255, 0x4b / 255, 0x39 / 255);
+export const TINTA = rgb(0x1b / 255, 0x17 / 255, 0x10 / 255);
+export const CAFE = rgb(0x6b / 255, 0x60 / 255, 0x55 / 255);
+export const LINHA = rgb(0xe2 / 255, 0xda / 255, 0xcb / 255);
 const PRETO = rgb(0, 0, 0);
-const BRANCO = rgb(1, 1, 1);
+export const BRANCO = rgb(1, 1, 1);
 
 export const RODAPE = "Taxa de serviço dividida entre a equipe que trabalhou no período e turno.";
 
 /** As fontes padrão do PDF só têm o alfabeto latino básico (WinAnsi). */
-const seguro = (s: string) => s.replace(/−/g, "-").replace(/[^\x20-\x7e -ÿ·–—]/g, "");
+export const seguro = (s: string) => s.replace(/−/g, "-").replace(/[^\x20-\x7e -ÿ·–—]/g, "");
 
 /**
  * Desenha um SVG do logotipo (grupos com translate, paths e rects) em vetor,
  * com `largura` pontos e o canto de cima à esquerda em (x, topo).
  */
-function desenharSvg(pg: PDFPage, svg: string, x: number, topo: number, largura: number, cor: RGB) {
+export function desenharSvg(pg: PDFPage, svg: string, x: number, topo: number, largura: number, cor: RGB) {
   const [, , vbL] = svg.match(/viewBox="([^"]+)"/)![1].split(/\s+/).map(Number);
   const s = largura / vbL;
   for (const g of svg.matchAll(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">(.*?)<\/g>/g)) {
@@ -193,7 +193,7 @@ function desenharSvg(pg: PDFPage, svg: string, x: number, topo: number, largura:
   }
 }
 
-const altoSvg = (svg: string, largura: number) => {
+export const altoSvg = (svg: string, largura: number) => {
   const [, , l, a] = svg.match(/viewBox="([^"]+)"/)![1].split(/\s+/).map(Number);
   return (a * largura) / l;
 };
