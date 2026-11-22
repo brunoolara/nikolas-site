@@ -160,16 +160,7 @@ export default function EditorSalao({
       />
 
       {folhaDomingo && folha ? (
-        <section className="p-cartao mt-8 grid gap-4 p-5 sm:grid-cols-2">
-          <label className="block">
-            <span className="p-rotulo">Chamada</span>
-            <input
-              className={campo}
-              value={folha.eyebrow ?? ""}
-              onChange={(e) => mudarFolha({ eyebrow: e.target.value })}
-            />
-            <span className="p-ajuda">Ex.: Só no almoço de domingo</span>
-          </label>
+        <section className="p-cartao mt-8 p-5">
           <label className="block">
             <span className="p-rotulo">Frase da folha</span>
             <input

@@ -49,7 +49,7 @@ function Linha({ item, duas }: { item: ItemSalao; duas: boolean }) {
 export function Secao({ secao, mostrarTitulo = true }: { secao: SecaoSalao; mostrarTitulo?: boolean }) {
   const duas = Boolean(secao.colunas);
   return (
-    <section className="bloco">
+    <section className="bloco" data-secao={secao.id}>
       {mostrarTitulo && secao.titulo ? <h3>{secao.titulo}</h3> : null}
       {secao.nota ? <p className="nota">{secao.nota}</p> : null}
       {secao.colunas ? (
@@ -206,13 +206,6 @@ export default function FolhaSalao({
         <header className="abre">
           <img className="wm" src="/images/wordmark-preto.svg" alt="" />
           <h2>{folha.titulo}</h2>
-          {folha.eyebrow ? (
-            <p className="eyebrow">
-              <span />
-              {folha.eyebrow}
-              <span />
-            </p>
-          ) : null}
           {folha.frase ? <p className="frase">{folha.frase}</p> : null}
         </header>
         <Miolo folha={folha} achar={achar} frase={menu.frase} />

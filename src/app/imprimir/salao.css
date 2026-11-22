@@ -420,23 +420,6 @@
   max-width: 90mm;
   text-wrap: balance;
 }
-.domingo .abre .eyebrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4mm;
-  margin: calc(2.5mm + 3mm * var(--e)) 0 0;
-  font-weight: 600;
-  font-size: 3.1mm;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: var(--color-verde);
-}
-.domingo .abre .eyebrow span {
-  display: block;
-  width: 15mm;
-  border-top: 0.3mm solid var(--color-verde);
-}
 .domingo .abre .frase {
   font-family: var(--font-display);
   font-variation-settings: "opsz" 36, "SOFT" 60, "WONK" 1;
@@ -444,20 +427,29 @@
   font-weight: 400;
   font-size: calc(3.5mm + 0.9mm * var(--e));
   color: var(--color-cafe);
-  margin: calc(2mm + 2mm * var(--e)) 0 0;
+  margin: calc(2.5mm + 3mm * var(--e)) 0 0;
 }
 .domingo .miolo {
   margin-top: calc(4mm + 6mm * var(--e));
 }
 .domingo .nome {
-  font-size: calc(3.5mm + 0.6mm * var(--c));
+  /* +1 pt (0,35 mm) a pedido do Bruno em 21/11 */
+  font-size: calc(3.85mm + 0.6mm * var(--c));
 }
 .domingo .preco {
   font-size: calc(3.4mm + 0.5mm * var(--c));
 }
 .domingo .desc {
-  font-size: calc(2.9mm + 0.4mm * var(--c));
+  /* +2 pt (0,7 mm) a pedido do Bruno em 21/11 */
+  font-size: calc(3.6mm + 0.4mm * var(--c));
   margin-top: calc(0.4mm + 0.4mm * var(--c));
+}
+/* As sobremesas ficam no tamanho de antes de 21/11, um pouco menores que os pratos */
+.domingo [data-secao="sobremesas"] .nome {
+  font-size: calc(3.5mm + 0.6mm * var(--c));
+}
+.domingo [data-secao="sobremesas"] .desc {
+  font-size: calc(2.9mm + 0.4mm * var(--c));
 }
 .domingo .lista li {
   padding: calc(1.6mm + 2.4mm * var(--c)) 0;
