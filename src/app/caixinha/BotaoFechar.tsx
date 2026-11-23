@@ -1,12 +1,13 @@
 "use client";
 
 // Fecha o dia (congela o pagamento e passa os saldos adiante) ou reabre o
-// último dia fechado. BotaoTurno faz o mesmo com um turno só.
+// último dia fechado. BotaoTurno faz o mesmo com um turno só. Os dois também
+// marcam "Não pago no dia" (como no PC): nada é pago, fica a pagar depois.
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { ROTULO_TURNO, TURNOS, type Turno } from "@/lib/caixinha/tipos";
-import { acaoFecharDia, acaoFecharTurno, acaoReabrirDia } from "./acoes";
+import { acaoFecharDia, acaoFecharTurno, acaoNaoPago, acaoReabrirDia } from "./acoes";
 
 type Props = {
   data: string;
@@ -16,12 +17,16 @@ type Props = {
   /** Um turno já foi pago: fechar agora paga só este e fecha o dia. */
   restante: Turno | null;
   linksTurno: Record<Turno, string>;
+  /** Mostra "Não pago no dia": há turno aberto com alguém marcado e ainda sem a marca. */
+  naoPago: boolean;
 };
 
 const nome = (t: Turno) => ROTULO_TURNO[t].toLowerCase();
 
+const DEPOIS = "Nada é pago agora: fica a pagar depois, e o PC não muda mais as presenças.";
+
 export default function BotaoFechar(props: Props) {
-  const { data, fechado, podeReabrir, diasNoPagamento, restante, linksTurno } = props;
+  const { data, fechado, podeReabrir, diasNoPagamento, restante, linksTurno, naoPago } = props;
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
 
@@ -31,6 +36,12 @@ export default function BotaoFechar(props: Props) {
       : "Fechar o dia? O pagamento fica congelado e os saldos passam para o próximo dia.";
     if (!window.confirm(texto)) return;
     iniciar(async () => setAviso((await acaoFecharDia(data)).mensagem));
+  }
+
+  function marcarNaoPago() {
+    const texto = restante ? `Marcar o ${nome(restante)} como não pago no dia?` : "Marcar o dia como não pago?";
+    if (!window.confirm(`${texto} ${DEPOIS}`)) return;
+    iniciar(async () => setAviso((await acaoNaoPago(data, null)).mensagem));
   }
 
   function reabrir() {
@@ -57,6 +68,11 @@ export default function BotaoFechar(props: Props) {
           {restante ? `Fechar o ${nome(restante)} e pagar` : "Fechar o dia e pagar"}
         </button>
       )}
+      {!fechado && naoPago ? (
+        <button type="button" disabled={ocupado} onClick={marcarNaoPago} className="p-btn p-btn-secundario min-h-11 px-6">
+          Não pago no dia
+        </button>
+      ) : null}
       {!fechado && !restante ? (
         <p className="text-sm text-cafe">
           ou{" "}
@@ -87,9 +103,11 @@ type PropsTurno = {
   /** O outro turno já foi pago: pagar este fecha o dia. */
   fechaODia: boolean;
   podeReabrir: boolean;
+  /** Mostra "Não pago no dia": o turno tem alguém marcado e ainda não tem a marca. */
+  naoPago: boolean;
 };
 
-export function BotaoTurno({ data, turno, pago, fechaODia, podeReabrir }: PropsTurno) {
+export function BotaoTurno({ data, turno, pago, fechaODia, podeReabrir, naoPago }: PropsTurno) {
   const [aviso, setAviso] = useState("");
   const [ocupado, iniciar] = useTransition();
 
@@ -104,6 +122,11 @@ export function BotaoTurno({ data, turno, pago, fechaODia, podeReabrir }: PropsT
   function reabrir() {
     if (!window.confirm(`Reabrir o ${nome(turno)}? Os saldos voltam ao que eram antes do pagamento.`)) return;
     iniciar(async () => setAviso((await acaoReabrirDia(data)).mensagem));
+  }
+
+  function marcarNaoPago() {
+    if (!window.confirm(`Marcar o ${nome(turno)} como não pago no dia? ${DEPOIS}`)) return;
+    iniciar(async () => setAviso((await acaoNaoPago(data, turno)).mensagem));
   }
 
   return (
@@ -121,6 +144,11 @@ export function BotaoTurno({ data, turno, pago, fechaODia, podeReabrir }: PropsT
           Fechar o {nome(turno)} e pagar
         </button>
       )}
+      {!pago && naoPago ? (
+        <button type="button" disabled={ocupado} onClick={marcarNaoPago} className="p-btn p-btn-secundario min-h-11 px-6">
+          Não pago no dia
+        </button>
+      ) : null}
       {aviso ? <p className="text-sm text-cafe">{aviso}</p> : null}
     </div>
   );

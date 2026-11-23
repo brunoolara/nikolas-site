@@ -592,6 +592,51 @@ export async function acaoPcNaoPago(data: string, turno: string, responsavel: st
   return { ok: true, mensagem: `${ROTULO_TURNO[t]} encerrado sem pagamento. Fica a pagar pelo Bruno.` };
 }
 
+/**
+ * "Não pago no dia" pela Caixinha: a mesma marca do PC, num turno ou (com
+ * turno null) nos turnos abertos do dia que têm alguém marcado. Nada é pago:
+ * fica a pagar depois, e o PC não mexe mais nas presenças desses turnos.
+ */
+export async function acaoNaoPago(data: string, turno: string | null): Promise<Resultado> {
+  const nome = await quem();
+  if (!nome) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  if (turno !== null && !turnoValido(turno)) return { ok: false, mensagem: "Turno inválido." };
+  if (!DATA.test(data)) return { ok: false, mensagem: "Dia inválido." };
+  if (data > hoje()) return { ok: false, mensagem: "Este dia ainda não chegou." };
+  // a taxa que aparecia na tela, guardada só para referência (como no PC)
+  const antes = await lerDia(data);
+  const tk = TURNOS.some((t) => antes.turnos[t].taxaManual === null)
+    ? (await taxasDoPeriodo([data])).get(data)
+    : undefined;
+  let marcados: Turno[] = [];
+  let jaEstava = false;
+  const r = await mexerNoDia(
+    data,
+    (dia) => {
+      const alvo = turno ? [turno] : turnosAbertos(dia);
+      marcados = alvo.filter((t) => !dia.turnos[t].encerrado && dia.turnos[t].presencas.length > 0);
+      jaEstava = alvo.length > 0 && alvo.every((t) => dia.turnos[t].encerrado);
+      if (!marcados.length) return dia;
+      const em = new Date().toISOString();
+      const turnos = { ...dia.turnos };
+      for (const t of marcados)
+        turnos[t] = { ...turnos[t], encerrado: { em, por: nome, taxa: turnos[t].taxaManual ?? (tk?.ok ? tk.taxa[t] : null) } };
+      return { ...dia, turnos };
+    },
+    turno ?? undefined,
+  );
+  if (!r.ok) return r;
+  if (jaEstava) return { ok: false, mensagem: "Já estava marcado como não pago no dia." };
+  if (!marcados.length) return { ok: false, mensagem: "Marque quem trabalhou antes." };
+  return {
+    ok: true,
+    mensagem:
+      marcados.length === 1
+        ? `${ROTULO_TURNO[marcados[0]]} marcado como não pago no dia. Fica a pagar.`
+        : "Almoço e jantar marcados como não pagos no dia. Ficam a pagar.",
+  };
+}
+
 /** Desfaz o "Não pago no dia": o PC volta a marcar presença nesse turno. */
 export async function acaoLiberarNoPc(data: string, turno: string): Promise<Resultado> {
   if (!turnoValido(turno)) return { ok: false, mensagem: "Turno inválido." };

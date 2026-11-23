@@ -75,6 +75,16 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
   const podeReabrir = Boolean(fechado) && eUltimo(fechado?.pagamento, pagamento?.fim ?? data);
   const restante = tp && !fechado ? abertos[0] : null;
   const hora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  // "Não pago no dia": só em turno aberto, com alguém marcado e ainda sem a marca
+  const podeNaoPago = (ts: Turno[]) =>
+    !fechado && data <= dia && ts.some((t) => registro.turnos[t].presencas.length > 0 && !registro.turnos[t].encerrado);
+  /** "às 14:30", ou "em 23/11 às 00:30" se foi marcado em outro dia. */
+  const quandoMarcado = (iso: string) => {
+    const d = new Date(iso);
+    const noDia = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(d);
+    const as = `às ${d.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}`;
+    return noDia === data ? as : `em ${noDia.slice(8, 10)}/${noDia.slice(5, 7)} ${as}`;
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
@@ -184,11 +194,7 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
               fechado || tp?.turno === t || !registro.turnos[t].encerrado
                 ? null
                 : {
-                    em: new Date(registro.turnos[t].encerrado!.em).toLocaleTimeString("pt-BR", {
-                      timeZone: "America/Sao_Paulo",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }),
+                    em: quandoMarcado(registro.turnos[t].encerrado!.em),
                     por: registro.turnos[t].encerrado!.por,
                   }
             }
@@ -205,6 +211,7 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
               pago={Boolean(fechado) || tp?.turno === ver}
               fechaODia={Boolean(tp) && tp?.turno !== ver}
               podeReabrir={!fechado && tp?.turno === ver && eUltimo(tp.pagamento, data)}
+              naoPago={tp?.turno !== ver && podeNaoPago([ver])}
             />
           </DivisaoTurno>
           {tp?.turno === ver && pagTurno ? (
@@ -254,6 +261,7 @@ export default async function Caixinha({ searchParams }: PageProps<"/caixinha">)
             diasNoPagamento={pagamento?.dias.length ?? 1}
             restante={restante}
             linksTurno={{ almoco: link(data, "almoco"), jantar: link(data, "jantar") }}
+            naoPago={podeNaoPago(abertos)}
           />
         </section>
 

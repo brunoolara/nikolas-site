@@ -18,7 +18,7 @@ type Props = {
   taxaManual: number | null;
   takeat: { taxa: number; comandas: number } | null;
   partes: Record<string, number>;
-  /** Encerrado no PC sem pagamento ("Não pago no dia"). */
+  /** Marcado "Não pago no dia" (no PC ou na Caixinha); `em` já vem como "às 14:30". */
   encerrado: { em: string; por: string } | null;
 };
 
@@ -52,14 +52,14 @@ export default function EditorTurno(props: Props) {
 
       {encerrado ? (
         <p className="p-aviso p-aviso-alerta mt-3">
-          Não pago no dia: encerrado no PC às {encerrado.em} por {encerrado.por}. Fica a pagar.{" "}
+          Não pago no dia: marcado {encerrado.em} por {encerrado.por}. Fica a pagar.{" "}
           <button
             type="button"
             disabled={ocupado}
             className="font-semibold text-verde hover:underline"
             onClick={() => rodar(() => acaoLiberarNoPc(data, turno))}
           >
-            Liberar de novo no PC
+            Desfazer
           </button>
         </p>
       ) : null}
