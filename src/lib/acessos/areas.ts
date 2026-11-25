@@ -1,9 +1,26 @@
 // As áreas internas do site. Fora de usuarios.ts para as telas do navegador
 // poderem usar sem puxar código de servidor.
 
-export type Area = "cardapio" | "posts" | "caixinha" | "operacao" | "estoque" | "minha-caixinha" | "caixinha-turno";
+export type Area =
+  | "cardapio"
+  | "posts"
+  | "caixinha"
+  | "operacao"
+  | "estoque"
+  | "minha-caixinha"
+  | "caixinha-turno"
+  | "contas";
 
-export const AREAS: Area[] = ["cardapio", "posts", "caixinha", "operacao", "estoque", "minha-caixinha", "caixinha-turno"];
+export const AREAS: Area[] = [
+  "cardapio",
+  "posts",
+  "caixinha",
+  "operacao",
+  "estoque",
+  "minha-caixinha",
+  "caixinha-turno",
+  "contas",
+];
 
 export const ROTULO_AREA: Record<Area, string> = {
   cardapio: "Alterar cardápio",
@@ -13,4 +30,5 @@ export const ROTULO_AREA: Record<Area, string> = {
   estoque: "Estoque (contagem semanal)",
   "minha-caixinha": "Minha caixinha (só a parte da própria pessoa)",
   "caixinha-turno": "Caixinha do turno (tela do PC: marcar presença e pagar o turno de agora)",
+  contas: "Contas a pagar (ver o que vence, copiar o código e marcar como pago)",
 };

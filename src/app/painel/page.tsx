@@ -61,6 +61,13 @@ const BLOCOS: Bloco[] = [
     descricao: "A contagem semanal do estoque, por categoria, pelo celular ou pelo computador.",
   },
   {
+    area: "contas",
+    href: "/contas",
+    nome: "Contas a pagar",
+    icone: "contas",
+    descricao: "O que vence hoje e nos próximos dias, o código para pagar e o “Paguei”, direto da Takeat.",
+  },
+  {
     master: true,
     href: "/cmv",
     nome: "CMV",

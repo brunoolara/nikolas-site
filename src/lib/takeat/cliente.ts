@@ -152,5 +152,40 @@ export async function takeatGet<T>(
   throw new ErroTakeat("A Takeat recusou o acesso.", 401);
 }
 
+/**
+ * PATCH com corpo JSON. Hoje só a baixa de conta a pagar usa (precisa do
+ * escopo financial:write). Conta na cota como as consultas, com prioridade
+ * "essencial": quem está pagando não pode ficar sem resposta.
+ */
+export async function takeatPatch<T>(rota: string, corpo: unknown): Promise<T> {
+  if (process.env.NODE_ENV === "development" && process.env.TAKEAT_FIXTURE_DIR) return corpo as T;
+
+  const chave = process.env.TAKEAT_API_KEY;
+  if (!chave) throw new ErroTakeat("A chave da Takeat ainda não foi configurada na Vercel.");
+  if ((await usoDeHoje()) >= TETO.essencial)
+    throw new ErroTakeat("A cota diária de consultas à Takeat acabou. Volta amanhã.", 429);
+
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    await contar(rota.replace(/\/\d+/g, "/{id}"));
+    const res = await fetch(`${BASE}${rota}`, {
+      method: "PATCH",
+      headers: {
+        authorization: `Bearer ${await obterToken(chave, tentativa > 0)}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(corpo),
+      cache: "no-store",
+    });
+    if (res.status === 401 && tentativa === 0) continue;
+    if (res.status === 403)
+      throw new ErroTakeat("A chave da Takeat do painel não tem permissão para gravar isto.", 403);
+    if (res.status === 404) throw new ErroTakeat("A Takeat não achou este lançamento (foi apagado?).", 404);
+    if (res.status === 429) throw new ErroTakeat("A Takeat pediu para esperar (limite por minuto). Tente em um minuto.", 429);
+    if (!res.ok) throw new ErroTakeat(`A Takeat respondeu com erro (${res.status}).`, res.status);
+    return (await res.json()) as T;
+  }
+  throw new ErroTakeat("A Takeat recusou o acesso.", 401);
+}
+
 export const mensagemDe = (erro: unknown) =>
   erro instanceof ErroTakeat ? erro.motivo : "Não consegui falar com a Takeat agora.";

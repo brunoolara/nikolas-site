@@ -42,6 +42,7 @@ export const ITENS: Item[] = [
     area: "minha-caixinha",
   },
   { chave: "estoque", href: "/estoque", nome: "Estoque", icone: "estoque", area: "estoque" },
+  { chave: "contas", href: "/contas", nome: "Contas", icone: "contas", area: "contas" },
   { chave: "cmv", href: "/cmv", nome: "CMV", icone: "cmv", master: true },
   { chave: "acessos", href: "/acessos", nome: "Acessos", icone: "acessos", master: true },
 ];

@@ -9,7 +9,7 @@ import "server-only";
 import { get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 
-export type TipoEvento = "entrou" | "falhou" | "saiu" | "visita" | "cardapio";
+export type TipoEvento = "entrou" | "falhou" | "saiu" | "visita" | "cardapio" | "conta";
 
 export type Evento = {
   /** ISO 8601. */
@@ -18,7 +18,7 @@ export type Evento = {
   /** Login usado (na falha, o que foi digitado). */
   usuario: string;
   nome?: string;
-  /** visita: a página aberta; cardapio: a peça ("Menu executivo"...). */
+  /** visita: a página aberta; cardapio: a peça ("Menu executivo"...); conta: o que foi pago ou desfeito. */
   onde?: string;
   /** cardapio: versão gravada. */
   versao?: number;
