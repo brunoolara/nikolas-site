@@ -21,7 +21,7 @@ import AvisoNotificacoes from "./AvisoNotificacoes";
 import { ehGestor, tiposDe } from "@/lib/notificacoes/armazem";
 import { chavePublica, pushConfigurado } from "@/lib/notificacoes/enviar";
 
-export type Secao = "inicio" | Area | "caixa" | "cmv" | "acessos" | "avisos" | "perfil";
+export type Secao = "inicio" | Area | "caixa" | "faturamento" | "cmv" | "acessos" | "avisos" | "perfil";
 
 type Item = {
   chave: Secao;
@@ -60,6 +60,7 @@ export const ITENS: Item[] = [
   },
   { chave: "estoque", href: "/estoque", nome: "Estoque", icone: "estoque", area: "estoque" },
   { chave: "contas", href: "/contas", nome: "Contas", icone: "contas", area: "contas" },
+  { chave: "faturamento", href: "/faturamento", nome: "Faturamento", icone: "faturamento", gestor: true },
   { chave: "caixa", href: "/caixa", nome: "Caixa", icone: "caixa", gestor: true },
   { chave: "cmv", href: "/cmv", nome: "CMV", icone: "cmv", master: true },
   { chave: "acessos", href: "/acessos", nome: "Acessos", icone: "acessos", master: true },

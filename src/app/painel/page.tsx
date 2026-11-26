@@ -73,6 +73,13 @@ const BLOCOS: Bloco[] = [
   },
   {
     gestor: true,
+    href: "/faturamento",
+    nome: "Faturamento",
+    icone: "faturamento",
+    descricao: "Quanto a casa vendeu no dia, na semana ou no mês, por turno, canal e forma de pagamento.",
+  },
+  {
+    gestor: true,
     href: "/caixa",
     nome: "Caixa",
     icone: "caixa",
