@@ -14,13 +14,20 @@ import { mostrarChave, ROTULO_PIX } from "@/lib/caixinha/pix";
 import EditorPix from "../caixinha/EditorPix";
 import Notificacoes from "./Notificacoes";
 import MinhaSenha from "./MinhaSenha";
+import MeusDados from "./MeusDados";
+import { lerUsuarios } from "@/lib/acessos/usuarios";
 import { acaoMinhaChavePix } from "./acoes";
 
 export default async function Perfil() {
   // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
   const sessao = await sessaoAtual();
   if (!sessao) redirect("/");
-  const [todasPrefs, equipe] = await Promise.all([lerPreferencias(), sessao.pessoa ? lerEquipe() : []]);
+  const [todasPrefs, equipe, usuarios] = await Promise.all([
+    lerPreferencias(),
+    sessao.pessoa ? lerEquipe() : [],
+    sessao.master ? [] : lerUsuarios(),
+  ]);
+  const eu = usuarios.find((u) => u.usuario === sessao.usuario);
   const prefs = preferenciasDe(todasPrefs, sessao.usuario);
   const pix = equipe.find((p) => p.id === sessao.pessoa)?.pix;
   const tipos = tiposDe(sessao).map((chave) => ({ chave, ...TIPOS[chave] }));
@@ -64,6 +71,8 @@ export default async function Perfil() {
           <p className="mt-4 text-sm text-cafe">Para abrir outra área, fale com o Bruno.</p>
         ) : null}
       </section>
+
+      {!sessao.master ? <MeusDados nome={sessao.nome} cpf={eu?.cpf ?? ""} celular={eu?.celular ?? ""} /> : null}
 
       {!sessao.master ? <MinhaSenha /> : null}
 

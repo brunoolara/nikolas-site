@@ -4,6 +4,7 @@
 
 import { useState, useTransition } from "react";
 import { AREAS, ROTULO_AREA, type Area } from "@/lib/acessos/areas";
+import { mostrarCelular, mostrarCpf } from "@/lib/acessos/dados";
 import { acaoAlterarUsuario, acaoExcluirUsuario, type Mudanca } from "./acoes";
 
 /** Alguém da equipe da Caixinha e o login ligado a ele, se houver. */
@@ -16,10 +17,12 @@ type Props = {
   ativo: boolean;
   pessoa: string;
   gestor: boolean;
+  cpf?: string;
+  celular?: string;
   equipe: DaEquipe[];
 };
 
-export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, gestor, equipe }: Props) {
+export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, gestor, cpf, celular, equipe }: Props) {
   const [aviso, setAviso] = useState("");
   const [novaSenha, setNovaSenha] = useState<string | null>(null);
   const [ocupado, iniciar] = useTransition();
@@ -48,6 +51,9 @@ export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, gest
         </h3>
         {ativo ? null : <span className="p-selo p-selo-vermelho">Desativado</span>}
       </div>
+      <p className="mt-1 text-sm tabular-nums text-cafe">
+        CPF {cpf ? mostrarCpf(cpf) : "não informado"} · Celular {celular ? mostrarCelular(celular) : "não informado"}
+      </p>
 
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
         {AREAS.map((area) => (

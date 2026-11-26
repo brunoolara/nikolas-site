@@ -23,6 +23,9 @@ export type Usuario = {
   pessoa?: string;
   /** Gestor (sócios e gerência) ou funcionário. Só separa as listas em Acessos. */
   gestor?: boolean;
+  /** Preenchidos pela própria pessoa no Perfil, só números. */
+  cpf?: string;
+  celular?: string;
   ativo: boolean;
   sal: string;
   hash: string;

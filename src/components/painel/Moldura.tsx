@@ -5,6 +5,7 @@
 // No celular, como um aplicativo: em cima o ☰ ao lado do N abre o menu lateral
 // com todas as áreas; embaixo ficam fixos os cinco botões do dia a dia
 // (Início, Ao vivo, Criar, Avisos e Perfil).
+// Para funcionário com notificações desligadas no aparelho, abre o aviso que pede para ativar.
 
 import { Suspense } from "react";
 import Link from "next/link";
@@ -16,6 +17,9 @@ import Icone, { type NomeIcone } from "./Icone";
 import Sair from "./Sair";
 import MenuLateral from "./MenuLateral";
 import BarraInferior, { type Atalho } from "./BarraInferior";
+import AvisoNotificacoes from "./AvisoNotificacoes";
+import { tiposDe } from "@/lib/notificacoes/armazem";
+import { chavePublica, pushConfigurado } from "@/lib/notificacoes/enviar";
 
 export type Secao = "inicio" | Area | "cmv" | "acessos" | "avisos" | "perfil";
 
@@ -126,6 +130,10 @@ export default async function Moldura({ atual }: { atual: Secao }) {
           </div>
         </div>
       </header>
+
+      {!sessao.master && atual !== "perfil" && pushConfigurado() && tiposDe(sessao).length ? (
+        <AvisoNotificacoes chavePublica={chavePublica()} />
+      ) : null}
 
       <BarraInferior
         atual={atual}

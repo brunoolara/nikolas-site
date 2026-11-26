@@ -30,6 +30,8 @@ export default async function Acessos() {
         ativo={u.ativo}
         pessoa={u.pessoa ?? ""}
         gestor={Boolean(u.gestor)}
+        cpf={u.cpf}
+        celular={u.celular}
         equipe={equipe}
       />
     ));

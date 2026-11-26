@@ -6,7 +6,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import type { TipoAviso } from "@/lib/notificacoes/armazem";
-import { acaoDesinscrever, acaoInscrever, acaoPreferencia, acaoTestar } from "./acoes";
+import { ativarNesteAparelho, reenviar, situacaoDoAparelho, type Situacao } from "@/lib/notificacoes/aparelho";
+import { acaoDesinscrever, acaoPreferencia, acaoTestar } from "./acoes";
 
 type Tipo = { chave: TipoAviso; nome: string; descricao: string };
 
@@ -18,31 +19,6 @@ type Props = {
   preferencias: Record<TipoAviso, boolean>;
 };
 
-type Situacao = "carregando" | "sem-suporte" | "iphone-instalar" | "negado" | "desligado" | "ligado";
-
-function chaveEmBytes(base64: string): Uint8Array<ArrayBuffer> {
-  const b64 = (base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
-  const bruto = atob(b64);
-  const bytes = new Uint8Array(new ArrayBuffer(bruto.length));
-  for (let i = 0; i < bruto.length; i++) bytes[i] = bruto.charCodeAt(i);
-  return bytes;
-}
-
-function nomeDoAparelho(): string {
-  const ua = navigator.userAgent;
-  if (/iPhone/.test(ua)) return "iPhone";
-  if (/iPad/.test(ua)) return "iPad";
-  if (/Android/.test(ua)) return "Android";
-  if (/Windows/.test(ua)) return "Computador (Windows)";
-  if (/Mac/.test(ua)) return "Mac";
-  return "Aparelho";
-}
-
-const ehIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
-const instalado = () =>
-  window.matchMedia("(display-mode: standalone)").matches ||
-  (navigator as Navigator & { standalone?: boolean }).standalone === true;
-
 export default function Notificacoes({ chavePublica, configurado, tipos, preferencias }: Props) {
   const [situacao, setSituacao] = useState<Situacao>("carregando");
   const [endpoint, setEndpoint] = useState("");
@@ -51,47 +27,26 @@ export default function Notificacoes({ chavePublica, configurado, tipos, prefere
   const [ocupado, iniciar] = useTransition();
 
   useEffect(() => {
-    (async () => {
-      const temPush = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-      if (!temPush) return setSituacao(ehIOS() && !instalado() ? "iphone-instalar" : "sem-suporte");
-      if (Notification.permission === "denied") return setSituacao("negado");
-      const registro = await navigator.serviceWorker.getRegistration("/");
-      const assinatura = await registro?.pushManager.getSubscription();
-      if (assinatura) {
-        setEndpoint(assinatura.endpoint);
-        // o aparelho acha que está inscrito, mas o servidor pode ter perdido a
-        // inscrição (foi o que aconteceu na troca do Blob pelo Supabase, 12/11):
-        // reenvia a cada visita, sem mexer nas preferências
-        const json = assinatura.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-        void acaoInscrever(json, nomeDoAparelho()).catch(() => {});
-      }
-      setSituacao(assinatura ? "ligado" : "desligado");
-    })().catch(() => setSituacao("sem-suporte"));
+    situacaoDoAparelho()
+      .then(({ situacao, assinatura }) => {
+        if (assinatura) {
+          setEndpoint(assinatura.endpoint);
+          // o aparelho acha que está inscrito, mas o servidor pode ter perdido a
+          // inscrição (foi o que aconteceu na troca do Blob pelo Supabase, 12/11):
+          // reenvia a cada visita, sem mexer nas preferências
+          reenviar(assinatura);
+        }
+        setSituacao(situacao);
+      })
+      .catch(() => setSituacao("sem-suporte"));
   }, []);
 
   function ativar() {
     iniciar(async () => {
-      try {
-        const permissao = await Notification.requestPermission();
-        if (permissao !== "granted") {
-          setSituacao(permissao === "denied" ? "negado" : "desligado");
-          return;
-        }
-        const registro = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-        await navigator.serviceWorker.ready;
-        const assinatura =
-          (await registro.pushManager.getSubscription()) ??
-          (await registro.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveEmBytes(chavePublica) }));
-        const json = assinatura.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-        const r = await acaoInscrever(json, nomeDoAparelho());
-        setAviso(r.mensagem);
-        if (r.ok) {
-          setEndpoint(assinatura.endpoint);
-          setSituacao("ligado");
-        }
-      } catch {
-        setAviso("Não consegui ativar neste aparelho. Tente de novo.");
-      }
+      const r = await ativarNesteAparelho(chavePublica);
+      setAviso(r.mensagem);
+      setSituacao(r.situacao);
+      if (r.endpoint) setEndpoint(r.endpoint);
     });
   }
 

@@ -5,6 +5,8 @@
 
 import { revalidatePath } from "next/cache";
 import { sessaoAtual, trocarMinhaSenha } from "@/lib/acessos/sessao";
+import { gravarUsuarios, lerUsuarios } from "@/lib/acessos/usuarios";
+import { celularValido, cpfValido, soDigitos } from "@/lib/acessos/dados";
 import {
   PREFERENCIAS_PADRAO,
   TIPOS,
@@ -121,4 +123,28 @@ export async function acaoMinhaSenha(atual: string, nova: string): Promise<Respo
   const erro = await trocarMinhaSenha(atual, nova);
   if (erro) return { ok: false, mensagem: erro };
   return { ok: true, mensagem: "Senha trocada. Nos outros aparelhos, entre de novo com a senha nova." };
+}
+
+/** CPF e celular da própria pessoa; os dois são opcionais (vazio apaga). */
+export async function acaoMeusDados(cpf: string, celular: string): Promise<Resposta> {
+  const sessao = await sessaoAtual();
+  if (!sessao) return { ok: false, mensagem: "Entre de novo no painel." };
+  if (sessao.master) return { ok: false, mensagem: "O master não tem cadastro aqui." };
+  const c = soDigitos(cpf);
+  const cel = soDigitos(celular);
+  if (c && !cpfValido(c)) return { ok: false, mensagem: "Esse CPF não confere. Confira os números." };
+  if (cel && !celularValido(cel)) return { ok: false, mensagem: "Coloque o celular com DDD, por exemplo (35) 99999-9999." };
+
+  const usuarios = await lerUsuarios();
+  const u = usuarios.find((x) => x.usuario === sessao.usuario);
+  if (!u) return { ok: false, mensagem: "Entre de novo no painel." };
+  const novo = { ...u };
+  if (c) novo.cpf = c;
+  else delete novo.cpf;
+  if (cel) novo.celular = cel;
+  else delete novo.celular;
+  await gravarUsuarios(usuarios.map((x) => (x.usuario === u.usuario ? novo : x)));
+  revalidatePath("/perfil");
+  revalidatePath("/acessos");
+  return { ok: true, mensagem: "Dados salvos." };
 }
