@@ -154,8 +154,12 @@ export function lerFechamento(id: string, html: string): { ok: true; fechamento:
   };
 }
 
-/** Sangria do troco que fica para o próximo caixa ("Fundo próximo caixa", "troco"...). */
-export const ehFundo = (m: Movimento) => /fundo|troco/i.test(m.descricao);
+/**
+ * Sangria do troco que fica para o próximo caixa ("Fundo próximo caixa",
+ * "troco", "inicio de caixa" — este último usado pela equipe em 26/11/2026).
+ */
+export const ehFundo = (m: Movimento) =>
+  /fundo|troco|in[ií]cio d[eo] (pr[oó]ximo )?caixa|pr[oó]ximo caixa/i.test(m.descricao);
 
 const tem = (nome: string, re: RegExp) => re.test(nome.normalize("NFD").replace(/[̀-ͯ]/g, ""));
 
