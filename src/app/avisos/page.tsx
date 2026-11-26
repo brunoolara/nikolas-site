@@ -1,6 +1,6 @@
 // Avisos: em cima, o que está pendente nas áreas da pessoa (post do dia,
 // contagem de estoque, caixinha sem fechar); embaixo, as notificações que
-// saíram para ela (fechamento do caixinha e do caixa, delivery atrasado), da
+// saíram para ela (fechamento do caixinha e do caixa, delivery novo e atrasado), da
 // mais nova para a mais velha, agrupadas por dia. Tudo resumido, uma linha cada.
 // Abrir esta tela conta como visto: o número do sino zera (lib/avisos.ts).
 
@@ -120,7 +120,7 @@ export default async function Avisos() {
           ))
         ) : (
           <p className="p-cartao mt-2 p-6 text-center text-sm text-cafe">
-            As notificações de caixinha, caixa e delivery atrasado ficam aqui, da mais nova para a mais antiga.
+            As notificações de caixinha, caixa e delivery ficam aqui, da mais nova para a mais antiga.
           </p>
         )}
       </section>

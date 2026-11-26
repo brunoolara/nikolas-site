@@ -25,6 +25,7 @@ import {
 } from "./armazem";
 import { enviar } from "./enviar";
 import { guardarNoHistorico } from "./historico";
+import { reais } from "@/lib/caixinha/tipos";
 
 /** Quem pode receber avisos do delivery: o master e quem tem o Ao vivo. */
 /** Quem tem o Ao vivo e quer esse aviso, e os aparelhos inscritos dessas pessoas. */
@@ -44,6 +45,9 @@ const resumoItens = (p: PedidoDelivery) => {
 const quem = (p: PedidoDelivery) => [p.senha ? `#${p.senha}` : "", p.cliente].filter(Boolean).join(" ");
 
 const AVISO_PREPARO_MIN = 90;
+
+const horaLocal = (iso: string) =>
+  new Date(iso).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
 /** Minutos desde que o pedido entrou em preparação. */
 function minutosEmPreparo(p: PedidoDelivery, agora: number): number {
@@ -81,12 +85,20 @@ export async function vigiarDelivery(): Promise<Resultado> {
 
   let enviados = 0;
   if (novos.length) {
-    const para = (await quemRecebe("deliveryNovo")).aparelhos;
+    const { usuarios, aparelhos } = await quemRecebe("deliveryNovo");
     for (const p of novos) {
-      enviados += await enviar(para, {
+      enviados += await enviar(aparelhos, {
         title: p.ifood ? "Novo pedido do iFood" : p.retirada ? "Novo pedido para retirar" : "Novo pedido de delivery",
         body: [quem(p), p.bairro, resumoItens(p)].filter(Boolean).join(" · "),
         tag: `delivery-${p.id}`,
+        url: "/operacao?ver=delivery",
+      });
+      // na tela Avisos, resumido: a hora do pedido, o cliente e o valor (pedido do Bruno em 26/11/2026)
+      await guardarNoHistorico({
+        tipo: "deliveryNovo",
+        para: usuarios,
+        titulo: `${p.ifood ? "Pedido iFood" : p.retirada ? "Pedido para retirar" : "Novo pedido"} · ${horaLocal(p.inicio)}`,
+        texto: [quem(p) || "Cliente sem nome", reais(p.valor)].join(" · "),
         url: "/operacao?ver=delivery",
       });
     }
@@ -101,7 +113,6 @@ export async function vigiarDelivery(): Promise<Resultado> {
         url: "/operacao?ver=delivery",
       };
       enviados += await enviar(aparelhos, mensagem);
-      // o novo pedido não vai para a tela Avisos (são muitos por dia); o atrasado vai
       await guardarNoHistorico({ tipo: "deliveryAtrasado", para: usuarios, titulo: mensagem.title, texto: mensagem.body, url: mensagem.url });
     }
   }
