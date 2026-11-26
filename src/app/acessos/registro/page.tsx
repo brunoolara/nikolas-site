@@ -177,7 +177,7 @@ function Detalhes({ linhas }: { linhas: string[] }) {
       </ul>
       {resto.length ? (
         <details className="mt-1">
-          <summary className="cursor-pointer text-verde">Ver mais {resto.length}</summary>
+          <summary className="-my-3 cursor-pointer py-3 text-verde">Ver mais {resto.length}</summary>
           <ul className="list-disc pl-5">
             {resto.map((l, i) => (
               <li key={i}>{l}</li>

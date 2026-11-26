@@ -628,19 +628,16 @@ html:has(.painel) {
 }
 
 /* Troca de tela (View Transitions do navegador, pedido de 25/11/2026).
-   Os blocos de espera são um <ViewTransition> (Carregando.tsx): ao tocar,
-   a tela velha se apaga enquanto os blocos aparecem; quando a página chega,
-   os blocos somem e o conteúdo se acende no lugar. As barras de cima e de
-   baixo são iguais nas duas telas, então ficam paradas. Navegador sem
-   suporte troca de tela como antes. Fora daqui nada anima: a atualização
-   depois de gravar (Paguei, contagem) não pisca. */
+   Os blocos de espera são um <ViewTransition> (Carregando.tsx) e são só
+   eles que animam (o React não anima o resto da página): dentro de uma
+   área, ao tocar, eles sobem e aparecem; quando a página chega, se
+   dissolvem sobre o conteúdo já no lugar. As barras de cima e de baixo
+   ficam paradas. Navegador sem suporte, ou com "reduzir movimento",
+   troca de tela como antes. A atualização depois de gravar (Paguei,
+   contagem) não anima. */
 ::view-transition {
   /* o toque durante a animação vai para a tela de verdade */
   pointer-events: none;
-}
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.2s;
 }
 ::view-transition-new(.p-entra) {
   animation: p-tela-entra 0.18s ease-out both;
