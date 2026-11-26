@@ -85,7 +85,7 @@ export default async function Posts({ searchParams }: PageProps<"/posts">) {
         <>
           {ehHoje && atrasados.length ? (
             <details className="p-aviso p-aviso-alerta mt-6">
-              <summary className="cursor-pointer font-semibold">
+              <summary className="-my-3 cursor-pointer py-3 font-semibold">
                 {atrasados.length} {atrasados.length > 1 ? "posts ficaram" : "post ficou"} para trás
               </summary>
               <p className="mt-1 text-xs">Eram de dias anteriores e ninguém marcou como publicado.</p>

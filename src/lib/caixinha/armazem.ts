@@ -12,7 +12,7 @@
 // nada se perde (mesmo esquema do registro do painel).
 
 import "server-only";
-import { del, get, put } from "@/lib/loja";
+import { del, get, lerVarios, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 import { diaVazio, type Dia, type Estado, type Pagamento, type Pessoa } from "./tipos";
 
@@ -58,6 +58,15 @@ export function atualizarEquipe(mudar: (equipe: Pessoa[]) => Pessoa[]) {
 
 export async function lerDia(data: string): Promise<Dia> {
   return (await ler<Dia>(arquivoDia(data))).valor ?? diaVazio(data);
+}
+
+/** Os mesmos dias de lerDia, numa leitura só (para telas que leem semanas). */
+export async function lerDias(datas: string[]): Promise<Dia[]> {
+  const conteudos = await lerVarios(datas.map(arquivoDia));
+  return datas.map((d) => {
+    const texto = conteudos.get(arquivoDia(d));
+    return texto ? (JSON.parse(texto) as Dia) : diaVazio(d);
+  });
 }
 
 export function atualizarDia(data: string, mudar: (dia: Dia) => Dia) {

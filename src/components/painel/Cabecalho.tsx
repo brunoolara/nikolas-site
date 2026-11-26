@@ -19,7 +19,7 @@ export default function Cabecalho({ titulo, descricao, voltar, acoes }: Props) {
         {voltar ? (
           <Link
             href={voltar.href}
-            className="mb-1 inline-flex items-center gap-1 text-sm font-medium text-cafe hover:text-verde"
+            className="relative mb-1 inline-flex items-center gap-1 text-sm font-medium text-cafe after:absolute after:-inset-x-2 after:-inset-y-3 hover:text-verde"
           >
             <Icone nome="voltar" className="h-3.5 w-3.5" />
             {voltar.rotulo}

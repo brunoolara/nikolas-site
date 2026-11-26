@@ -6,7 +6,7 @@ import Link from "next/link";
 import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
 import { DATA, hoje, rotuloData, somarDias } from "@/lib/posts/tipos";
-import { lerDia, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
+import { lerDias, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
 import { diasEntre, reais, type Dia } from "@/lib/caixinha/tipos";
 import Abas from "../Abas";
 import EscolherPeriodo from "../EscolherPeriodo";
@@ -130,8 +130,8 @@ export default async function Relatorio({ searchParams }: PageProps<"/caixinha/r
   const antesDatas = diasEntre(somarDias(antesFim, -(datas.length - 1)), antesFim);
 
   const [dias, diasAntes, estado] = await Promise.all([
-    Promise.all(datas.map(lerDia)),
-    Promise.all(antesDatas.map(lerDia)),
+    lerDias(datas),
+    lerDias(antesDatas),
     lerEstado(),
   ]);
   const r = apurar(dias);

@@ -217,7 +217,7 @@ export default function Editor({ menu: inicial, atualizadoEm, atualizadoPor }: P
       </section>
 
       {/* barra fixa: salvar nunca fica longe */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-linha bg-papel/95 shadow-[0_-4px_16px_rgb(27_23_16/0.06)] backdrop-blur">
+      <div className="p-acoes-fixas">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <button type="button" onClick={salvar} disabled={salvando} className="p-btn p-btn-primario min-w-32">
             {salvando ? "Salvando…" : "Salvar"}

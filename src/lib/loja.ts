@@ -67,6 +67,25 @@ export async function get(caminho: string, _opcoes?: { access?: "private"; useCa
   return { statusCode: 200, stream: stream(linha.conteudo), blob: { etag: `"${linha.versao}"` } };
 }
 
+/**
+ * Vários arquivos JSON de uma vez (caminho → conteúdo); o que não existe fica
+ * de fora. Uma consulta a cada 50 caminhos, em vez de uma por arquivo: o
+ * relatório da Caixinha lia 50 dias um a um e levava quase 2 s (25/11/2026).
+ */
+export async function lerVarios(caminhos: string[]): Promise<Map<string, string>> {
+  const lotes: string[][] = [];
+  for (let i = 0; i < caminhos.length; i += 50) lotes.push(caminhos.slice(i, i + 50));
+  const linhas = await Promise.all(
+    lotes.map(async (lote) => {
+      const lista = lote.map((c) => `"${c.replace(/"/g, '\\"')}"`).join(",");
+      const res = await pedir(tabela(`caminho=in.(${encodeURIComponent(lista)})&select=caminho,conteudo`));
+      if (!res.ok) return falha(res, "ler vários");
+      return (await res.json()) as { caminho: string; conteudo: string }[];
+    }),
+  );
+  return new Map(linhas.flat().map((l) => [l.caminho, l.conteudo]));
+}
+
 /** Uma versão nova, sempre diferente da anterior. */
 const novaVersao = () => Date.now() * 1000 + Math.floor(Math.random() * 1000);
 

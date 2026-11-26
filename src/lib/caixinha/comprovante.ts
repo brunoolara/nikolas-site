@@ -6,7 +6,7 @@ import "server-only";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import { MONOGRAMA_SVG, WORDMARK_SVG } from "./marca-svg";
 import { rotuloData } from "@/lib/posts/tipos";
-import { lerDia, lerEquipe, lerEstado, lerPagamento } from "./armazem";
+import { lerDias, lerEquipe, lerEstado, lerPagamento } from "./armazem";
 import { taxasDoPeriodo } from "./takeat";
 import {
   diasEntre,
@@ -42,7 +42,7 @@ export async function lerComprovante(id: string, pessoa: string): Promise<Compro
   const pag = await lerPagamento(id);
   const linha = pag?.linhas.find((l) => l.pessoa === pessoa);
   if (!pag || !linha) return null;
-  const dias = (await Promise.all(pag.dias.map(lerDia)))
+  const dias = (await lerDias(pag.dias))
     .map((d) => {
       const p = partesNoPagamento(d, pag.id).find((x) => x.pessoa === pessoa);
       return p ? { data: d.data, almoco: p.almoco, jantar: p.jantar, consumo: p.consumo } : null;
@@ -73,7 +73,7 @@ export async function previaComprovante(
   const datas = diasEntre(ini, fim);
   if (!datas.length || datas.length > MAX_DIAS_PAGAMENTO) return null;
   if (turno && ini !== fim) return null;
-  const [dias, equipe, estado] = await Promise.all([Promise.all(datas.map(lerDia)), lerEquipe(), lerEstado()]);
+  const [dias, equipe, estado] = await Promise.all([lerDias(datas), lerEquipe(), lerEstado()]);
   if (dias.some((d) => d.fechamento)) return null;
   const turnosDe = (d: (typeof dias)[number]) => (turno ? [turno] : turnosAbertos(d));
   if (turno && !turnosAbertos(dias[0]).includes(turno)) return null;

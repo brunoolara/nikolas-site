@@ -17,6 +17,18 @@ html:has(.painel) {
   .painel:has(.p-barra) {
     padding-bottom: calc(6.25rem + env(safe-area-inset-bottom));
   }
+  /* a barra de salvar dos editores sobe para cima da cápsula: antes ficava
+     escondida atrás dela, com o Salvar coberto pelo Início (25/11/2026) */
+  .painel:has(.p-barra) .p-acoes-fixas {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    max-width: 30rem;
+    margin-inline: auto;
+    border: 1px solid var(--color-linha);
+    border-radius: 1.25rem;
+    box-shadow: var(--p-sombra-alta);
+  }
 }
 @keyframes p-gaveta-entra {
   from {
@@ -48,6 +60,12 @@ html:has(.painel) {
    - .p-selo: etiqueta pequena de status.
    - .p-abas + .p-aba: abas de uma tela (a atual com aria-current="page"
        ou aria-selected="true").
+   - .p-chip: pílula de filtro (a escolhida com aria-pressed="true" ou
+       aria-current="true").
+   - .p-acoes-fixas: barra de salvar presa embaixo (no celular, acima da
+       cápsula de atalhos).
+   - Caixa de marcar e rádio já saem no tamanho e na cor certos; não pôr
+       size-4/accent na tela.
    Toda página interna usa a mesma largura da barra de cima (max-w-5xl),
    para nada mudar de tamanho ao trocar de tela.
    Ficam em @layer components para que uma utilidade do Tailwind na mesma
@@ -352,6 +370,64 @@ html:has(.painel) {
     color: var(--color-papel);
   }
 
+  /* Pílulas de filtro (categoria no Estoque, pessoa no Registro, tipo nos
+     Posts): a escolhida com aria-pressed (botão) ou aria-current (link). */
+  .p-chip {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 2.25rem;
+    padding: 0.375rem 0.875rem;
+    border: 1px solid var(--color-linha);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--color-cafe);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+  }
+  .p-chip:hover {
+    border-color: var(--color-verde);
+    color: var(--color-tinta);
+  }
+  .p-chip[aria-pressed="true"],
+  .p-chip[aria-current="true"] {
+    background: var(--color-verde);
+    border-color: var(--color-verde);
+    color: var(--color-papel);
+  }
+
+  /* Caixa de marcar: um tamanho só no painel inteiro, verde da marca */
+  .painel input[type="checkbox"]:not(.p-chave),
+  .painel input[type="radio"] {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--color-verde);
+  }
+
+  /* Barra de salvar presa embaixo dos editores (cardápio, contagem) */
+  .p-acoes-fixas {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    border-top: 1px solid var(--color-linha);
+    background: rgb(251 248 242 / 0.95);
+    box-shadow: 0 -4px 16px rgb(27 23 16 / 0.06);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
   /* Rodapé do celular: cinco botões numa cápsula de vidro que flutua acima
      da borda da tela, como a barra de abas do iOS (13/11/2026). O item
      atual ganha uma pílula verde-clara; o toque afunda o item. */
@@ -551,6 +627,46 @@ html:has(.painel) {
   }
 }
 
+/* Troca de tela (View Transitions do navegador, pedido de 25/11/2026).
+   Os blocos de espera são um <ViewTransition> (Carregando.tsx): ao tocar,
+   a tela velha se apaga enquanto os blocos aparecem; quando a página chega,
+   os blocos somem e o conteúdo se acende no lugar. As barras de cima e de
+   baixo são iguais nas duas telas, então ficam paradas. Navegador sem
+   suporte troca de tela como antes. Fora daqui nada anima: a atualização
+   depois de gravar (Paguei, contagem) não pisca. */
+::view-transition {
+  /* o toque durante a animação vai para a tela de verdade */
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.2s;
+}
+::view-transition-new(.p-entra) {
+  animation: p-tela-entra 0.18s ease-out both;
+}
+::view-transition-old(.p-sai) {
+  animation: p-tela-sai 0.12s ease-in both;
+}
+@keyframes p-tela-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes p-tela-sai {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 /* Dedo, não mouse: alvos de pelo menos 44 px e campo com 16 px de letra
    (abaixo disso o iPhone dá zoom ao tocar no campo). Na camada de
    componentes, para um min-h-14 da própria tela continuar valendo. */
@@ -563,12 +679,18 @@ html:has(.painel) {
     min-height: 2.5rem;
     padding-inline: 0.85rem;
   }
-  .p-aba {
+  .p-aba,
+  .p-chip {
     min-height: 2.75rem;
   }
   .p-campo {
     min-height: 2.75rem;
     font-size: 1rem;
+  }
+  /* a linha da caixa de marcar inteira é o alvo do dedo */
+  .painel label:has(> input[type="checkbox"]:not(.p-chave)),
+  .painel label:has(> input[type="radio"]) {
+    min-height: 2.75rem;
   }
 }
 

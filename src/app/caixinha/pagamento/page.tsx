@@ -6,7 +6,7 @@ import Link from "next/link";
 import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
 import { DATA, hoje, rotuloData, somarDias } from "@/lib/posts/tipos";
-import { lerDia, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
+import { lerDias, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
 import { curto, montarPeriodo, taxasNoPagamento } from "@/lib/caixinha/periodo";
 import { lerIdPagamento, PAGAMENTO_ID, PARTE_EQUIPE, reais, ROTULO_TURNO, TURNOS } from "@/lib/caixinha/tipos";
 import Abas from "../Abas";
@@ -195,7 +195,7 @@ async function PagamentoFeito({
       </div>
     );
 
-  const dias = await Promise.all(pag.dias.map(lerDia));
+  const dias = await lerDias(pag.dias);
   const taxas = dias.map((d) => taxasNoPagamento(d, pag.id));
   const taxaTotal = taxas.reduce((s, t) => s + (t.almoco ?? 0) + (t.jantar ?? 0), 0);
   const total = pag.linhas.reduce((s, l) => s + l.pagar, 0);

@@ -64,7 +64,6 @@ export default function Organizar({ linhas }: { linhas: Linha[] }) {
             <label className="flex items-center gap-1.5 text-xs text-cafe">
               <input
                 type="checkbox"
-                className="size-4 accent-[var(--color-verde)]"
                 checked={!l.naoContar}
                 disabled={ocupado}
                 onChange={(e) => ajustar(l.id, { naoContar: !e.target.checked })}

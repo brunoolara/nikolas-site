@@ -3,7 +3,7 @@
 
 import "server-only";
 import { rotuloData } from "@/lib/posts/tipos";
-import { lerDia, lerEquipe } from "./armazem";
+import { lerDias, lerEquipe } from "./armazem";
 import { taxasDoPeriodo } from "./takeat";
 import {
   diasEntre,
@@ -33,7 +33,7 @@ export async function montarPeriodo(ini: string, fim: string, estado: Estado) {
   if (datas.length > MAX_DIAS_PAGAMENTO) problemas.push(`Um pagamento cobre no máximo ${MAX_DIAS_PAGAMENTO} dias.`);
 
   const usados = datas.slice(0, MAX_DIAS_PAGAMENTO);
-  const [dias, equipe] = await Promise.all([Promise.all(usados.map(lerDia)), lerEquipe()]);
+  const [dias, equipe] = await Promise.all([lerDias(usados), lerEquipe()]);
   const abertos = dias.filter((d) => !d.fechamento);
   const precisam = abertos.filter((d) => turnosAbertos(d).some((t) => d.turnos[t].taxaManual === null)).map((d) => d.data);
   const takeat = precisam.length && !problemas.length ? await taxasDoPeriodo(precisam) : new Map();

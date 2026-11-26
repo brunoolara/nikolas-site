@@ -11,7 +11,7 @@
 //   marcado.
 
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, ViewTransition } from "react";
 import Logo from "@/components/Logo";
 import Icone from "./Icone";
 import BarraInferior from "./BarraInferior";
@@ -51,19 +51,25 @@ function secaoDe(caminho: string): string {
   return "";
 }
 
-/** Os blocos cinza no lugar do conteúdo. */
+/**
+ * Os blocos cinza no lugar do conteúdo. São eles que animam a troca de tela
+ * (classes p-entra e p-sai em painel.css): entram quando a tela é tocada e
+ * saem quando a página chega.
+ */
 export function Blocos() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10" aria-busy="true" aria-live="polite">
-      <span className="sr-only">Carregando…</span>
-      <div className="p-esqueleto h-9 w-56 max-w-full" />
-      <div className="p-esqueleto mt-3 h-4 w-80 max-w-full" />
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <div className="p-esqueleto h-36" />
-        <div className="p-esqueleto h-36" />
-        <div className="p-esqueleto h-24 sm:col-span-2" />
+    <ViewTransition enter="p-entra" exit="p-sai" default="none">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Carregando…</span>
+        <div className="p-esqueleto h-9 w-56 max-w-full" />
+        <div className="p-esqueleto mt-3 h-4 w-80 max-w-full" />
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <div className="p-esqueleto h-36" />
+          <div className="p-esqueleto h-36" />
+          <div className="p-esqueleto h-24 sm:col-span-2" />
+        </div>
       </div>
-    </div>
+    </ViewTransition>
   );
 }
 

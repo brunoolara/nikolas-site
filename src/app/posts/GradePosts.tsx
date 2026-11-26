@@ -61,9 +61,8 @@ export default function GradePosts({ posts, master, porTipo = false, vazio }: Pr
               key={t ?? "todos"}
               type="button"
               onClick={() => setTipo(t)}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                tipo === t ? "border-verde bg-verde text-papel" : "border-linha text-cafe hover:bg-creme"
-              }`}
+              aria-pressed={tipo === t}
+              className="p-chip"
             >
               {t ?? "Todos"}
             </button>

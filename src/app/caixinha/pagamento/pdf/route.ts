@@ -3,7 +3,7 @@
 
 import { pode } from "@/lib/acessos/sessao";
 import { hoje } from "@/lib/posts/tipos";
-import { lerDia, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
+import { lerDias, lerEstado, lerPagamento } from "@/lib/caixinha/armazem";
 import { fonteDe } from "@/lib/caixinha/comprovante";
 import { curto, montarPeriodo, taxasNoPagamento } from "@/lib/caixinha/periodo";
 import { nomeArquivoPeriodo, pdfPeriodo, type PdfPeriodo } from "@/lib/caixinha/pdf-periodo";
@@ -58,7 +58,7 @@ async function daPrevia(ini: string, fim: string): Promise<PdfPeriodo | null> {
 async function doPagamento(id: string): Promise<PdfPeriodo | null> {
   const pag = await lerPagamento(id);
   if (!pag) return null;
-  const dias = await Promise.all(pag.dias.map(lerDia));
+  const dias = await lerDias(pag.dias);
   const taxas = dias.map((d) => taxasNoPagamento(d, pag.id));
   const taxaTotal = taxas.reduce((s, t) => s + (t.almoco ?? 0) + (t.jantar ?? 0), 0);
   const total = pag.linhas.reduce((s, l) => s + l.pagar, 0);

@@ -128,7 +128,6 @@ export default function NovaCategoria({
           type="checkbox"
           checked={doisPrecos}
           onChange={(e) => setDoisPrecos(e.target.checked)}
-          className="size-4"
         />
         <span className="text-sm">Dois preços por prato (1 pessoa e 2 pessoas)</span>
       </label>

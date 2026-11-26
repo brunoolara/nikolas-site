@@ -277,7 +277,7 @@ export default async function Cmv({ searchParams }: PageProps<"/cmv">) {
 
       {teorico.semCusto.length ? (
         <details className="p-cartao mt-4 p-5">
-          <summary className="cursor-pointer font-semibold">
+          <summary className="-m-5 cursor-pointer p-5 font-semibold">
             Vendidos ainda sem custo de ficha ({teorico.semCusto.length})
           </summary>
           <ul className="mt-2 grid gap-1 text-sm text-cafe sm:grid-cols-2">

@@ -144,9 +144,8 @@ export default function Contagem({ semana, itens, valores: iniciais, fechada, ma
                 key={c}
                 type="button"
                 onClick={() => setFiltro(c)}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium ${
-                  ativo ? "border-verde bg-verde text-papel" : "border-linha bg-white text-cafe hover:border-verde"
-                }`}
+                aria-pressed={ativo}
+                className="p-chip"
               >
                 {c === "todas" ? "Todas" : c}
                 {n ? <span className="ml-1 opacity-75">{`${n.feitos}/${n.total}`}</span> : null}
@@ -246,7 +245,7 @@ export default function Contagem({ semana, itens, valores: iniciais, fechada, ma
         </p>
       ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-linha bg-papel/95 shadow-[0_-4px_16px_rgb(27_23_16/0.06)] backdrop-blur">
+      <div className="p-acoes-fixas">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           {fechada ? (
             master ? (

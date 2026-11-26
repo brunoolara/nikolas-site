@@ -186,7 +186,7 @@ export default function EditorSalao({
             </span>
           </label>
           <details className="mt-4 rounded-[var(--p-raio-sm)] border border-linha bg-creme/50 p-4">
-            <summary className="cursor-pointer font-semibold">Texto da &ldquo;Nossa história&rdquo;</summary>
+            <summary className="-m-4 cursor-pointer p-4 font-semibold">Texto da &ldquo;Nossa história&rdquo;</summary>
             <div className="mt-3 space-y-2">
               {menu.historia.map((p, i) => (
                 <textarea
@@ -274,7 +274,7 @@ export default function EditorSalao({
         />
       ) : null}
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-linha bg-papel/95 shadow-[0_-4px_16px_rgb(27_23_16/0.06)] backdrop-blur">
+      <div className="p-acoes-fixas">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-3">
           <button type="button" onClick={salvar} disabled={salvando} className="p-btn p-btn-primario min-w-32">
             {salvando ? "Salvando…" : "Salvar"}

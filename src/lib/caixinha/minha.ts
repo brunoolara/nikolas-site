@@ -12,7 +12,7 @@
 // colegas não saem daqui.
 
 import "server-only";
-import { lerDia, lerEquipe, lerEstado, lerPagamento } from "./armazem";
+import { lerDias, lerEquipe, lerEstado, lerPagamento } from "./armazem";
 import { taxasDoPeriodo } from "./takeat";
 import { hoje, somarDias } from "@/lib/posts/tipos";
 import {
@@ -144,7 +144,7 @@ export function montarMinha(
 export async function lerMinhaCaixinha(pessoa: string): Promise<MinhaCaixinha> {
   const fim = hoje();
   const ini = somarDias(fim, -(DIAS_MINHA - 1));
-  const [dias, equipe, estado] = await Promise.all([Promise.all(diasEntre(ini, fim).map(lerDia)), lerEquipe(), lerEstado()]);
+  const [dias, equipe, estado] = await Promise.all([lerDias(diasEntre(ini, fim)), lerEquipe(), lerEstado()]);
 
   // a taxa da Takeat só dos turnos abertos em que a pessoa trabalhou e que não têm taxa digitada
   const precisam = dias

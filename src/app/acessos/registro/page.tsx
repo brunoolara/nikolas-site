@@ -105,19 +105,15 @@ export default async function Registro({
 
       {pessoas.length ? (
         <nav className="mt-3 flex flex-wrap gap-1.5 text-sm">
-          <Link
-            href={link({ pessoa: "" })}
-            className={`rounded-full border px-3 py-1 font-medium ${!pessoa ? "border-verde bg-verde/10 text-verde" : "border-linha bg-white text-cafe hover:border-verde"}`}
-          >
+          <Link href={link({ pessoa: "" })} aria-current={!pessoa ? "true" : undefined} className="p-chip">
             Todos
           </Link>
           {pessoas.map(([usuario, nome]) => (
             <Link
               key={usuario}
               href={link({ pessoa: usuario })}
-              className={`rounded-full border px-3 py-1 font-medium ${
-                pessoa === usuario ? "border-verde bg-verde/10 text-verde" : "border-linha bg-white text-cafe hover:border-verde"
-              }`}
+              aria-current={pessoa === usuario ? "true" : undefined}
+              className="p-chip"
             >
               {nome}
             </Link>

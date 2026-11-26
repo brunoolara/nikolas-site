@@ -166,7 +166,7 @@ export default function Lista({ contas, bancos, formas, hoje }: Props) {
         const total = g.contas.reduce((s, c) => s + c.valor, 0);
         return (
           <details key={g.nome} open={g.aberto} className="group mt-8">
-            <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <summary className="-my-2 flex cursor-pointer list-none items-baseline justify-between gap-3 py-2 [&::-webkit-details-marker]:hidden">
               <h2 className={`font-display text-xl ${g.nome === "Vencidas" ? "text-[var(--p-vermelho)]" : ""}`}>
                 {g.nome}
                 <span className="ml-2 font-sans text-sm font-normal text-cafe">

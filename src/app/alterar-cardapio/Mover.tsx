@@ -17,6 +17,7 @@ export function mover<T>(lista: T[], de: number, para: number): T[] {
 
 const botao =
   "flex h-8 w-9 items-center justify-center rounded-md border border-linha bg-white text-xs text-cafe " +
+  "pointer-coarse:h-11 pointer-coarse:w-11 pointer-coarse:text-sm " +
   "hover:border-verde hover:text-verde disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-linha disabled:hover:text-cafe";
 
 export default function Mover({
