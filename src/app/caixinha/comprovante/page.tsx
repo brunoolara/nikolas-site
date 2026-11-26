@@ -5,19 +5,22 @@
 import Link from "next/link";
 import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
-import { rotuloData } from "@/lib/posts/tipos";
 import {
   buscarComprovante,
+  colunasDe,
   consulta,
   fonteDe,
   nomeArquivo,
-  periodo,
+  quandoCurto,
   rodape,
   RODAPE,
+  ROTULO_COLUNA,
+  rotuloDia,
+  rotuloDiaCurto,
   textoComprovante,
   totalDia,
 } from "@/lib/caixinha/comprovante";
-import { reais, ROTULO_TURNO } from "@/lib/caixinha/tipos";
+import { reais } from "@/lib/caixinha/tipos";
 import Enviar from "./Enviar";
 
 export default async function PaginaComprovante({ searchParams }: PageProps<"/caixinha/comprovante">) {
@@ -47,6 +50,7 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
 
   const l = c.linha;
   const varios = c.ini !== c.fim && c.dias.length > 0;
+  const colunas = colunasDe(c);
   const pdf = `/caixinha/comprovante/pdf?${consulta(fonte!, pessoa)}`;
   const voltar = c.pago
     ? { href: `/caixinha/pagamento?id=${c.pago.id}`, nome: "Voltar ao pagamento" }
@@ -69,60 +73,67 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
         </p>
       )}
 
-      <section className="p-cartao mt-6 max-w-xl p-5">
-        <p className="text-lg">
-          <span className="text-cafe">Funcionário:</span> <strong className="font-display text-2xl">{c.nome}</strong>
-        </p>
-        <p className="mt-1 text-base">
-          {c.ini === c.fim ? "Dia" : "Período"}: {periodo({ ...c, turno: undefined })}
-          {c.turno ? (
-            <>
-              <span className="text-cafe"> · </span>
-              <strong>{ROTULO_TURNO[c.turno]}</strong>
-            </>
-          ) : null}
-        </p>
+      {/* a mesma ordem do PDF: o valor primeiro, depois de quem e de quando, os dias e a conta */}
+      <section className="p-cartao mt-6 max-w-xl overflow-hidden">
+        <div className="p-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">
+            {c.pago ? "Comprovante da caixinha" : "Prévia da caixinha · ainda não fechada"}
+          </p>
+          <p className="mt-2 text-4xl font-semibold tabular-nums text-verde">{reais(l.pagar)}</p>
+          <p className="mt-1 text-base">
+            {c.pago ? "Recebido por" : "A receber por"} <strong>{c.nome}</strong>
+          </p>
+          <p className="text-sm text-cafe">{quandoCurto(c)}</p>
+        </div>
 
         {varios ? (
-          <ul className="mt-4 divide-y divide-linha/70 border-y border-linha/70 text-sm">
-            {c.dias.map((d) => (
-              <li key={d.data} className="flex items-baseline justify-between gap-3 py-2">
-                <div className="min-w-0">
-                  <p className="font-semibold first-letter:uppercase">{rotuloData(d.data)}</p>
-                  <p className="text-xs text-cafe">
-                    {[
-                      d.almoco ? `Almoço ${reais(d.almoco)}` : "",
-                      d.jantar ? `Jantar ${reais(d.jantar)}` : "",
-                      d.consumo ? `Consumo − ${reais(d.consumo)}` : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <span className="shrink-0 font-semibold tabular-nums">{reais(totalDia(d))}</span>
-              </li>
-            ))}
-          </ul>
+          <table className="p-tabela border-t border-linha">
+            <thead>
+              <tr>
+                <th className="!pl-5">Dia</th>
+                {colunas.map((k, i) => (
+                  <th key={k} className={`num ${colunas.length === 1 && i === 0 ? "!pr-5" : ""}`}>
+                    {ROTULO_COLUNA[k]}
+                  </th>
+                ))}
+                {colunas.length > 1 ? <th className="num !pr-5">Total</th> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {c.dias.map((d) => (
+                <tr key={d.data}>
+                  <td className="!pl-5">{colunas.length > 1 ? rotuloDiaCurto(d.data) : rotuloDia(d.data)}</td>
+                  {colunas.map((k, i) => (
+                    <td key={k} className={`num ${colunas.length === 1 && i === 0 ? "!pr-5" : ""}`}>
+                      {d[k] ? (k === "consumo" ? `− ${reais(d[k])}` : reais(d[k])) : "–"}
+                    </td>
+                  ))}
+                  {colunas.length > 1 ? <td className="num !pr-5">{reais(totalDia(d))}</td> : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : null}
 
-        <dl className="mt-4 space-y-1.5 text-sm">
+        <dl className="space-y-1.5 border-t border-linha px-5 pt-4 text-sm">
           {l.almoco ? <Item rotulo={varios ? "Almoço no período" : "Almoço"} valor={reais(l.almoco)} /> : null}
           {l.jantar ? <Item rotulo={varios ? "Jantar no período" : "Jantar"} valor={reais(l.jantar)} /> : null}
           {l.consumo ? <Item rotulo="Consumo descontado" valor={`− ${reais(l.consumo)}`} /> : null}
           {l.saldoAnterior ? <Item rotulo="Saldo anterior" valor={`− ${reais(-l.saldoAnterior)}`} /> : null}
         </dl>
-        <div className="mt-3 flex items-baseline justify-between border-t border-tinta pt-2.5">
+        <div className="mx-5 mt-3 flex items-baseline justify-between border-t border-tinta pt-2.5">
           <span className="font-semibold">{c.pago ? "Recebe" : "A receber"}</span>
-          <span className="text-lg font-semibold tabular-nums">{reais(l.pagar)}</span>
+          <span className="font-semibold tabular-nums">{reais(l.pagar)}</span>
         </div>
-        {l.novoSaldo < 0 ? (
-          <p className="mt-2 text-sm text-cafe">Fica para descontar no próximo pagamento: {reais(-l.novoSaldo)}</p>
-        ) : null}
 
-        <p className="mt-3 text-xs text-cafe">{RODAPE}</p>
-        <p className="mt-1 text-xs text-cafe">{rodape(c)} (só aqui na tela, não vai para a pessoa)</p>
-
-        <Enviar texto={textoComprovante(c)} pdf={pdf} arquivo={nomeArquivo(c)} />
+        <div className="px-5 pb-5">
+          {l.novoSaldo < 0 ? (
+            <p className="mt-3 text-sm text-cafe">Fica para descontar no próximo pagamento: {reais(-l.novoSaldo)}</p>
+          ) : null}
+          <p className="mt-4 text-xs text-cafe">{RODAPE}</p>
+          <p className="mt-1 text-xs text-cafe">{rodape(c)} (só aqui na tela, não vai para a pessoa)</p>
+          <Enviar texto={textoComprovante(c)} pdf={pdf} arquivo={nomeArquivo(c)} />
+        </div>
       </section>
     </div>
   );

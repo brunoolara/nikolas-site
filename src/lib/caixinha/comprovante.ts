@@ -117,6 +117,31 @@ export const rodape = (c: Comprovante) =>
 
 export const totalDia = (d: DiaComprovante) => d.almoco + d.jantar - d.consumo;
 
+export type Coluna = "almoco" | "jantar" | "consumo";
+export const ROTULO_COLUNA: Record<Coluna, string> = { almoco: "Almoço", jantar: "Jantar", consumo: "Consumo" };
+
+/** Só as colunas que tiveram valor em algum dia: sem coluna de traços na tabela. */
+export const colunasDe = (c: Comprovante): Coluna[] =>
+  (["almoco", "jantar", "consumo"] as const).filter((k) => c.dias.some((d) => d[k]));
+
+/** "Segunda, 23/11" */
+export const rotuloDia = (data: string) => {
+  const r = rotuloData(data);
+  return r.charAt(0).toUpperCase() + r.slice(1);
+};
+
+/** "Seg, 23/11": para a tabela quando ela tem muitas colunas. */
+export const rotuloDiaCurto = (data: string) => {
+  const r = rotuloDia(data);
+  return r.replace(/^([^\s,]{3})[^\s,]*,/, "$1,");
+};
+
+/** "23/11 a 26/11/2026", ou "Quarta, 25/11/2026" num dia só; com o turno no fim. */
+export const quandoCurto = (c: Comprovante) =>
+  (c.ini === c.fim
+    ? `${rotuloDia(c.ini)}/${c.ini.slice(0, 4)}`
+    : `${dataCompleta(c.ini).slice(0, 5)} a ${dataCompleta(c.fim)}`) + (c.turno ? ` · ${ROTULO_TURNO[c.turno]}` : "");
+
 /** O comprovante em texto, com o negrito do WhatsApp. */
 export function textoComprovante(c: Comprovante): string {
   const l = c.linha;
@@ -198,6 +223,13 @@ export const altoSvg = (svg: string, largura: number) => {
   return (a * largura) / l;
 };
 
+/**
+ * O PDF que a pessoa recebe (redesenho de 26/11/2026): bate o olho e entende.
+ * A ordem é a da tela: o valor primeiro, grande e em verde; de quem e de quando;
+ * os dias numa tabela só com as colunas que tiveram valor; a conta até o total;
+ * e no pé quem pagou e quando. Uma família de letra (Helvetica), três tamanhos,
+ * duas cores de texto (tinta e café) e o verde só na marca e no valor.
+ */
 export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`Caixinha · ${c.nome} · ${periodo(c)}`);
@@ -206,14 +238,16 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
   const negrito = await doc.embedFont(StandardFonts.HelveticaBold);
 
   const L = 420; // largura (A5)
-  const M = 32; // margem
-  const FAIXA = 112;
+  const M = 36; // margem
+  const FAIXA = 96;
+  const LINHA_DIA = 21;
   const varios = c.ini !== c.fim && c.dias.length > 0;
+  const colunas = colunasDe(c);
   const l = c.linha;
-  const totais = [l.almoco, l.jantar, l.consumo, l.saldoAnterior].filter(Boolean).length;
+  const contas = [l.almoco, l.jantar, l.consumo, l.saldoAnterior].filter(Boolean).length;
   const altura = Math.max(
     595,
-    FAIXA + 150 + (varios ? 34 + c.dias.length * 20 : 0) + totais * 22 + 50 + (l.novoSaldo < 0 ? 20 : 0) + 90,
+    FAIXA + 170 + (varios ? 30 + c.dias.length * LINHA_DIA : 0) + contas * 20 + 60 + (l.novoSaldo < 0 ? 20 : 0) + 90,
   );
   const pg = doc.addPage([L, altura]);
 
@@ -225,75 +259,77 @@ export async function pdfComprovante(c: Comprovante): Promise<Uint8Array> {
   const traco = (y: number, cor = LINHA, espessura = 0.75) =>
     pg.drawLine({ start: { x: M, y }, end: { x: L - M, y }, thickness: espessura, color: cor });
 
-  // faixa verde com o logotipo oficial (wordmark com o filete e "Restaurante · desde 1977")
+  // os três tamanhos: rótulo pequeno, texto e o valor em destaque
+  const T_ROTULO = 7.5;
+  const T_TEXTO = 10.5;
+  const T_VALOR = 30;
+
+  // faixa verde com o logotipo oficial
   pg.drawRectangle({ x: 0, y: altura - FAIXA, width: L, height: FAIXA, color: VERDE });
-  const LW = 190;
+  const LW = 170;
   desenharSvg(pg, WORDMARK_SVG, (L - LW) / 2, altura - (FAIXA - altoSvg(WORDMARK_SVG, LW)) / 2, LW, BRANCO);
 
-  // o que é este papel
-  let y = altura - FAIXA - 26;
-  const tipo = c.pago ? "COMPROVANTE DA CAIXINHA" : "PRÉVIA DA CAIXINHA · AINDA NÃO FECHADA";
-  texto(tipo, M, y, negrito, 7.5, c.pago ? CAFE : VERDE);
-  y -= 30;
-
-  // funcionário e dia/período, com o turno em negrito
-  texto("Funcionário:", M, y, normal, 13, CAFE);
-  texto(c.nome, M + largura("Funcionário:", normal, 13) + 5, y, negrito, 17);
+  // o valor primeiro
+  let y = altura - FAIXA - 34;
+  texto(c.pago ? "COMPROVANTE DA CAIXINHA" : "PRÉVIA DA CAIXINHA · AINDA NÃO FECHADA", M, y, negrito, T_ROTULO, CAFE);
+  y -= 36;
+  texto(reais(l.pagar), M, y, negrito, T_VALOR, VERDE);
   y -= 22;
-  const quando = `${c.ini === c.fim ? "Dia" : "Período"}: ${
-    c.ini === c.fim ? `${rotuloData(c.ini)}/${c.ini.slice(0, 4)}` : `${dataCompleta(c.ini)} a ${dataCompleta(c.fim)}`
-  }`;
-  texto(quando, M, y, normal, 12.5);
-  if (c.turno) {
-    const x = M + largura(quando, normal, 12.5);
-    texto(" · ", x, y, normal, 12.5, CAFE);
-    texto(ROTULO_TURNO[c.turno], x + largura(" · ", normal, 12.5), y, negrito, 12.5);
-  }
+  const por = c.pago ? "Recebido por " : "A receber por ";
+  texto(por, M, y, normal, T_TEXTO, CAFE);
+  texto(c.nome, M + largura(por, normal, T_TEXTO), y, negrito, T_TEXTO);
+  y -= 15;
+  texto(quandoCurto(c), M, y, normal, T_TEXTO, CAFE);
   y -= 26;
+  traco(y);
 
+  // os dias: só as colunas que tiveram valor, todas alinhadas à direita
   if (varios) {
-    const col = [L - M - 210, L - M - 140, L - M - 70, L - M];
-    texto("Dia", M, y, negrito, 8, CAFE);
-    ["Almoço", "Jantar", "Consumo", "Total"].forEach((h, i) => direita(h, col[i], y, negrito, 8, CAFE));
+    const comTotal = colunas.length > 1;
+    const cab = [...colunas.map((k) => ROTULO_COLUNA[k]), ...(comTotal ? ["Total"] : [])];
+    const W = 74;
+    const xCol = cab.map((_, i) => L - M - (cab.length - 1 - i) * W);
+    y -= 18;
+    texto("DIA", M, y, negrito, T_ROTULO, CAFE);
+    cab.forEach((h, i) => direita(h.toUpperCase(), xCol[i], y, negrito, T_ROTULO, CAFE));
     y -= 8;
-    traco(y);
-    y -= 14;
     for (const d of c.dias) {
-      texto(rotuloData(d.data), M, y, normal, 9.5);
-      direita(d.almoco ? reais(d.almoco) : "—", col[0], y, normal, 9.5);
-      direita(d.jantar ? reais(d.jantar) : "—", col[1], y, normal, 9.5);
-      direita(d.consumo ? `- ${reais(d.consumo)}` : "—", col[2], y, normal, 9.5);
-      direita(reais(totalDia(d)), col[3], y, normal, 9.5);
-      y -= 20;
+      y -= LINHA_DIA - 6;
+      texto(cab.length >= 3 ? rotuloDiaCurto(d.data) : rotuloDia(d.data), M, y, normal, T_TEXTO);
+      colunas.forEach((k, i) =>
+        direita(d[k] ? (k === "consumo" ? `- ${reais(d[k])}` : reais(d[k])) : "-", xCol[i], y, normal, T_TEXTO, d[k] ? TINTA : CAFE),
+      );
+      if (comTotal) direita(reais(totalDia(d)), xCol[cab.length - 1], y, normal, T_TEXTO);
+      y -= 6;
+      traco(y, LINHA, 0.5);
     }
-    y -= 6;
   }
 
-  // totais
-  traco(y + 12);
-  y -= 6;
-  const linhaTotal = (rotulo: string, valor: string) => {
-    texto(rotulo, M, y, normal, 10.5, CAFE);
-    direita(valor, L - M, y, normal, 10.5);
-    y -= 22;
+  // a conta até o total
+  y -= 22;
+  const conta = (rotulo: string, valor: string) => {
+    texto(rotulo, M, y, normal, T_TEXTO, CAFE);
+    direita(valor, L - M, y, normal, T_TEXTO);
+    y -= 20;
   };
-  if (l.almoco) linhaTotal(varios ? "Almoço no período" : "Almoço", reais(l.almoco));
-  if (l.jantar) linhaTotal(varios ? "Jantar no período" : "Jantar", reais(l.jantar));
-  if (l.consumo) linhaTotal("Consumo descontado", `- ${reais(l.consumo)}`);
-  if (l.saldoAnterior) linhaTotal("Saldo anterior", `- ${reais(-l.saldoAnterior)}`);
-
-  // o total: só um filete escuro em cima e o valor em negrito, sem caixa colorida
-  traco(y + 13, TINTA, 1);
+  if (l.almoco) conta(varios ? "Almoço no período" : "Almoço", reais(l.almoco));
+  if (l.jantar) conta(varios ? "Jantar no período" : "Jantar", reais(l.jantar));
+  if (l.consumo) conta("Consumo descontado", `- ${reais(l.consumo)}`);
+  if (l.saldoAnterior) conta("Saldo anterior", `- ${reais(-l.saldoAnterior)}`);
+  traco(y + 12, TINTA, 1);
   y -= 6;
-  texto(c.pago ? "Recebe" : "A receber", M, y, negrito, 11.5);
-  direita(reais(l.pagar), L - M, y, negrito, 13);
-  y -= 26;
-  if (l.novoSaldo < 0) texto(`Fica para descontar no próximo pagamento: ${reais(-l.novoSaldo)}`, M, y, normal, 9.5, CAFE);
+  texto(c.pago ? "Recebe" : "A receber", M, y, negrito, T_TEXTO);
+  direita(reais(l.pagar), L - M, y, negrito, T_TEXTO);
+  if (l.novoSaldo < 0) {
+    y -= 22;
+    texto(`Fica para descontar no próximo pagamento: ${reais(-l.novoSaldo)}`, M, y, normal, T_TEXTO, CAFE);
+  }
 
-  // rodapé: a frase e o monograma oficial no canto de baixo, à direita
-  const MW = 34;
-  desenharSvg(pg, MONOGRAMA_SVG, L - M - MW, 30 + MW, MW, PRETO);
-  texto(RODAPE, M, 36, normal, 8, CAFE);
+  // pé: de onde vem o dinheiro, quem pagou e quando, e o monograma
+  const MW = 30;
+  desenharSvg(pg, MONOGRAMA_SVG, L - M - MW, 32 + MW, MW, PRETO);
+  texto(RODAPE, M, 50, normal, T_ROTULO, CAFE);
+  texto(rodape(c), M, 38, normal, T_ROTULO, CAFE);
 
   return doc.save();
 }
