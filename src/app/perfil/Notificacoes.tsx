@@ -5,16 +5,17 @@
 // aberto pelo ícone; a tela explica o passo quando for o caso.
 
 import { useEffect, useState, useTransition } from "react";
+import type { TipoAviso } from "@/lib/notificacoes/armazem";
 import { acaoDesinscrever, acaoInscrever, acaoPreferencia, acaoTestar } from "./acoes";
 
-type Tipo = { chave: "deliveryNovo" | "deliveryAtrasado"; nome: string; descricao: string };
+type Tipo = { chave: TipoAviso; nome: string; descricao: string };
 
 type Props = {
   chavePublica: string;
   configurado: boolean;
-  podeDelivery: boolean;
+  /** Só os avisos que fazem sentido para a pessoa (tiposDe). */
   tipos: Tipo[];
-  preferencias: Record<Tipo["chave"], boolean>;
+  preferencias: Record<TipoAviso, boolean>;
 };
 
 type Situacao = "carregando" | "sem-suporte" | "iphone-instalar" | "negado" | "desligado" | "ligado";
@@ -42,7 +43,7 @@ const instalado = () =>
   window.matchMedia("(display-mode: standalone)").matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-export default function Notificacoes({ chavePublica, configurado, podeDelivery, tipos, preferencias }: Props) {
+export default function Notificacoes({ chavePublica, configurado, tipos, preferencias }: Props) {
   const [situacao, setSituacao] = useState<Situacao>("carregando");
   const [endpoint, setEndpoint] = useState("");
   const [aviso, setAviso] = useState("");
@@ -123,9 +124,10 @@ export default function Notificacoes({ chavePublica, configurado, podeDelivery, 
 
       {!configurado ? (
         <p className="p-aviso p-aviso-alerta mt-4">As notificações ainda não foram configuradas na Vercel.</p>
-      ) : !podeDelivery ? (
+      ) : !tipos.length ? (
         <p className="p-aviso p-aviso-info mt-4">
-          Por enquanto os avisos são do delivery, e seu acesso não inclui o Ao vivo.
+          Ainda não há avisos para o seu acesso. Os da Caixinha chegam quando o seu login está ligado a alguém da
+          equipe; fale com o Bruno.
         </p>
       ) : situacao === "carregando" ? (
         <p className="mt-4 text-sm text-cafe">Conferindo este aparelho…</p>

@@ -23,8 +23,11 @@ function configurar(): boolean {
 
 export const pushConfigurado = () => Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 
-/** Manda para cada aparelho; devolve quantos receberam. */
-export async function enviar(para: Inscricao[], mensagem: Mensagem): Promise<number> {
+/**
+ * Manda para cada aparelho; devolve quantos receberam. `validade` (segundos):
+ * quanto tempo a loja de push guarda o aviso se o celular estiver sem sinal.
+ */
+export async function enviar(para: Inscricao[], mensagem: Mensagem, validade = 600): Promise<number> {
   if (!para.length || !configurar()) return 0;
   const corpo = JSON.stringify(mensagem);
   const mortos: string[] = [];
@@ -32,7 +35,7 @@ export async function enviar(para: Inscricao[], mensagem: Mensagem): Promise<num
   await Promise.all(
     para.map(async (i) => {
       try {
-        await webpush.sendNotification({ endpoint: i.endpoint, keys: i.keys }, corpo, { TTL: 600, urgency: "high" });
+        await webpush.sendNotification({ endpoint: i.endpoint, keys: i.keys }, corpo, { TTL: validade, urgency: "high" });
         ok++;
       } catch (erro) {
         const status = (erro as { statusCode?: number }).statusCode;

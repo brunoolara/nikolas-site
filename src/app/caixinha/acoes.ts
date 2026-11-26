@@ -15,6 +15,9 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { avisarFechamento, type Fechamento } from "@/lib/notificacoes/caixinha";
+import { curto } from "@/lib/caixinha/periodo";
 import { sessaoAtual } from "@/lib/acessos/sessao";
 import type { Resultado } from "@/lib/acessos/acoes";
 import { DATA, hoje, rotuloData } from "@/lib/posts/tipos";
@@ -48,10 +51,27 @@ import {
   turnosAbertos,
   type Dia,
   type Estado,
+  type ParteDia,
   type Turno,
 } from "@/lib/caixinha/tipos";
 
 const FALHA = "Não consegui gravar. Tente de novo em instantes.";
+
+/**
+ * Avisa no celular quem recebe e quem acompanha o total (lib/notificacoes/caixinha).
+ * Depois da resposta: o fechamento não espera, e falha no push não volta para quem fechou.
+ */
+function avisarDepois(f: Fechamento) {
+  after(() => avisarFechamento(f).catch((erro) => console.error("caixinha: falha ao avisar no celular", erro)));
+}
+
+const somaPartes = (partes: ParteDia[]) => arredondar(partes.reduce((s, p) => s + p.almoco + p.jantar, 0));
+
+/** "Almoço de qua, 25/11" ou "Almoço e jantar de qua, 25/11": os turnos que tiveram taxa. */
+function nomeDoDia(data: string, partes: ParteDia[]): string {
+  const turnos = TURNOS.filter((t) => partes.some((p) => p[t] > 0));
+  return `${turnos.length === 1 ? ROTULO_TURNO[turnos[0]] : "Almoço e jantar"} de ${curto(data)}`;
+}
 
 async function quem(): Promise<string | null> {
   const sessao = await sessaoAtual();
@@ -277,6 +297,15 @@ async function fecharPeriodo(nome: string, ini: string, fim: string): Promise<Re
       ultimoFechado: estado.ultimoFechado && estado.ultimoFechado > fim ? estado.ultimoFechado : fim,
       pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
     });
+    // um dia só: se um turno já tinha sido pago, este fechamento completou o dia
+    const tp = datas.length === 1 ? dias[0].turnoPago : undefined;
+    avisarDepois({
+      id,
+      oQue: datas.length === 1 ? nomeDoDia(ini, partes[0]) : `De ${curto(ini)} a ${curto(fim)}`,
+      linhas,
+      por: nome,
+      ...(tp ? { totalDoDia: somaPartes(juntarPartes(tp.partes, partes[0])) } : {}),
+    });
     revalidatePath("/caixinha", "layout");
     revalidatePath("/caixinha-turno");
     return { ok: true, mensagem: datas.length === 1 ? "Dia fechado." : `${datas.length} dias fechados e pagos.` };
@@ -358,6 +387,7 @@ async function fecharTurno(nome: string, data: string, turno: string): Promise<R
       ultimoFechado: estado.ultimoFechado,
       pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
     });
+    avisarDepois({ id, oQue: `${ROTULO_TURNO[turno]} de ${curto(data)}`, linhas, por: nome });
     revalidatePath("/caixinha", "layout");
     revalidatePath("/caixinha-turno");
     return { ok: true, mensagem: `${ROTULO_TURNO[turno]} fechado e pago.` };

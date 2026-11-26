@@ -12,6 +12,7 @@
 import "server-only";
 import { get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
+import { MASTER } from "@/lib/acessos/usuarios";
 
 const PASTA = process.env.NODE_ENV === "production" ? "notificacoes" : "notificacoes-teste";
 
@@ -31,10 +32,43 @@ export const TIPOS = {
     nome: "Delivery atrasado",
     descricao: "Quando um pedido fica 1h30 ou mais em preparação.",
   },
+  caixinhaMinha: {
+    nome: "Minha caixinha",
+    descricao: "Quanto você vai receber, quando o turno em que você trabalhou é fechado.",
+  },
+  caixinhaTotal: {
+    nome: "Total da caixinha",
+    descricao: "O total do turno e do dia, quando a caixinha é fechada.",
+  },
 } as const;
 export type TipoAviso = keyof typeof TIPOS;
 export type Preferencias = Record<TipoAviso, boolean>;
-export const PREFERENCIAS_PADRAO: Preferencias = { deliveryNovo: true, deliveryAtrasado: true };
+export const PREFERENCIAS_PADRAO: Preferencias = {
+  deliveryNovo: true,
+  deliveryAtrasado: true,
+  caixinhaMinha: true,
+  caixinhaTotal: true,
+};
+
+/** Quem recebe o total da caixinha (pedido do Bruno em 25/11/2026: ele, a Marta e a Maria Ignez). */
+export const TOTAL_DA_CAIXINHA_PARA = [MASTER, "marta", "mariaignez"];
+
+/** Os avisos que fazem sentido para a pessoa: delivery com o Ao vivo, a própria caixinha com login ligado à equipe. */
+export function tiposDe(s: { usuario: string; areas: string[]; pessoa?: string }): TipoAviso[] {
+  return (Object.keys(TIPOS) as TipoAviso[]).filter((t) =>
+    t === "caixinhaMinha"
+      ? Boolean(s.pessoa)
+      : t === "caixinhaTotal"
+        ? TOTAL_DA_CAIXINHA_PARA.includes(s.usuario)
+        : s.areas.includes("operacao"),
+  );
+}
+
+/** As preferências da pessoa, com o padrão para os avisos que ela nunca mexeu. */
+export const preferenciasDe = (todas: Record<string, Partial<Preferencias>>, usuario: string): Preferencias => ({
+  ...PREFERENCIAS_PADRAO,
+  ...todas[usuario],
+});
 
 export type EstadoDelivery = {
   /** Pedidos já vistos (avisados como novos ou já existentes na primeira leitura). */
