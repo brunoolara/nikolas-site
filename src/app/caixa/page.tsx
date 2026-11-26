@@ -291,7 +291,7 @@ export default async function Caixa({
           </label>
           <label className="block min-w-0">
             <span className="p-rotulo">Turno</span>
-            <select name="turno" defaultValue={turno} className="p-campo mt-1 h-11">
+            <select name="turno" defaultValue={turno} className="p-campo mt-1 block h-11">
               <option value="">Os dois</option>
               <option value="almoco">Almoço</option>
               <option value="jantar">Jantar</option>
