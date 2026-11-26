@@ -3,12 +3,12 @@
 
 import Link from "next/link";
 import Entrar from "@/components/painel/Entrar";
-import Moldura from "@/components/painel/Moldura";
+import Moldura, { podeVer } from "@/components/painel/Moldura";
 import Icone, { type NomeIcone } from "@/components/painel/Icone";
 import { faltaConfigurarSenha, sessaoAtual } from "@/lib/acessos/sessao";
 import type { Area } from "@/lib/acessos/areas";
 
-type Bloco = { href: string; nome: string; descricao: string; icone: NomeIcone; area?: Area; master?: boolean };
+type Bloco = { href: string; nome: string; descricao: string; icone: NomeIcone; area?: Area; master?: boolean; gestor?: boolean };
 
 const BLOCOS: Bloco[] = [
   {
@@ -68,6 +68,13 @@ const BLOCOS: Bloco[] = [
     descricao: "O que vence hoje e nos próximos dias, o código para pagar e o “Paguei”, direto da Takeat.",
   },
   {
+    gestor: true,
+    href: "/caixa",
+    nome: "Fechamento de caixa",
+    icone: "caixa",
+    descricao: "Cada caixa fechado na Takeat: formas de pagamento, sangrias e o dinheiro a entregar.",
+  },
+  {
     master: true,
     href: "/cmv",
     nome: "CMV",
@@ -117,7 +124,7 @@ export default async function Painel() {
   const sessao = await sessaoAtual();
   if (!sessao) return <Entrar area="qualquer" titulo="Painel do Nikola's" subtitulo="Entre com seu usuário e senha." />;
 
-  const liberados = BLOCOS.filter((b) => (b.master ? sessao.master : b.area ? sessao.areas.includes(b.area) : false));
+  const liberados = BLOCOS.filter((b) => podeVer(b, sessao, false));
   const hoje = new Date().toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "numeric",

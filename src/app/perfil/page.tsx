@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import Cabecalho from "@/components/painel/Cabecalho";
 import Icone from "@/components/painel/Icone";
 import Sair from "@/components/painel/Sair";
-import { ITENS } from "@/components/painel/Moldura";
+import { ITENS, podeVer } from "@/components/painel/Moldura";
 import { sessaoAtual } from "@/lib/acessos/sessao";
 import { TIPOS, lerPreferencias, preferenciasDe, tiposDe } from "@/lib/notificacoes/armazem";
 import { chavePublica, pushConfigurado } from "@/lib/notificacoes/enviar";
@@ -32,7 +32,7 @@ export default async function Perfil() {
   const pix = equipe.find((p) => p.id === sessao.pessoa)?.pix;
   const tipos = tiposDe(sessao).map((chave) => ({ chave, ...TIPOS[chave] }));
   const areas = ITENS.filter(
-    (i) => i.chave !== "inicio" && (i.master ? sessao.master : i.area ? sessao.areas.includes(i.area) : false),
+    (i) => i.chave !== "inicio" && podeVer(i, sessao, false),
   );
 
   return (

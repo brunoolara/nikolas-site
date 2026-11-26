@@ -18,12 +18,25 @@ import Sair from "./Sair";
 import MenuLateral from "./MenuLateral";
 import BarraInferior, { type Atalho } from "./BarraInferior";
 import AvisoNotificacoes from "./AvisoNotificacoes";
-import { tiposDe } from "@/lib/notificacoes/armazem";
+import { ehGestor, tiposDe } from "@/lib/notificacoes/armazem";
 import { chavePublica, pushConfigurado } from "@/lib/notificacoes/enviar";
 
-export type Secao = "inicio" | Area | "cmv" | "acessos" | "avisos" | "perfil";
+export type Secao = "inicio" | Area | "caixa" | "cmv" | "acessos" | "avisos" | "perfil";
 
-type Item = { chave: Secao; href: string; nome: string; icone: NomeIcone; area?: Area; master?: boolean };
+type Item = {
+  chave: Secao;
+  href: string;
+  nome: string;
+  icone: NomeIcone;
+  area?: Area;
+  master?: boolean;
+  /** Master e gestores (ehGestor). */
+  gestor?: boolean;
+};
+
+/** A pessoa vê este item? */
+export const podeVer = (i: { area?: Area; master?: boolean; gestor?: boolean }, s: Sessao, semNada = true) =>
+  i.master ? s.master : i.gestor ? ehGestor(s) : i.area ? s.areas.includes(i.area) : semNada;
 
 export const ITENS: Item[] = [
   { chave: "inicio", href: "/", nome: "Início", icone: "inicio" },
@@ -47,6 +60,7 @@ export const ITENS: Item[] = [
   },
   { chave: "estoque", href: "/estoque", nome: "Estoque", icone: "estoque", area: "estoque" },
   { chave: "contas", href: "/contas", nome: "Contas", icone: "contas", area: "contas" },
+  { chave: "caixa", href: "/caixa", nome: "Caixa", icone: "caixa", gestor: true },
   { chave: "cmv", href: "/cmv", nome: "CMV", icone: "cmv", master: true },
   { chave: "acessos", href: "/acessos", nome: "Acessos", icone: "acessos", master: true },
 ];
@@ -81,7 +95,7 @@ async function Contador({ sessao }: { sessao: Sessao }) {
 export default async function Moldura({ atual }: { atual: Secao }) {
   const sessao = await sessaoAtual();
   if (!sessao) return null;
-  const itens = ITENS.filter((i) => (i.master ? sessao.master : i.area ? sessao.areas.includes(i.area) : true));
+  const itens = ITENS.filter((i) => podeVer(i, sessao));
   const segundo = itens.find((i) => i.chave === "operacao") ?? itens.find((i) => i.chave !== "inicio") ?? itens[0];
 
   return (

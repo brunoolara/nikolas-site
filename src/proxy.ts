@@ -21,6 +21,7 @@ const INTERNAS = [
   "/operacao",
   "/estoque",
   "/contas",
+  "/caixa",
   "/cmv",
   "/acessos",
   "/imprimir",

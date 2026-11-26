@@ -40,6 +40,10 @@ export const TIPOS = {
     nome: "Total da caixinha",
     descricao: "O total do turno e do dia, quando a caixinha é fechada.",
   },
+  caixaFechado: {
+    nome: "Fechamento de caixa",
+    descricao: "Quando o caixa é fechado na Takeat; o toque abre os valores.",
+  },
 } as const;
 export type TipoAviso = keyof typeof TIPOS;
 export type Preferencias = Record<TipoAviso, boolean>;
@@ -48,18 +52,23 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   deliveryAtrasado: true,
   caixinhaMinha: true,
   caixinhaTotal: true,
+  caixaFechado: true,
 };
 
 /** Quem recebe o total da caixinha (pedido do Bruno em 25/11/2026: ele, a Marta e a Maria Ignez). */
 export const TOTAL_DA_CAIXINHA_PARA = [MASTER, "marta", "mariaignez"];
+
+/** Master, quem está marcado como gestor em Acessos ou está na lista fixa. */
+export const ehGestor = (s: { usuario: string; gestor?: boolean }) =>
+  s.usuario === MASTER || Boolean(s.gestor) || TOTAL_DA_CAIXINHA_PARA.includes(s.usuario);
 
 /** Os avisos que fazem sentido para a pessoa: delivery com o Ao vivo, a própria caixinha com login ligado à equipe. */
 export function tiposDe(s: { usuario: string; areas: string[]; pessoa?: string; gestor?: boolean }): TipoAviso[] {
   return (Object.keys(TIPOS) as TipoAviso[]).filter((t) =>
     t === "caixinhaMinha"
       ? Boolean(s.pessoa)
-      : t === "caixinhaTotal"
-        ? s.usuario === MASTER || Boolean(s.gestor) || TOTAL_DA_CAIXINHA_PARA.includes(s.usuario)
+      : t === "caixinhaTotal" || t === "caixaFechado"
+        ? ehGestor(s)
         : s.areas.includes("operacao"),
   );
 }
