@@ -1,9 +1,11 @@
 // Os caixas fechados na Takeat, lidos do e-mail "Conferência de caixa"
 // (api/caixa/fechamento). Em cima, o fechamento escolhido (?id=, que é o que
-// a notificação abre) ou o mais recente; embaixo, os anteriores.
+// a notificação abre) ou o mais recente; embaixo, os dos últimos 7 dias, ou os
+// de uma data e turno buscados (?data=AAAA-MM-DD&turno=almoco|jantar).
 // O resumo segue o pedido do Bruno em 26/11/2026: abertura, dinheiro contado
 // com a sobra ou falta, as formas de pagamento somadas por tipo, o total do
-// caixa, as sangrias uma a uma, o fundo do próximo caixa e o dinheiro a entregar.
+// caixa, as sangrias uma a uma, o fundo do próximo caixa, o dinheiro a entregar
+// e a Caixinha do mesmo turno (lib/caixa/caixinha.ts).
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -13,6 +15,7 @@ import { ehGestor } from "@/lib/notificacoes/armazem";
 import { ehIlegivel, lerMeses, type Registro } from "@/lib/caixa/armazem";
 import { ehFundo, resumir, turnoDe, type Fechamento, type Movimento } from "@/lib/caixa/email";
 import { reais } from "@/lib/caixinha/tipos";
+import { caixinhaDoTurno, type CaixinhaDoTurno } from "@/lib/caixa/caixinha";
 import { curto } from "@/lib/caixinha/periodo";
 
 const hora = (quando: string) => quando.slice(11, 16);
@@ -75,12 +78,12 @@ function Movimentos({ titulo, lista }: { titulo: string; lista: Movimento[] }) {
   );
 }
 
-function Detalhe({ f }: { f: Fechamento }) {
+function Detalhe({ f, caixinha }: { f: Fechamento; caixinha: CaixinhaDoTurno }) {
   const r = resumir(f);
   return (
     <article className="p-cartao mt-6 p-5 sm:p-6">
       <h2 className="font-display text-2xl">
-        {turnoDe(f)} · {dia(f.fechado)}
+        {turnoDe(f)} · {dia(f.aberto)}
       </h2>
       <p className="mt-1 text-sm text-cafe">
         {f.aberto.slice(0, 10) === f.fechado.slice(0, 10)
@@ -124,11 +127,37 @@ function Detalhe({ f }: { f: Fechamento }) {
           <Linha rotulo="Dinheiro a entregar ao gestor" valor={r.aEntregar} />
         </tfoot>
       </table>
-      {!r.fundoProximo ? (
-        <p className="mt-2 text-sm text-cafe">
-          Nenhuma sangria com “fundo” ou “troco” na descrição: o troco do próximo caixa não foi lançado.
-        </p>
-      ) : null}
+
+      <section className="mt-5">
+        <h3 className="p-rotulo">Caixinha</h3>
+        <table className="p-tabela mt-1">
+          <tbody>
+            <tr>
+              <td>
+                Caixinha do {turnoDe(f).toLowerCase()} para os funcionários{" "}
+                {caixinha.situacao === "paga" ? (
+                  <span className="p-selo p-selo-verde">Paga</span>
+                ) : caixinha.situacao === "a-pagar" ? (
+                  <span className="p-selo p-selo-ambar">A pagar</span>
+                ) : null}
+              </td>
+              <td className="num">
+                {"valor" in caixinha ? (
+                  reais(caixinha.valor)
+                ) : (
+                  <span className="text-cafe">
+                    {caixinha.situacao === "aberta"
+                      ? "ainda não fechada"
+                      : caixinha.situacao === "sem-taxa"
+                        ? "sem a taxa"
+                        : "não lançada"}
+                  </span>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
       <details className="mt-5 text-sm">
         <summary className="cursor-pointer text-cafe">Ver as formas de pagamento como vieram da Takeat</summary>
@@ -155,7 +184,7 @@ function Detalhe({ f }: { f: Fechamento }) {
   );
 }
 
-function Item({ r, atual }: { r: Registro; atual: boolean }) {
+function Item({ r, atual, filtro }: { r: Registro; atual: boolean; filtro: string }) {
   if (ehIlegivel(r))
     return (
       <li className="p-aviso p-aviso-erro">
@@ -165,12 +194,12 @@ function Item({ r, atual }: { r: Registro; atual: boolean }) {
   return (
     <li>
       <Link
-        href={`/caixa?id=${encodeURIComponent(r.id)}`}
+        href={`/caixa?id=${encodeURIComponent(r.id)}${filtro ? `&${filtro}` : ""}`}
         aria-current={atual ? "true" : undefined}
         className="flex min-h-12 flex-wrap items-center justify-between gap-2 rounded-[var(--p-raio-sm)] border border-linha bg-white px-3 py-2 hover:border-verde/50 aria-[current=true]:border-verde"
       >
         <span>
-          <strong>{turnoDe(r)}</strong> · {dia(r.fechado)}{" "}
+          <strong>{turnoDe(r)}</strong> · {dia(r.aberto)}{" "}
           <span className="text-sm tabular-nums text-cafe">
             {hora(r.aberto)}–{hora(r.fechado)}
           </span>
@@ -184,42 +213,97 @@ function Item({ r, atual }: { r: Registro; atual: boolean }) {
   );
 }
 
-export default async function Caixa({ searchParams }: { searchParams: Promise<{ id?: string | string[] }> }) {
+const DATA = /^d{4}-d{2}-d{2}$/;
+const TURNOS = { almoco: "Almoço", jantar: "Jantar" } as const;
+type ChaveTurno = keyof typeof TURNOS;
+const ehTurno = (t: unknown): t is ChaveTurno => t === "almoco" || t === "jantar";
+const texto = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
+// o turno pertence ao dia em que abriu (jantar que fecha depois da meia-noite)
+const diaDe = (r: Registro) => (ehIlegivel(r) ? r.recebido : r.aberto).slice(0, 10);
+
+export default async function Caixa({
+  searchParams,
+}: {
+  searchParams: Promise<Record<"id" | "data" | "turno", string | string[] | undefined>>;
+}) {
   // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
   const sessao = await sessaoAtual();
   if (!sessao) redirect("/");
   if (!ehGestor(sessao)) return null;
 
   const busca = await searchParams;
-  const registros = await lerMeses(meses());
+  const data = DATA.test(texto(busca.data)) ? texto(busca.data) : "";
+  const turno = ehTurno(busca.turno) ? busca.turno : "";
+  const filtrando = Boolean(data || turno);
+
+  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  const seteDias = new Date(Date.UTC(+hoje.slice(0, 4), +hoje.slice(5, 7) - 1, +hoje.slice(8, 10) - 6))
+    .toISOString()
+    .slice(0, 10);
+  const registros = await lerMeses(data ? [data.slice(0, 7)] : meses());
+  const lista = registros.filter((r) =>
+    filtrando
+      ? (!data || diaDe(r) === data) && (!turno || (!ehIlegivel(r) && turnoDe(r) === TURNOS[turno]))
+      : diaDe(r) >= seteDias,
+  );
   const legiveis = registros.filter((r): r is Fechamento => !ehIlegivel(r));
-  const escolhido = (typeof busca.id === "string" && legiveis.find((f) => f.id === busca.id)) || legiveis[0];
+  const escolhido =
+    legiveis.find((f) => f.id === texto(busca.id)) ??
+    lista.find((r): r is Fechamento => !ehIlegivel(r)) ??
+    (filtrando ? undefined : legiveis[0]);
+  const caixinha = escolhido
+    ? await caixinhaDoTurno(escolhido.aberto.slice(0, 10), turnoDe(escolhido) === "Almoço" ? "almoco" : "jantar")
+    : null;
+  const filtro = [data && `data=${data}`, turno && `turno=${turno}`].filter(Boolean).join("&");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
-      <Cabecalho
-        titulo="Fechamento de caixa"
-        descricao="Cada caixa fechado na Takeat, lido do e-mail de conferência que ela manda."
-      />
+      <Cabecalho titulo="Fechamento de caixa" />
 
-      {escolhido ? (
-        <Detalhe f={escolhido} />
+      {escolhido && caixinha ? (
+        <Detalhe f={escolhido} caixinha={caixinha} />
       ) : (
         <p className="p-cartao mt-6 p-6 text-center text-sm text-cafe">
-          Nenhum fechamento chegou ainda. Eles aparecem aqui alguns minutos depois de o caixa ser fechado na Takeat.
+          {filtrando
+            ? "Nenhum fechamento nessa data e turno."
+            : "Nenhum fechamento chegou ainda. Eles aparecem aqui alguns minutos depois de o caixa ser fechado na Takeat."}
         </p>
       )}
 
-      {registros.length > 1 ? (
-        <section className="mt-8">
-          <h2 className="p-cartao-titulo">Este mês e o anterior</h2>
-          <ul className="mt-3 grid gap-2">
-            {registros.map((r) => (
-              <Item key={r.id} r={r} atual={r.id === escolhido?.id} />
+      <section className="mt-8">
+        <h2 className="p-cartao-titulo">{filtrando ? "Busca" : "Últimos 7 dias"}</h2>
+        <form action="/caixa" className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="block text-sm font-semibold">
+            Data
+            <input type="date" name="data" defaultValue={data} max={hoje} className="p-campo mt-1 w-auto" />
+          </label>
+          <label className="block text-sm font-semibold">
+            Turno
+            <select name="turno" defaultValue={turno} className="p-campo mt-1 w-auto">
+              <option value="">Os dois</option>
+              <option value="almoco">Almoço</option>
+              <option value="jantar">Jantar</option>
+            </select>
+          </label>
+          <button type="submit" className="p-btn p-btn-primario min-h-11">
+            Buscar
+          </button>
+          {filtrando ? (
+            <Link href="/caixa" className="p-btn p-btn-fantasma min-h-11">
+              Voltar aos últimos 7 dias
+            </Link>
+          ) : null}
+        </form>
+        {lista.length ? (
+          <ul className="mt-4 grid gap-2">
+            {lista.map((r) => (
+              <Item key={r.id} r={r} atual={r.id === escolhido?.id} filtro={filtro} />
             ))}
           </ul>
-        </section>
-      ) : null}
+        ) : (
+          <p className="mt-4 text-sm text-cafe">Nenhum fechamento {filtrando ? "encontrado" : "nos últimos 7 dias"}.</p>
+        )}
+      </section>
     </div>
   );
 }
