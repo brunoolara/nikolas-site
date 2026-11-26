@@ -89,7 +89,8 @@ export default function Equipe({ pessoas }: { pessoas: Pessoa[] }) {
                 </>
               ) : (
                 <>
-                  <span className="min-w-0 flex-1 font-semibold">
+                  {/* no celular o nome ocupa a linha toda: antes encolhia a zero e ficava embaixo do "Parte" */}
+                  <span className="min-w-0 grow basis-full font-semibold sm:basis-0">
                     {p.nome}
                     {p.ativo ? null : <span className="font-normal text-cafe"> · desativado</span>}
                     {p.saldoTexto ? <span className="block font-normal text-red-700">deve {p.saldoTexto}</span> : null}
