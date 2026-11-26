@@ -47,19 +47,34 @@ async function atualizar<T>(caminho: string, vazio: T, mudar: (atual: T) => T): 
       });
       return;
     } catch (erro) {
-      if (tentativa >= 3) throw erro;
+      if (tentativa >= 5) throw erro;
+      // outra gravação passou na frente: espera um pouco (com sorteio) e lê de novo
+      await new Promise((r) => setTimeout(r, 150 + Math.random() * 350 * (tentativa + 1)));
     }
   }
 }
 
 /** Guarda um aviso. Nunca derruba quem chamou: no pior caso o aviso não entra no histórico. */
-export async function guardarNoHistorico(item: Omit<ItemHistorico, "id" | "em">): Promise<void> {
-  if (!item.para.length) return;
+export function guardarNoHistorico(item: Omit<ItemHistorico, "id" | "em">): Promise<void> {
+  return guardarVariosNoHistorico([item]);
+}
+
+/**
+ * Guarda vários avisos numa gravação só. Gravar um por um ao mesmo tempo no
+ * mesmo arquivo fazia uns atropelarem os outros (26/11/2026: 2 dos 8 avisos
+ * da Caixinha ficaram fora do histórico).
+ */
+export async function guardarVariosNoHistorico(itens: Omit<ItemHistorico, "id" | "em">[]): Promise<void> {
+  const validos = itens.filter((i) => i.para.length);
+  if (!validos.length) return;
   const em = new Date().toISOString();
   try {
-    await atualizar<ItemHistorico[]>(doMes(em), [], (lista) => [...lista, { id: randomUUID(), em, ...item }]);
+    await atualizar<ItemHistorico[]>(doMes(em), [], (lista) => [
+      ...lista,
+      ...validos.map((item) => ({ id: randomUUID(), em, ...item })),
+    ]);
   } catch (erro) {
-    console.error("notificacoes: aviso fora do histórico", item.titulo, erro);
+    console.error("notificacoes: avisos fora do histórico", validos.map((i) => i.titulo).join(", "), erro);
   }
 }
 

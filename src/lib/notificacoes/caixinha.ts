@@ -25,7 +25,7 @@ import {
   type Preferencias,
 } from "./armazem";
 import { enviar, type Mensagem } from "./enviar";
-import { guardarNoHistorico } from "./historico";
+import { guardarVariosNoHistorico } from "./historico";
 
 export type Fechamento = {
   /** Id do pagamento: se ele for reaberto e fechado de novo, o aviso novo substitui o velho no celular. */
@@ -139,19 +139,22 @@ export async function avisarFechamento(f: Fechamento): Promise<number> {
   const enviados = await Promise.all(avisos.map((a) => (a.para.length ? enviar(a.para, a.mensagem, 12 * 3600) : 0)));
   // no histórico (tela Avisos): o total é um aviso só para todos os gestores
   const total = avisos.filter((a) => a.tipo === "caixinhaTotal");
-  await Promise.all([
+  // numa gravação só: um por um ao mesmo tempo se atropelavam no mesmo arquivo
+  await guardarVariosNoHistorico([
     ...avisos
       .filter((a) => a.tipo === "caixinhaMinha")
-      .map((a) => guardarNoHistorico({ tipo: a.tipo, para: [a.usuario], titulo: a.mensagem.title, texto: a.mensagem.body, url: a.mensagem.url })),
-    total.length
-      ? guardarNoHistorico({
-          tipo: "caixinhaTotal",
-          para: total.map((a) => a.usuario),
-          titulo: total[0].mensagem.title,
-          texto: total[0].mensagem.body,
-          url: "/caixinha",
-        })
-      : null,
+      .map((a) => ({ tipo: a.tipo, para: [a.usuario], titulo: a.mensagem.title, texto: a.mensagem.body, url: a.mensagem.url })),
+    ...(total.length
+      ? [
+          {
+            tipo: "caixinhaTotal" as const,
+            para: total.map((a) => a.usuario),
+            titulo: total[0].mensagem.title,
+            texto: total[0].mensagem.body,
+            url: "/caixinha",
+          },
+        ]
+      : []),
   ]);
   return enviados.reduce<number>((s, n) => s + n, 0);
 }
