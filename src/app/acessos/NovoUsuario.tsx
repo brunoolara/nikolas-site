@@ -19,9 +19,16 @@ export default function NovoUsuario({ equipe }: { equipe: DaEquipe[] }) {
 
   return (
     <form ref={form} action={enviar} className="p-cartao mt-10 p-5 sm:p-6">
-      <h2 className="p-cartao-titulo">Cadastrar funcionário</h2>
+      <h2 className="p-cartao-titulo">Cadastrar login</h2>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <label className="block text-sm font-semibold">
+          É
+          <select name="tipo" defaultValue="funcionario" className={campo}>
+            <option value="funcionario">Funcionário</option>
+            <option value="gestor">Gestor</option>
+          </select>
+        </label>
         <label className="block text-sm font-semibold">
           Nome
           <input name="nome" required placeholder="Ex.: Maria" className={campo} />

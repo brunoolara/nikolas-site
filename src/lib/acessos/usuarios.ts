@@ -21,6 +21,8 @@ export type Usuario = {
   areas: Area[];
   /** Quem o login é na equipe da Caixinha (id da pessoa), para a "Minha caixinha". */
   pessoa?: string;
+  /** Gestor (sócios e gerência) ou funcionário. Só separa as listas em Acessos. */
+  gestor?: boolean;
   ativo: boolean;
   sal: string;
   hash: string;

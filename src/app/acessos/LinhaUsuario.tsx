@@ -9,9 +9,17 @@ import { acaoAlterarUsuario, acaoExcluirUsuario, type Mudanca } from "./acoes";
 /** Alguém da equipe da Caixinha e o login ligado a ele, se houver. */
 export type DaEquipe = { id: string; nome: string; login: string | null };
 
-type Props = { usuario: string; nome: string; areas: Area[]; ativo: boolean; pessoa: string; equipe: DaEquipe[] };
+type Props = {
+  usuario: string;
+  nome: string;
+  areas: Area[];
+  ativo: boolean;
+  pessoa: string;
+  gestor: boolean;
+  equipe: DaEquipe[];
+};
 
-export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, equipe }: Props) {
+export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, gestor, equipe }: Props) {
   const [aviso, setAviso] = useState("");
   const [novaSenha, setNovaSenha] = useState<string | null>(null);
   const [ocupado, iniciar] = useTransition();
@@ -111,6 +119,14 @@ export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, equi
           className="p-btn p-btn-secundario p-btn-sm"
         >
           {ativo ? "Desativar" : "Reativar"}
+        </button>
+        <button
+          type="button"
+          disabled={ocupado}
+          onClick={() => alterar({ gestor: !gestor })}
+          className="p-btn p-btn-secundario p-btn-sm"
+        >
+          {gestor ? "Passar para Funcionários" : "Passar para Gestores"}
         </button>
         <button type="button" disabled={ocupado} onClick={excluir} className="p-btn p-btn-perigo p-btn-sm ml-auto">
           Excluir

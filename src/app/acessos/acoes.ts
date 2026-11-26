@@ -43,6 +43,7 @@ export async function acaoCriarUsuario(_estado: Resultado, dados: FormData): Pro
   const senha = String(dados.get("senha") ?? "");
   const areas = soAreas(dados.getAll("areas").map(String));
   const pessoa = String(dados.get("pessoa") ?? "") || undefined;
+  const gestor = dados.get("tipo") === "gestor";
 
   if (!USUARIO_VALIDO.test(usuario))
     return { ok: false, mensagem: "Usuário: de 3 a 30 letras minúsculas, números, ponto ou hífen, sem espaço." };
@@ -58,14 +59,14 @@ export async function acaoCriarUsuario(_estado: Resultado, dados: FormData): Pro
 
   await gravarUsuarios([
     ...usuarios,
-    { usuario, nome, areas, ...(pessoa ? { pessoa } : {}), ativo: true, ...cifrar(senha), versao: 1, criadoEm: new Date().toISOString() },
+    { usuario, nome, areas, ...(pessoa ? { pessoa } : {}), ...(gestor ? { gestor } : {}), ativo: true, ...cifrar(senha), versao: 1, criadoEm: new Date().toISOString() },
   ]);
   revalidatePath("/acessos");
   return { ok: true, mensagem: `${nome} cadastrado.` };
 }
 
 /** `pessoa: null` desfaz a ligação com a equipe da Caixinha. */
-export type Mudanca = { areas?: Area[]; ativo?: boolean; senha?: string; nome?: string; pessoa?: string | null };
+export type Mudanca = { areas?: Area[]; ativo?: boolean; senha?: string; nome?: string; pessoa?: string | null; gestor?: boolean };
 
 export async function acaoAlterarUsuario(usuario: string, mudanca: Mudanca): Promise<Resultado> {
   if (!(await eMaster())) return { ok: false, mensagem: "Só o master altera funcionários." };
@@ -93,13 +94,23 @@ export async function acaoAlterarUsuario(usuario: string, mudanca: Mudanca): Pro
   if (mudanca.nome?.trim()) novo.nome = mudanca.nome.trim();
   if (mudanca.areas) novo.areas = soAreas(mudanca.areas);
   if (mudanca.ativo !== undefined) novo.ativo = mudanca.ativo;
+  if (mudanca.gestor !== undefined) {
+    if (mudanca.gestor) novo.gestor = true;
+    else delete novo.gestor;
+  }
   if (mudanca.senha !== undefined) Object.assign(novo, cifrar(mudanca.senha));
   // senha nova ou desativação tiram a pessoa de onde ela estiver logada
   if (mudanca.senha !== undefined || mudanca.ativo === false) novo.versao = u.versao + 1;
 
   await gravarUsuarios(usuarios.map((x) => (x.usuario === usuario ? novo : x)));
   revalidatePath("/acessos");
-  return { ok: true, mensagem: mudanca.senha !== undefined ? "Senha trocada." : "Salvo." };
+  const mensagem =
+    mudanca.senha !== undefined
+      ? "Senha trocada."
+      : mudanca.gestor !== undefined
+        ? `${novo.nome} agora está em ${mudanca.gestor ? "Gestores" : "Funcionários"}.`
+        : "Salvo.";
+  return { ok: true, mensagem };
 }
 
 export async function acaoExcluirUsuario(usuario: string): Promise<Resultado> {
