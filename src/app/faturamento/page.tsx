@@ -305,7 +305,7 @@ export default async function Faturamento({
             <p className="text-[13px] font-semibold text-papel/75">
               Faturamento{turno ? ` · ${turno === "almoco" ? "almoço" : "jantar"}` : ""} · sem a taxa de serviço
             </p>
-            <p className="mt-1 text-[40px] font-semibold leading-none tabular-nums sm:text-5xl">{reais(atual.total)}</p>
+            <p className="mt-1 text-[min(40px,10.5vw)] font-semibold leading-none tabular-nums sm:text-5xl">{reais(atual.total)}</p>
             <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-papel/75">
               <Variacao atual={atual.total} antes={antes.total} claro />
               vs {p.comparado}: {reais(antes.total)}

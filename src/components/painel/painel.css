@@ -324,18 +324,25 @@ html:has(.painel) {
     line-height: 1.3;
     color: var(--color-cafe);
   }
+  /* O número acompanha a largura do cartão (não da tela): em dois cartões
+     lado a lado no celular, "R$ 159.749,86" cabe sem sair da borda; em
+     cartão largo fica no tamanho cheio. 15cqi = um valor de até 12
+     caracteres na largura útil do cartão. */
+  .p-cartao:has(.p-kpi-valor) {
+    container-type: inline-size;
+  }
   .p-kpi-valor {
     margin-top: 0.25rem;
     font-family: var(--font-sans);
     font-weight: 600;
     letter-spacing: -0.015em;
-    font-size: 1.75rem;
+    font-size: clamp(1rem, 15cqi, 1.75rem);
     line-height: 1.15;
     font-variant-numeric: tabular-nums;
   }
   @media (min-width: 640px) {
     .p-kpi-valor {
-      font-size: 1.875rem;
+      font-size: clamp(1rem, 15cqi, 1.875rem);
     }
   }
 
