@@ -47,7 +47,7 @@ export default async function Perfil() {
           <p className="font-display text-2xl">{sessao.nome}</p>
           <p className="text-sm text-cafe">
             Usuário <strong className="text-tinta">{sessao.usuario}</strong> ·{" "}
-            {sessao.master ? "dono, vê tudo" : "funcionário"}
+            {sessao.master ? "dono, vê tudo" : sessao.gestor ? "gestor" : "funcionário"}
           </p>
         </div>
       </section>

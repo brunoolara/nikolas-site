@@ -54,12 +54,12 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
 export const TOTAL_DA_CAIXINHA_PARA = [MASTER, "marta", "mariaignez"];
 
 /** Os avisos que fazem sentido para a pessoa: delivery com o Ao vivo, a própria caixinha com login ligado à equipe. */
-export function tiposDe(s: { usuario: string; areas: string[]; pessoa?: string }): TipoAviso[] {
+export function tiposDe(s: { usuario: string; areas: string[]; pessoa?: string; gestor?: boolean }): TipoAviso[] {
   return (Object.keys(TIPOS) as TipoAviso[]).filter((t) =>
     t === "caixinhaMinha"
       ? Boolean(s.pessoa)
       : t === "caixinhaTotal"
-        ? TOTAL_DA_CAIXINHA_PARA.includes(s.usuario)
+        ? s.usuario === MASTER || Boolean(s.gestor) || TOTAL_DA_CAIXINHA_PARA.includes(s.usuario)
         : s.areas.includes("operacao"),
   );
 }

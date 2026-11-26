@@ -68,6 +68,40 @@ function avisarDepois(f: Fechamento) {
   after(() => avisarFechamento(f).catch((erro) => console.error("caixinha: falha ao avisar no celular", erro)));
 }
 
+/**
+ * "Não pago no dia": avisa o que cada um tem a receber dos turnos encerrados
+ * e o total a pagar. Usa a taxa guardada no encerramento; sem ela (a Takeat
+ * não respondeu e ninguém digitou) não há valor para avisar. O saldo negativo
+ * de dias anteriores fica para o pagamento; o consumo do turno já sai.
+ */
+function avisarNaoPagoDepois(data: string, turnos: Turno[], por: string) {
+  after(async () => {
+    try {
+      const [dia, equipe] = await Promise.all([lerDia(data), lerEquipe()]);
+      const taxa: Record<Turno, number> = { almoco: 0, jantar: 0 };
+      for (const t of turnos) {
+        const guardada = dia.turnos[t].encerrado?.taxa;
+        if (guardada == null) {
+          console.error(`caixinha: ${t} de ${data} encerrado sem taxa, aviso não enviado`);
+          return;
+        }
+        taxa[t] = guardada;
+      }
+      const linhas = somarPagamento([partesDoDia(dia, taxa, equipe, turnos)], {});
+      await avisarFechamento({
+        id: `nao-pago-${data}-${turnos.join("-")}`,
+        oQue: `${turnos.length === 1 ? ROTULO_TURNO[turnos[0]] : "Almoço e jantar"} de ${curto(data)}`,
+        linhas,
+        por,
+        situacao: "a-pagar",
+        ...(turnos.length === 1 ? { turno: turnos[0] } : {}),
+      });
+    } catch (erro) {
+      console.error("caixinha: falha ao avisar o não pago no celular", erro);
+    }
+  });
+}
+
 const somaPartes = (partes: ParteDia[]) => arredondar(partes.reduce((s, p) => s + p.almoco + p.jantar, 0));
 
 /** "Almoço de qua, 25/11" ou "Almoço e jantar de qua, 25/11": os turnos que tiveram taxa. */
@@ -302,11 +336,15 @@ async function fecharPeriodo(nome: string, ini: string, fim: string): Promise<Re
     });
     // um dia só: se um turno já tinha sido pago, este fechamento completou o dia
     const tp = datas.length === 1 ? dias[0].turnoPago : undefined;
+    // um dia só com um turno trabalhado e pago na hora: aviso do turno; o resto é acumulado
+    const comGente = datas.length === 1 ? turnosAbertos(dias[0]).filter((t) => dias[0].turnos[t].presencas.some((p) => p.pct > 0)) : [];
+    const turnoAvulso = comGente.length === 1 && !dias[0].turnos[comGente[0]].encerrado ? comGente[0] : undefined;
     avisarDepois({
       id,
       oQue: datas.length === 1 ? nomeDoDia(ini, partes[0]) : `De ${curto(ini)} a ${curto(fim)}`,
       linhas,
       por: nome,
+      ...(turnoAvulso ? { turno: turnoAvulso } : {}),
       ...(tp ? { totalDoDia: somaPartes(juntarPartes(tp.partes, partes[0])) } : {}),
     });
     revalidatePath("/caixinha", "layout");
@@ -390,7 +428,14 @@ async function fecharTurno(nome: string, data: string, turno: string): Promise<R
       ultimoFechado: estado.ultimoFechado,
       pagamentos: [...(estado.pagamentos ?? []).filter((p) => p !== id), id],
     });
-    avisarDepois({ id, oQue: `${ROTULO_TURNO[turno]} de ${curto(data)}`, linhas, por: nome });
+    avisarDepois({
+      id,
+      oQue: `${ROTULO_TURNO[turno]} de ${curto(data)}`,
+      linhas,
+      por: nome,
+      // turno que tinha ficado sem pagar entra como acumulado
+      ...(dia.turnos[turno].encerrado ? {} : { turno }),
+    });
     revalidatePath("/caixinha", "layout");
     revalidatePath("/caixinha-turno");
     return { ok: true, mensagem: `${ROTULO_TURNO[turno]} fechado e pago.` };
@@ -652,6 +697,7 @@ export async function acaoPcNaoPago(data: string, turno: string, responsavel: st
   if (!r.ok) return r;
   if (jaEstava) return { ok: false, mensagem: ENCERRADO };
   if (vazio) return { ok: false, mensagem: "Marque quem trabalhou antes de encerrar." };
+  avisarNaoPagoDepois(agora.data, [t], nome);
   return { ok: true, mensagem: `${ROTULO_TURNO[t]} encerrado sem pagamento. Fica a pagar pelo Bruno.` };
 }
 
@@ -691,6 +737,7 @@ export async function acaoNaoPago(data: string, turno: string | null): Promise<R
   if (!r.ok) return r;
   if (jaEstava) return { ok: false, mensagem: "Já estava marcado como não pago no dia." };
   if (!marcados.length) return { ok: false, mensagem: "Marque quem trabalhou antes." };
+  avisarNaoPagoDepois(data, marcados, nome);
   return {
     ok: true,
     mensagem:

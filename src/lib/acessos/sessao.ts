@@ -31,7 +31,7 @@ import {
 const COOKIE = "sessao";
 const DIAS_30 = 60 * 60 * 24 * 30;
 
-export type Sessao = { usuario: string; nome: string; master: boolean; areas: Area[]; pessoa?: string };
+export type Sessao = { usuario: string; nome: string; master: boolean; areas: Area[]; pessoa?: string; gestor?: boolean };
 
 function senhaMaster(): string | null {
   const s = process.env.SENHA_PAINEL;
@@ -162,7 +162,14 @@ export const sessaoAtual = cache(async (): Promise<Sessao | null> => {
     return { usuario, nome: "Bruno", master: true, areas: AREAS.filter((a) => a !== "minha-caixinha") };
   const u = (await lerUsuarios()).find((x) => x.usuario === usuario);
   if (!u || !u.ativo || u.versao !== versao) return null;
-  const sessao: Sessao = { usuario, nome: u.nome, master: false, areas: u.areas, ...(u.pessoa ? { pessoa: u.pessoa } : {}) };
+  const sessao: Sessao = {
+    usuario,
+    nome: u.nome,
+    master: false,
+    areas: u.areas,
+    ...(u.pessoa ? { pessoa: u.pessoa } : {}),
+    ...(u.gestor ? { gestor: true } : {}),
+  };
   anotarVisita(sessao);
   return sessao;
 });

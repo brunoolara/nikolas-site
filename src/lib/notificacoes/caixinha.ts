@@ -1,17 +1,21 @@
 // Avisos da Caixinha no celular (pedido do Bruno em 25/11/2026).
 //
 // Quando um turno, um dia ou um período é fechado e pago:
-// - cada pessoa paga que tem login ligado à equipe da Caixinha recebe quanto
-//   vai receber (já com o consumo e o saldo negativo descontados);
-// - o Bruno, a Marta e a Maria Ignez recebem o total, e o do dia inteiro
-//   quando o fechamento completou o dia.
+// - cada pessoa que tem login ligado à equipe da Caixinha recebe quanto foi
+//   pago a ela (já com o consumo e o saldo negativo descontados);
+// - os gestores recebem o total pago, e o do dia inteiro quando o fechamento
+//   completou o dia.
+// Quando um turno é encerrado sem pagamento ("Não pago no dia", 25/11/2026),
+// sai o mesmo par de avisos dizendo o que ficou a receber e o total a pagar.
+// Gestores: o master, quem está marcado como gestor em Acessos e a lista fixa
+// TOTAL_DA_CAIXINHA_PARA.
 //
 // Sai depois da resposta (after, em caixinha/acoes.ts): o fechamento não
 // espera o push, e uma falha aqui nunca desfaz o fechamento.
 
 import "server-only";
 import { lerUsuarios, MASTER, type Usuario } from "@/lib/acessos/usuarios";
-import { arredondar, reais, type LinhaPagamento } from "@/lib/caixinha/tipos";
+import { arredondar, reais, ROTULO_TURNO, type LinhaPagamento, type Turno } from "@/lib/caixinha/tipos";
 import {
   lerInscricoes,
   lerPreferencias,
@@ -32,43 +36,63 @@ export type Fechamento = {
   por: string;
   /** Total do dia inteiro, quando este fechamento pagou o último turno do dia. */
   totalDoDia?: number;
+  /** "a-pagar": encerrado sem pagamento; os valores ficam para quando for pago. */
+  situacao?: "pago" | "a-pagar";
+  /**
+   * O turno, quando o aviso é de um turno só fechado na hora. Sem ele, o
+   * pagamento juntou o que estava acumulado (turnos não pagos, dias, período).
+   */
+  turno?: Turno;
 };
 
 export type Aviso = { para: Inscricao[]; mensagem: Mensagem };
 
-/** O aviso para uma pessoa da equipe. */
+/**
+ * O aviso para uma pessoa da equipe: curto, só o primeiro nome e o valor que
+ * ela recebe (já com o consumo e o saldo descontados, sem detalhar). Textos do
+ * Bruno em 25/11/2026 ("o caixinha", como se fala no Nikola's).
+ */
 function individual(f: Fechamento, l: LinhaPagamento, url: string): Mensagem {
-  const descontos = [
-    l.consumo > 0 ? `consumo de ${reais(l.consumo)}` : "",
-    l.saldoAnterior < 0 ? `saldo anterior de ${reais(l.saldoAnterior)}` : "",
-  ].filter(Boolean);
+  const nome = l.nome.trim().split(" ")[0];
+  const doTurno = f.turno ? ` do ${ROTULO_TURNO[f.turno].toLowerCase()}` : "";
   const body =
-    l.pagar > 0
-      ? `${f.oQue}.${descontos.length ? ` Já descontado: ${descontos.join(" e ")}.` : ""}`
-      : l.novoSaldo < 0
-        ? `${f.oQue}. O desconto passou da sua parte: ${reais(l.novoSaldo)} ficam para o próximo pagamento.`
-        : `${f.oQue}.`;
+    l.pagar <= 0
+      ? `${nome}, desta vez o consumo passou do seu caixinha. Não há valor a receber.`
+      : f.situacao === "a-pagar"
+        ? `${nome}, o valor do seu caixinha${doTurno} foi de ${reais(l.pagar)}.`
+        : f.turno
+          ? `${nome}, seu caixinha${doTurno} foi pago: ${reais(l.pagar)}.`
+          : `${nome}, o valor dos caixinhas que estavam acumulados foi pago para você: ${reais(l.pagar)}.`;
+  return { title: "Caixinha", body, tag: `caixinha-${f.id}`, url };
+}
+
+/** O aviso do total, para os gestores. */
+function total(f: Fechamento, url: string): Mensagem {
+  const partes = arredondar(f.linhas.reduce((s, l) => s + l.almoco + l.jantar, 0));
+  const dinheiro = arredondar(f.linhas.reduce((s, l) => s + l.pagar, 0));
+  const pessoas = f.linhas.filter((l) => l.almoco + l.jantar > 0).length;
+  const quantas = `${pessoas} ${pessoas === 1 ? "pessoa" : "pessoas"}`;
+  const descontou = Math.abs(dinheiro - partes) >= 0.01 ? `Taxa repartida: ${reais(partes)} (antes dos descontos de consumo e saldo).` : "";
+  const aPagar = f.situacao === "a-pagar";
+  const body = [
+    aPagar ? `${f.oQue}: ${quantas}, encerrado sem pagamento por ${f.por}.` : `${f.oQue}: ${quantas}, pago por ${f.por}.`,
+    descontou,
+    !aPagar && f.totalDoDia !== undefined ? `Dia todo: ${reais(f.totalDoDia)}.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return {
-    title: l.pagar > 0 ? `Sua caixinha: ${reais(l.pagar)}` : "Sua caixinha: nada a receber desta vez",
+    title: aPagar ? `Caixinha a pagar: ${reais(dinheiro)}` : `Caixinha paga: ${reais(dinheiro)}`,
     body,
-    tag: `caixinha-${f.id}`,
+    tag: `caixinha-total-${f.id}`,
     url,
   };
 }
 
-/** O aviso do total, para o Bruno, a Marta e a Maria Ignez. */
-function total(f: Fechamento, url: string): Mensagem {
-  const partes = arredondar(f.linhas.reduce((s, l) => s + l.almoco + l.jantar, 0));
-  const pago = arredondar(f.linhas.reduce((s, l) => s + l.pagar, 0));
-  const pessoas = f.linhas.filter((l) => l.almoco + l.jantar > 0).length;
-  const body = [
-    `${f.oQue}: ${pessoas} ${pessoas === 1 ? "pessoa" : "pessoas"}, fechado por ${f.por}.`,
-    Math.abs(pago - partes) >= 0.01 ? `Pago em dinheiro: ${reais(pago)} (descontos de consumo e saldo).` : "",
-    f.totalDoDia !== undefined ? `Dia todo: ${reais(f.totalDoDia)}.` : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return { title: `Caixinha: ${reais(partes)}`, body, tag: `caixinha-total-${f.id}`, url };
+/** Quem recebe o total: o master, os marcados como gestor e a lista fixa. */
+export function gestores(usuarios: Usuario[]): string[] {
+  const marcados = usuarios.filter((u) => u.ativo && u.gestor).map((u) => u.usuario);
+  return [...new Set([MASTER, ...TOTAL_DA_CAIXINHA_PARA, ...marcados])];
 }
 
 /**
@@ -94,7 +118,7 @@ export function montarAvisos(
     }
   }
 
-  for (const usuario of TOTAL_DA_CAIXINHA_PARA) {
+  for (const usuario of gestores(usuarios)) {
     const u = usuario === MASTER ? null : ativos.find((x) => x.usuario === usuario);
     if (usuario !== MASTER && !u) continue;
     if (!preferenciasDe(prefs, usuario).caixinhaTotal) continue;
