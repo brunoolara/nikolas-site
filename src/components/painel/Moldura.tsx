@@ -114,7 +114,7 @@ export default async function Moldura({ atual }: { atual: Secao }) {
           <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-md" aria-label="Início do painel">
             <Logo className="h-8 w-8" variante="claro" />
             <span className="block leading-tight">
-              <span className="block font-display text-lg">Nikola&apos;s</span>
+              <span className="marca block font-display text-lg">Nikola&apos;s</span>
               <span className="block text-[11px] uppercase tracking-[0.14em] text-papel/70">Painel</span>
             </span>
           </Link>

@@ -225,11 +225,11 @@ html:has(.painel) {
     box-shadow: var(--p-sombra);
   }
   .p-cartao-titulo {
-    font-family: var(--font-display);
-    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
-    letter-spacing: -0.015em;
-    font-size: 1.375rem;
-    line-height: 1.2;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: 1.125rem;
+    line-height: 1.3;
   }
 
   /* Avisos */
@@ -326,8 +326,8 @@ html:has(.painel) {
   }
   .p-kpi-valor {
     margin-top: 0.25rem;
-    font-family: var(--font-display);
-    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
+    font-family: var(--font-sans);
+    font-weight: 600;
     letter-spacing: -0.015em;
     font-size: 1.75rem;
     line-height: 1.15;
@@ -719,4 +719,17 @@ html:has(.painel) {
     animation: none;
   }
 }
+}
+
+/* Duas fontes no painel (Bruno, 26/11/2026): a Fraunces só no título da
+   página (o h1: "Faturamento", "Caixinha"...); todo o resto, inclusive
+   títulos de seção e números, na Figtree. Fora de camada e mais específico
+   que o .font-display do globals.css, para valer em todas as telas internas
+   sem mexer nelas uma a uma. O site público não tem .painel e não muda.
+   O "Nikola's" ao lado do monograma (.marca) é logotipo e fica na Fraunces. */
+.painel .font-display:not(h1):not(.marca) {
+  font-family: var(--font-sans);
+  font-variation-settings: normal;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }

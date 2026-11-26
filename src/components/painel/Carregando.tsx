@@ -88,7 +88,7 @@ export function TelaCarregando() {
           <span className="flex shrink-0 items-center gap-2.5">
             <Logo className="h-8 w-8" />
             <span className="block leading-tight">
-              <span className="block font-display text-lg">Nikola&apos;s</span>
+              <span className="marca block font-display text-lg">Nikola&apos;s</span>
               <span className="block text-[11px] uppercase tracking-[0.14em] text-cafe">Painel</span>
             </span>
           </span>

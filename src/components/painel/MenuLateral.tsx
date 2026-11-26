@@ -45,7 +45,7 @@ export default function MenuLateral({ itens, atual, nome }: { itens: ItemMenu[];
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-linha px-4 py-3">
             <div>
-              <p className="font-display text-xl">Nikola&apos;s</p>
+              <p className="marca font-display text-xl">Nikola&apos;s</p>
               <p className="text-sm text-cafe">{nome}</p>
             </div>
             <button
