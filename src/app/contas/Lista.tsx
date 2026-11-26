@@ -11,6 +11,7 @@ import type { Conta, Opcao } from "@/lib/contas/takeat";
 import { lerCodigo, ROTULO_CODIGO, type TipoCodigo } from "@/lib/contas/codigo";
 import { reais } from "@/lib/caixinha/tipos";
 import { rotuloData, somarDias } from "@/lib/posts/tipos";
+import { copiarTexto } from "@/lib/copiar";
 import { acaoDesfazer, acaoPaguei } from "./acoes";
 
 type Props = { contas: Conta[]; bancos: Opcao[]; formas: Opcao[]; hoje: string };
@@ -27,31 +28,6 @@ function grupos(contas: Conta[], hoje: string) {
     { nome: "Mais para frente", contas: contas.filter((c) => c.vencimento > semana), aberto: false },
   ];
   return lista.filter((g) => g.contas.length);
-}
-
-/** Copia pelo jeito novo; se o navegador recusar, pelo antigo. */
-async function copiarTexto(texto: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(texto);
-    return true;
-  } catch {
-    const area = document.createElement("textarea");
-    area.value = texto;
-    area.setAttribute("readonly", "");
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.appendChild(area);
-    area.select();
-    area.setSelectionRange(0, texto.length);
-    let ok = false;
-    try {
-      ok = document.execCommand("copy");
-    } catch {
-      ok = false;
-    }
-    area.remove();
-    return ok;
-  }
 }
 
 function formaSugerida(conta: Conta, tipo: TipoCodigo, formas: Opcao[]): number | null {

@@ -9,13 +9,19 @@ import { ITENS } from "@/components/painel/Moldura";
 import { sessaoAtual } from "@/lib/acessos/sessao";
 import { TIPOS, lerPreferencias, preferenciasDe, tiposDe } from "@/lib/notificacoes/armazem";
 import { chavePublica, pushConfigurado } from "@/lib/notificacoes/enviar";
+import { lerEquipe } from "@/lib/caixinha/armazem";
+import { mostrarChave, ROTULO_PIX } from "@/lib/caixinha/pix";
+import EditorPix from "../caixinha/EditorPix";
 import Notificacoes from "./Notificacoes";
+import { acaoMinhaChavePix } from "./acoes";
 
 export default async function Perfil() {
   // o layout já barra, mas o Next pode pedir só a página sem rodar o layout
   const sessao = await sessaoAtual();
   if (!sessao) redirect("/");
-  const prefs = preferenciasDe(await lerPreferencias(), sessao.usuario);
+  const [todasPrefs, equipe] = await Promise.all([lerPreferencias(), sessao.pessoa ? lerEquipe() : []]);
+  const prefs = preferenciasDe(todasPrefs, sessao.usuario);
+  const pix = equipe.find((p) => p.id === sessao.pessoa)?.pix;
   const tipos = tiposDe(sessao).map((chave) => ({ chave, ...TIPOS[chave] }));
   const areas = ITENS.filter(
     (i) => i.chave !== "inicio" && (i.master ? sessao.master : i.area ? sessao.areas.includes(i.area) : false),
@@ -57,6 +63,19 @@ export default async function Perfil() {
           <p className="mt-4 text-sm text-cafe">Para abrir outra área ou trocar a senha, fale com o Bruno.</p>
         ) : null}
       </section>
+
+      {sessao.pessoa ? (
+        <section className="p-cartao mt-4 p-5">
+          <h2 className="p-cartao-titulo">Chave Pix da caixinha</h2>
+          <p className="mt-1 text-sm text-cafe">
+            Para quem paga a caixinha copiar a sua chave na hora. Só quem cuida da Caixinha vê.
+          </p>
+          <EditorPix
+            atual={pix ? { rotulo: ROTULO_PIX[pix.tipo], mostrar: mostrarChave(pix) } : null}
+            acao={acaoMinhaChavePix}
+          />
+        </section>
+      ) : null}
 
       <Notificacoes
         chavePublica={chavePublica()}

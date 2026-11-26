@@ -18,6 +18,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { avisarFechamento, type Fechamento } from "@/lib/notificacoes/caixinha";
 import { curto } from "@/lib/caixinha/periodo";
+import { conferirChavePix, resumoChave } from "@/lib/caixinha/pix";
+import { registrar } from "@/lib/registro";
 import { sessaoAtual } from "@/lib/acessos/sessao";
 import type { Resultado } from "@/lib/acessos/acoes";
 import { DATA, hoje, rotuloData } from "@/lib/posts/tipos";
@@ -27,6 +29,7 @@ import {
   atualizarEquipe,
   gravarEstado,
   gravarPagamento,
+  gravarPixDe,
   lerDia,
   lerEquipe,
   lerEstado,
@@ -467,6 +470,36 @@ export async function acaoAdicionarPessoa(nome: string): Promise<Resultado> {
     return { ok: true, mensagem: `${limpo} entrou na equipe.` };
   } catch (erro) {
     console.error("caixinha: falha ao gravar a equipe", erro);
+    return { ok: false, mensagem: FALHA };
+  }
+}
+
+/**
+ * Cadastra, troca ou (tipo null) tira a chave Pix de alguém da equipe, para
+ * quem não tem login. Fica no registro do painel (tipo e final da chave).
+ */
+export async function acaoPixDaPessoa(id: string, tipo: string | null, chave: string): Promise<Resultado> {
+  const sessao = await sessaoAtual();
+  if (!sessao?.areas.includes("caixinha")) return { ok: false, mensagem: "Sessão expirada. Entre de novo." };
+  const r = tipo === null ? null : conferirChavePix(tipo, chave);
+  if (r && !r.ok) return { ok: false, mensagem: r.erro };
+  try {
+    const pessoa = (await lerEquipe()).find((p) => p.id === id);
+    if (!pessoa || !(await gravarPixDe(id, r ? r.pix : null, sessao.nome)))
+      return { ok: false, mensagem: "Essa pessoa não está na equipe." };
+    after(() =>
+      registrar({
+        tipo: "pix",
+        usuario: sessao.usuario,
+        nome: sessao.nome,
+        onde: r ? `cadastrou a chave Pix de ${pessoa.nome} (${resumoChave(r.pix)})` : `tirou a chave Pix de ${pessoa.nome}`,
+      }),
+    );
+    revalidatePath("/caixinha", "layout");
+    revalidatePath("/perfil");
+    return { ok: true, mensagem: r ? "Chave Pix salva." : "Chave Pix tirada." };
+  } catch (erro) {
+    console.error("caixinha: falha ao gravar a chave Pix", erro);
     return { ok: false, mensagem: FALHA };
   }
 }

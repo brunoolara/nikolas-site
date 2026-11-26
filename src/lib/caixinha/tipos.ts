@@ -21,6 +21,8 @@
 
 export const PARTE_EQUIPE = 0.95;
 
+import type { ChavePix } from "./pix";
+
 export type Turno = "almoco" | "jantar";
 export const TURNOS: Turno[] = ["almoco", "jantar"];
 export const ROTULO_TURNO: Record<Turno, string> = { almoco: "Almoço", jantar: "Jantar" };
@@ -34,6 +36,8 @@ export type Pessoa = {
   parte?: number;
   /** % no domingo, se for diferente (sem = o mesmo de `parte`). */
   parteDomingo?: number;
+  /** Chave Pix para receber a caixinha: a pessoa cadastra no Perfil, ou quem cuida da Caixinha na Equipe. */
+  pix?: ChavePix & { em: string; por: string };
 };
 
 const ehDomingo = (data: string) => new Date(`${data}T12:00:00Z`).getUTCDay() === 0;

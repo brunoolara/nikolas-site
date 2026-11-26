@@ -37,6 +37,7 @@ const DESCRICAO: Record<Evento["tipo"], string> = {
   falhou: "",
   cardapio: "salvou",
   conta: "",
+  pix: "",
 };
 
 /** O servidor pode anotar a mesma visita mais de uma vez no dia: fica a primeira. */
@@ -145,7 +146,7 @@ export default async function Registro({
                           <span className="text-cafe"> · versão {e.versao}</span>
                         </>
                       ) : null}
-                      {e.tipo === "conta" ? <> {e.onde}</> : null}
+                      {e.tipo === "conta" || e.tipo === "pix" ? <> {e.onde}</> : null}
                       {e.tipo === "falhou" ? (
                         <span className="text-cafe">
                           {" "}

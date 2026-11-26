@@ -5,6 +5,7 @@ import Cabecalho from "@/components/painel/Cabecalho";
 import { exigir } from "@/lib/acessos/sessao";
 import { lerEquipe, lerEstado } from "@/lib/caixinha/armazem";
 import { reais } from "@/lib/caixinha/tipos";
+import { mostrarChave, ROTULO_PIX } from "@/lib/caixinha/pix";
 import Equipe from "./Equipe";
 import Abas from "../Abas";
 
@@ -21,13 +22,14 @@ export default async function PaginaEquipe() {
       parte: p.parte ?? 100,
       parteDomingo: p.parteDomingo ?? null,
       saldo: estado.saldos[p.id] ?? 0,
+      pix: p.pix ? { rotulo: ROTULO_PIX[p.pix.tipo], mostrar: mostrarChave(p.pix) } : null,
     }));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
       <Cabecalho
         titulo="Equipe da caixinha"
-        descricao="Todos os funcionários entram no rateio; sócios ficam de fora. A parte é o % com que a pessoa entra no turno ao ser marcada (dá para mudar no dia). Quem tem saldo negativo aparece com o valor que ainda deve."
+        descricao="Todos os funcionários entram no rateio; sócios ficam de fora. A parte é o % com que a pessoa entra no turno ao ser marcada (dá para mudar no dia). Quem tem saldo negativo aparece com o valor que ainda deve. A chave Pix aparece no pagamento; quem tem login cadastra a sua no Perfil."
       />
       <Abas atual="equipe" master={sessao.master} />
       <Equipe pessoas={pessoas.map((p) => ({ ...p, saldoTexto: p.saldo < 0 ? reais(-p.saldo) : "" }))} />

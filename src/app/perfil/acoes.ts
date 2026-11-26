@@ -14,6 +14,10 @@ import {
   type TipoAviso,
 } from "@/lib/notificacoes/armazem";
 import { enviar } from "@/lib/notificacoes/enviar";
+import { after } from "next/server";
+import { gravarPixDe } from "@/lib/caixinha/armazem";
+import { conferirChavePix, resumoChave } from "@/lib/caixinha/pix";
+import { registrar } from "@/lib/registro";
 
 type Resposta = { ok: boolean; mensagem: string };
 type Assinatura = { endpoint: string; keys: { p256dh: string; auth: string } };
@@ -79,4 +83,35 @@ export async function acaoTestar(): Promise<Resposta> {
   return n
     ? { ok: true, mensagem: n === 1 ? "Teste enviado." : `Teste enviado para ${n} aparelhos.` }
     : { ok: false, mensagem: "Não consegui enviar. Confira se as notificações estão permitidas no aparelho." };
+}
+
+/**
+ * A própria chave Pix da caixinha (tipo null tira). Só para login ligado a
+ * alguém da equipe; fica no registro do painel (tipo e final da chave).
+ */
+export async function acaoMinhaChavePix(tipo: string | null, chave: string): Promise<Resposta> {
+  const sessao = await sessaoAtual();
+  if (!sessao) return { ok: false, mensagem: "Entre de novo no painel." };
+  if (!sessao.pessoa)
+    return { ok: false, mensagem: "Seu login não está ligado a ninguém da equipe da Caixinha. Fale com o Bruno." };
+  const r = tipo === null ? null : conferirChavePix(tipo, chave);
+  if (r && !r.ok) return { ok: false, mensagem: r.erro };
+  try {
+    if (!(await gravarPixDe(sessao.pessoa, r ? r.pix : null, sessao.nome)))
+      return { ok: false, mensagem: "Não achei você na equipe da Caixinha. Fale com o Bruno." };
+  } catch (erro) {
+    console.error("perfil: falha ao gravar a chave Pix", erro);
+    return { ok: false, mensagem: "Não consegui gravar. Tente de novo em instantes." };
+  }
+  after(() =>
+    registrar({
+      tipo: "pix",
+      usuario: sessao.usuario,
+      nome: sessao.nome,
+      onde: r ? `cadastrou a própria chave Pix (${resumoChave(r.pix)})` : "tirou a própria chave Pix",
+    }),
+  );
+  revalidatePath("/perfil");
+  revalidatePath("/caixinha", "layout");
+  return { ok: true, mensagem: r ? "Chave Pix salva." : "Chave Pix tirada." };
 }

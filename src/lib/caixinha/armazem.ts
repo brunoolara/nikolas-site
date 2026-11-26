@@ -15,6 +15,7 @@ import "server-only";
 import { del, get, lerVarios, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 import { diaVazio, type Dia, type Estado, type Pagamento, type Pessoa } from "./tipos";
+import type { ChavePix } from "./pix";
 
 // Em desenvolvimento o site usa a mesma loja da Vercel; a pasta separada
 // impede que um teste local apareça na caixinha de verdade.
@@ -54,6 +55,22 @@ export async function lerEquipe(): Promise<Pessoa[]> {
 
 export function atualizarEquipe(mudar: (equipe: Pessoa[]) => Pessoa[]) {
   return atualizar<Pessoa[]>(EQUIPE, () => [], mudar);
+}
+
+/** Grava (ou, com null, tira) a chave Pix de uma pessoa. false se a pessoa não está na equipe. */
+export async function gravarPixDe(pessoa: string, pix: ChavePix | null, por: string): Promise<boolean> {
+  let achou = false;
+  await atualizarEquipe((equipe) =>
+    equipe.map((p) => {
+      if (p.id !== pessoa) return p;
+      achou = true;
+      const copia = { ...p };
+      if (pix) copia.pix = { ...pix, em: new Date().toISOString(), por };
+      else delete copia.pix;
+      return copia;
+    }),
+  );
+  return achou;
 }
 
 export async function lerDia(data: string): Promise<Dia> {

@@ -267,6 +267,10 @@ html:has(.painel) {
     background: var(--p-vermelho-fundo);
     color: var(--p-vermelho);
   }
+  .p-selo-ambar {
+    background: var(--p-ambar-fundo);
+    color: var(--p-ambar-texto);
+  }
 
   /* Tabelas de valores */
   .p-tabela {

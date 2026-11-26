@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { acaoAdicionarPessoa, acaoAlterarPessoa } from "../acoes";
+import { acaoAdicionarPessoa, acaoAlterarPessoa, acaoPixDaPessoa } from "../acoes";
+import EditorPix from "../EditorPix";
 
 type Pessoa = {
   id: string;
@@ -12,6 +13,7 @@ type Pessoa = {
   /** % no domingo; null = o mesmo de todo dia. */
   parteDomingo: number | null;
   saldoTexto: string;
+  pix: { rotulo: string; mostrar: string } | null;
 };
 
 const OPCOES = [100, 75, 50, 25];
@@ -143,6 +145,11 @@ export default function Equipe({ pessoas }: { pessoas: Pessoa[] }) {
                   >
                     {p.ativo ? "Desativar" : "Reativar"}
                   </button>
+                  {p.ativo ? (
+                    <div className="w-full border-t border-linha/70 pt-2">
+                      <EditorPix atual={p.pix} acao={(tipo, chave) => acaoPixDaPessoa(p.id, tipo, chave)} compacto />
+                    </div>
+                  ) : null}
                 </>
               )}
             </li>
