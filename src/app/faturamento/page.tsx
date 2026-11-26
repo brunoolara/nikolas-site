@@ -302,7 +302,7 @@ export default async function Faturamento({
         <>
           {/* o número que importa: o total, na faixa verde, com os canais embaixo */}
           <section className="mt-4 rounded-[22px] bg-verde p-5 text-papel shadow-[var(--p-sombra-alta)] sm:p-6">
-            <p className="text-xs font-semibold uppercase tracking-wide text-papel/70">
+            <p className="text-[13px] font-semibold text-papel/75">
               Faturamento{turno ? ` · ${turno === "almoco" ? "almoço" : "jantar"}` : ""} · sem a taxa de serviço
             </p>
             <p className="mt-1 text-[40px] font-semibold leading-none tabular-nums sm:text-5xl">{reais(atual.total)}</p>
@@ -313,7 +313,7 @@ export default async function Faturamento({
             <div className="mt-5 grid grid-cols-2 gap-3 border-t border-papel/15 pt-4">
               {CANAIS.map((k) => (
                 <div key={k} className="min-w-0">
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-papel/65">{ROTULO_CANAL[k]}</p>
+                  <p className="truncate text-[13px] font-semibold text-papel/70">{ROTULO_CANAL[k]}</p>
                   <p className="mt-0.5 truncate text-base font-semibold tabular-nums sm:text-lg">{reais(atual.canais[k].valor)}</p>
                 </div>
               ))}

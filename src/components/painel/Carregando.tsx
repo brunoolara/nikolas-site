@@ -13,6 +13,7 @@
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore, ViewTransition } from "react";
 import Logo from "@/components/Logo";
+import Monograma from "./Monograma";
 import Icone from "./Icone";
 import BarraInferior from "./BarraInferior";
 
@@ -25,6 +26,8 @@ const INTERNAS = [
   "/operacao",
   "/estoque",
   "/contas",
+  "/caixa",
+  "/faturamento",
   "/cmv",
   "/acessos",
   "/imprimir",
@@ -61,6 +64,8 @@ export function Blocos() {
     <ViewTransition enter="p-entra" exit="p-sai" default="none">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10" aria-busy="true" aria-live="polite">
         <span className="sr-only">Carregando…</span>
+        {/* a gota do monograma cai enquanto a tela não chega */}
+        <Monograma className="mx-auto mb-6 h-12 w-12 text-verde" animar="sempre" />
         <div className="p-esqueleto h-9 w-56 max-w-full" />
         <div className="p-esqueleto mt-3 h-4 w-80 max-w-full" />
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -80,16 +85,16 @@ export function TelaCarregando() {
   if (!noPainel) return null;
   return (
     <div className="painel">
-      <header className="sticky top-0 z-30 border-b border-linha bg-papel/95 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-verde-escuro bg-verde text-papel">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4 lg:h-auto lg:py-2.5">
-          <span className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center text-tinta lg:hidden" aria-hidden>
+          <span className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center text-papel lg:hidden" aria-hidden>
             <Icone nome="menu" className="h-6 w-6" />
           </span>
           <span className="flex shrink-0 items-center gap-2.5">
-            <Logo className="h-8 w-8" />
+            <Logo className="h-8 w-8" variante="claro" />
             <span className="block leading-tight">
               <span className="marca block font-display text-lg">Nikola&apos;s</span>
-              <span className="block text-[11px] uppercase tracking-[0.14em] text-cafe">Painel</span>
+              <span className="block text-[11px] uppercase tracking-[0.14em] text-papel/70">Painel</span>
             </span>
           </span>
         </div>

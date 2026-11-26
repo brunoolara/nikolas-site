@@ -76,7 +76,7 @@ export default async function PaginaComprovante({ searchParams }: PageProps<"/ca
       {/* a mesma ordem do PDF: o valor primeiro, depois de quem e de quando, os dias e a conta */}
       <section className="p-cartao mt-6 max-w-xl overflow-hidden">
         <div className="p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-cafe">
+          <p className="text-[13px] font-semibold text-cafe">
             {c.pago ? "Comprovante da caixinha" : "Prévia da caixinha · ainda não fechada"}
           </p>
           <p className="mt-2 text-4xl font-semibold tabular-nums text-verde">{reais(l.pagar)}</p>

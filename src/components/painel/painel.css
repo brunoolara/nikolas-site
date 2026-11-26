@@ -733,3 +733,101 @@ html:has(.painel) {
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+
+/* Monograma com a gota caindo (Monograma.tsx, pedido do Bruno em 26/11/2026).
+   A gota desce de cima (acelerando, como gravidade), achata um pouco ao tocar
+   e volta à forma, parada do lado do N. Na abertura cai uma vez; nas telas
+   carregando, cai de novo a cada 1,8 s. */
+.p-gota {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.p-gota-uma {
+  animation: p-gota-cai 0.95s both;
+}
+.p-gota-sempre {
+  animation: p-gota-repete 1.8s infinite both;
+}
+@keyframes p-gota-cai {
+  0% {
+    transform: translateY(-420%) scale(0.9, 1.12);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.45);
+  }
+  12% {
+    opacity: 1;
+  }
+  62% {
+    transform: translateY(0) scale(0.94, 1.08);
+    animation-timing-function: ease-out;
+  }
+  74% {
+    transform: translateY(0) scale(1.14, 0.84);
+    animation-timing-function: ease-in-out;
+  }
+  88% {
+    transform: translateY(0) scale(0.97, 1.03);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+    opacity: 1;
+  }
+}
+@keyframes p-gota-repete {
+  0% {
+    transform: translateY(-420%) scale(0.9, 1.12);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.45);
+  }
+  6% {
+    opacity: 1;
+  }
+  33% {
+    transform: translateY(0) scale(0.94, 1.08);
+    animation-timing-function: ease-out;
+  }
+  40% {
+    transform: translateY(0) scale(1.14, 0.84);
+    animation-timing-function: ease-in-out;
+  }
+  48% {
+    transform: translateY(0) scale(0.97, 1.03);
+  }
+  54%,
+  84% {
+    transform: translateY(0) scale(1, 1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+    opacity: 0;
+  }
+}
+
+/* A abertura: tela creme por cima de tudo, some depois que a gota assenta */
+.p-abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-papel);
+  animation: p-abertura-sai 0.35s ease 1.15s forwards;
+}
+@keyframes p-abertura-sai {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p-gota-uma,
+  .p-gota-sempre {
+    animation: none;
+  }
+  .p-abertura {
+    animation-delay: 0.3s;
+  }
+}

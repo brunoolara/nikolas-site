@@ -18,6 +18,7 @@ import Sair from "./Sair";
 import MenuLateral from "./MenuLateral";
 import BarraInferior, { type Atalho } from "./BarraInferior";
 import AvisoNotificacoes from "./AvisoNotificacoes";
+import Abertura from "./Abertura";
 import { ehGestor, tiposDe } from "@/lib/notificacoes/armazem";
 import { chavePublica, pushConfigurado } from "@/lib/notificacoes/enviar";
 
@@ -101,6 +102,7 @@ export default async function Moldura({ atual }: { atual: Secao }) {
 
   return (
     <>
+      <Abertura />
       {/* verde da marca; no Início ele continua na faixa da saudação, sem a linha de baixo */}
       <header
         className={`sticky top-0 z-30 bg-verde text-papel print:hidden ${atual === "inicio" ? "" : "border-b border-verde-escuro"}`}

@@ -3,7 +3,7 @@
 // A porta do painel: usuário e senha.
 
 import { useActionState } from "react";
-import Logo from "@/components/Logo";
+import Monograma from "./Monograma";
 import { acaoEntrar, type Resultado } from "@/lib/acessos/acoes";
 import type { Area } from "@/lib/acessos/areas";
 
@@ -22,7 +22,8 @@ export default function Entrar({ area, titulo, subtitulo }: Props) {
     <div className="flex min-h-dvh items-center justify-center px-4 py-12">
       <form action={enviar} className="p-cartao w-full max-w-sm p-7 sm:p-8">
         <div className="flex flex-col items-center text-center">
-          <Logo className="h-14 w-14" />
+          {/* a gota cai e assenta do lado do N ao abrir o painel */}
+          <Monograma className="h-14 w-14 text-tinta" animar="uma" />
           <h1 className="mt-4 font-display text-3xl">{titulo}</h1>
           <p className="mt-1 text-sm text-cafe">{subtitulo}</p>
         </div>
