@@ -32,14 +32,18 @@ const FUSO = "America/Sao_Paulo";
 const formatoDia = new Intl.DateTimeFormat("en-CA", { timeZone: FUSO });
 const formatoHora = new Intl.DateTimeFormat("en-GB", { timeZone: FUSO, hour: "2-digit", hour12: false });
 
-/** Dia (AAAA-MM-DD) e hora (0–23) de Ouro Fino em que a comanda abriu. */
-export function quando(iso: string): { dia: string; hora: number } {
+/**
+ * Dia (AAAA-MM-DD) e hora (0–23) de Ouro Fino em que a comanda abriu, e o turno.
+ * Mesmas regras da Caixinha (lib/caixinha/takeat.ts): jantar a partir das 17h,
+ * e o que abre até as 6h da manhã conta no jantar do dia anterior.
+ */
+export function quando(iso: string): { dia: string; hora: number; turno: Turno } {
   const d = new Date(iso);
-  return { dia: formatoDia.format(d), hora: Number(formatoHora.format(d)) % 24 };
+  const hora = Number(formatoHora.format(d)) % 24;
+  const dia = formatoDia.format(d);
+  if (hora < 6) return { dia: formatoDia.format(new Date(d.getTime() - 86_400_000)), hora, turno: "jantar" };
+  return { dia, hora, turno: hora < 17 ? "almoco" : "jantar" };
 }
-
-/** Almoço se abriu antes das 16h (o mesmo corte do Fechamento de caixa). */
-export const turnoDaHora = (hora: number): Turno => (hora < 16 ? "almoco" : "jantar");
 
 export function canalDe(c: Comanda): Canal {
   const delivery = c.is_delivery || c.table?.table_type === "delivery";
@@ -63,7 +67,9 @@ export function grupoDe(nome: string): GrupoPagamento {
 
 export type Venda = { dia: string; hora: number; turno: Turno; canal: Canal; valor: number; pessoas: number; taxa: number };
 
-/** As vendas válidas, com dia, hora, turno e canal. */
+const pagoTudo = (c: Comanda) => (c.payments ?? []).reduce((s, p) => s + num(p.payment_value), 0);
+
+/** As vendas válidas, com dia, hora, turno e canal. O valor é sem a taxa de serviço. */
 export function vendasDe(comandas: Comanda[]): (Venda & { comanda: Comanda })[] {
   const lista: (Venda & { comanda: Comanda })[] = [];
   for (const c of comandas) {
@@ -74,16 +80,20 @@ export function vendasDe(comandas: Comanda[]): (Venda & { comanda: Comanda })[] 
     if (pago <= 0) continue;
     const canal = canalDe(c);
     const teto = canal === "presencial" ? num(c.total_price) : num(c.total_delivery_price) || num(c.total_price);
-    const { dia, hora } = quando(c.start_time);
+    const { dia, hora, turno } = quando(c.start_time);
+    const consumo = num(c.total_price);
+    // total_service_price é o total COM a taxa: a taxa é o que foi pago acima do consumo (como na Caixinha)
+    const taxa =
+      canal === "presencial" ? Math.max(0, Math.min(pagoTudo(c), num(c.total_service_price) || consumo) - consumo) : 0;
     lista.push({
       comanda: c,
       dia,
       hora,
-      turno: turnoDaHora(hora),
+      turno,
       canal,
       valor: Math.min(pago, teto || pago),
       pessoas: canal === "presencial" ? Math.max(1, Math.round(num(c.people_at_table))) : 0,
-      taxa: num(c.total_service_price),
+      taxa,
     });
   }
   return lista;

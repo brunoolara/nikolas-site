@@ -229,7 +229,8 @@ export default async function Faturamento({
   const evolucao =
     atual && p.ver === "dia"
       ? [...new Set([...Array.from({ length: 14 }, (_, n) => n + 10), ...atual.porHora.keys()])]
-          .sort((x, y) => x - y)
+          // a madrugada (até as 6h) é o fim do jantar: vem depois das 23h
+          .sort((x, y) => (x < 6 ? x + 24 : x) - (y < 6 ? y + 24 : y))
           .map((h) => ({
           rotulo: `${h}h`,
           titulo: `${h}h`,
@@ -244,11 +245,13 @@ export default async function Faturamento({
         : [];
   const melhor = evolucao.reduce((m, i, n) => (i.valor > (evolucao[m]?.valor ?? 0) ? n : m), 0);
 
-  // média por dia da semana (só no mês): soma do dia ÷ quantos daquele dia houve no período
+  // média por dia da semana (só no mês): soma ÷ quantos daquele dia tiveram venda (dia sem venda não puxa a média)
   const porSemana =
     atual && p.ver === "mes"
       ? ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"].map((rotulo, i) => {
-          const desses = dias(p.ini, p.fim).filter((d) => (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7 === i);
+          const desses = dias(p.ini, p.fim).filter(
+            (d) => (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7 === i && (atual!.porDia.get(d) ?? 0) > 0,
+          );
           const soma = desses.reduce((s, d) => s + (atual!.porDia.get(d) ?? 0), 0);
           return { rotulo, titulo: `Média de ${rotulo}`, valor: desses.length ? soma / desses.length : 0 };
         })
@@ -304,7 +307,7 @@ export default async function Faturamento({
           {/* o número que importa: o total, na faixa verde, com os canais embaixo */}
           <section className="mt-4 rounded-[22px] bg-verde p-5 text-papel shadow-[var(--p-sombra-alta)] sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-papel/70">
-              Faturamento{turno ? ` · ${turno === "almoco" ? "almoço" : "jantar"}` : ""}
+              Faturamento{turno ? ` · ${turno === "almoco" ? "almoço" : "jantar"}` : ""} · sem a taxa de serviço
             </p>
             <p className="mt-1 text-[40px] font-semibold leading-none tabular-nums sm:text-5xl">{reais(atual.total)}</p>
             <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-papel/75">
@@ -382,7 +385,7 @@ export default async function Faturamento({
             </Secao>
           ) : null}
 
-          <Secao titulo="Formas de pagamento">
+          <Secao titulo="Formas de pagamento" subtitulo="O que entrou por cada forma, já com a taxa de serviço.">
             {atual.pagamentos.length ? (
               <ul className="space-y-3">
                 {atual.pagamentos.map((g) => {
