@@ -271,28 +271,34 @@ export default async function Caixa({
       )}
 
       <section className="mt-8">
-        <h2 className="p-cartao-titulo">{filtrando ? "Busca" : "Últimos 7 dias"}</h2>
-        <form action="/caixa" className="mt-3 flex flex-wrap items-end gap-2">
-          <label className="block text-sm font-semibold">
-            Data
-            <input type="date" name="data" defaultValue={data} max={hoje} className="p-campo mt-1 w-auto" />
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="p-cartao-titulo">{filtrando ? "Busca" : "Últimos 7 dias"}</h2>
+          {filtrando ? (
+            <Link href="/caixa" className="text-sm font-semibold text-verde hover:underline">
+              Ver os últimos 7 dias
+            </Link>
+          ) : null}
+        </div>
+        {/* data e turno lado a lado, mesma altura; no celular o Buscar ocupa a linha de baixo */}
+        <form
+          action="/caixa"
+          className="p-cartao mt-3 grid grid-cols-2 items-end gap-3 p-3 sm:grid-cols-[1fr_1fr_auto] sm:p-4"
+        >
+          <label className="block">
+            <span className="p-rotulo">Data</span>
+            <input type="date" name="data" defaultValue={data} max={hoje} className="p-campo mt-1 h-11" />
           </label>
-          <label className="block text-sm font-semibold">
-            Turno
-            <select name="turno" defaultValue={turno} className="p-campo mt-1 w-auto">
+          <label className="block">
+            <span className="p-rotulo">Turno</span>
+            <select name="turno" defaultValue={turno} className="p-campo mt-1 h-11">
               <option value="">Os dois</option>
               <option value="almoco">Almoço</option>
               <option value="jantar">Jantar</option>
             </select>
           </label>
-          <button type="submit" className="p-btn p-btn-primario min-h-11">
+          <button type="submit" className="p-btn p-btn-primario col-span-2 h-11 px-6 sm:col-span-1">
             Buscar
           </button>
-          {filtrando ? (
-            <Link href="/caixa" className="p-btn p-btn-fantasma min-h-11">
-              Voltar aos últimos 7 dias
-            </Link>
-          ) : null}
         </form>
         {lista.length ? (
           <ul className="mt-4 grid gap-2">

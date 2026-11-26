@@ -26,7 +26,7 @@ export default function MenuLateral({ itens, atual, nome }: { itens: ItemMenu[];
       <button
         type="button"
         onClick={() => janela.current?.showModal()}
-        className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--p-raio-sm)] text-tinta hover:bg-creme lg:hidden"
+        className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--p-raio-sm)] text-papel hover:bg-verde-escuro lg:hidden"
         aria-label="Abrir o menu"
       >
         <Icone nome="menu" className="h-6 w-6" />

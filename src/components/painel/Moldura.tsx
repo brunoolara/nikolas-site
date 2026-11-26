@@ -12,7 +12,7 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import { sessaoAtual, type Sessao } from "@/lib/acessos/sessao";
 import type { Area } from "@/lib/acessos/areas";
-import { avisosDe } from "@/lib/avisos";
+import { contarNovos } from "@/lib/avisos";
 import Icone, { type NomeIcone } from "./Icone";
 import Sair from "./Sair";
 import MenuLateral from "./MenuLateral";
@@ -83,7 +83,7 @@ function atalhosDe(sessao: Sessao): Atalho[] {
 
 /** O número de alertas no sino. Vem depois do resto, para não atrasar a página. */
 async function Contador({ sessao }: { sessao: Sessao }) {
-  const n = (await avisosDe(sessao)).filter((a) => a.tipo === "alerta").length;
+  const n = await contarNovos(sessao);
   if (!n) return null;
   return (
     <span className="p-contador" aria-label={`${n} ${n === 1 ? "aviso" : "avisos"}`}>
@@ -100,7 +100,10 @@ export default async function Moldura({ atual }: { atual: Secao }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-linha bg-papel/95 backdrop-blur print:hidden">
+      {/* verde da marca; no Início ele continua na faixa da saudação, sem a linha de baixo */}
+      <header
+        className={`sticky top-0 z-30 bg-verde text-papel print:hidden ${atual === "inicio" ? "" : "border-b border-verde-escuro"}`}
+      >
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4 lg:h-auto lg:gap-3 lg:py-2.5">
           <MenuLateral
             itens={itens.map(({ chave, href, nome, icone }) => ({ chave, href, nome, icone }))}
@@ -108,10 +111,10 @@ export default async function Moldura({ atual }: { atual: Secao }) {
             nome={sessao.nome}
           />
           <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-md" aria-label="Início do painel">
-            <Logo className="h-8 w-8" />
+            <Logo className="h-8 w-8" variante="claro" />
             <span className="block leading-tight">
               <span className="block font-display text-lg">Nikola&apos;s</span>
-              <span className="block text-[11px] uppercase tracking-[0.14em] text-cafe">Painel</span>
+              <span className="block text-[11px] uppercase tracking-[0.14em] text-papel/70">Painel</span>
             </span>
           </Link>
 
@@ -125,18 +128,20 @@ export default async function Moldura({ atual }: { atual: Secao }) {
             <Link
               href="/avisos"
               aria-current={atual === "avisos" ? "page" : undefined}
-              className="relative flex h-10 w-10 items-center justify-center rounded-md text-cafe hover:bg-creme hover:text-tinta aria-[current=page]:bg-verde aria-[current=page]:text-papel"
+              className="relative flex h-10 w-10 items-center justify-center rounded-md text-papel/80 hover:bg-verde-escuro hover:text-papel aria-[current=page]:bg-papel aria-[current=page]:text-verde"
               aria-label="Avisos"
             >
               <Icone nome="sino" className="h-5 w-5" />
-              <Suspense fallback={null}>
-                <Contador sessao={sessao} />
-              </Suspense>
+              {atual === "avisos" ? null : (
+                <Suspense fallback={null}>
+                  <Contador sessao={sessao} />
+                </Suspense>
+              )}
             </Link>
             <Link
               href="/perfil"
               aria-current={atual === "perfil" ? "page" : undefined}
-              className="rounded-md px-2 py-2 text-sm text-cafe hover:bg-creme hover:text-tinta aria-[current=page]:font-semibold aria-[current=page]:text-verde"
+              className="rounded-md px-2 py-2 text-sm text-papel/80 hover:bg-verde-escuro hover:text-papel aria-[current=page]:font-semibold aria-[current=page]:text-papel"
             >
               {sessao.nome}
             </Link>
@@ -154,26 +159,31 @@ export default async function Moldura({ atual }: { atual: Secao }) {
         segundo={{ chave: segundo.chave, href: segundo.href, nome: segundo.nome, icone: segundo.icone }}
         atalhos={atalhosDe(sessao)}
         contador={
-          <Suspense fallback={null}>
-            <Contador sessao={sessao} />
-          </Suspense>
+          // em Avisos o número some: abrir a tela já conta como visto
+          atual === "avisos" ? null : (
+            <Suspense fallback={null}>
+              <Contador sessao={sessao} />
+            </Suspense>
+          )
         }
       />
     </>
   );
 }
 
+/** No computador: a área aberta com o nome; as outras só com o ícone (o nome no title), para caberem todas. */
 function LinkArea({ item, ativo }: { item: Item; ativo: boolean }) {
   return (
     <Link
       href={item.href}
       aria-current={ativo ? "page" : undefined}
-      className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold ${
-        ativo ? "bg-verde text-papel" : "text-cafe hover:bg-creme hover:text-tinta"
+      title={ativo ? undefined : item.nome}
+      className={`flex h-10 shrink-0 items-center gap-1.5 rounded-md text-sm font-semibold ${
+        ativo ? "bg-papel px-3 text-verde" : "w-10 justify-center text-papel/75 hover:bg-verde-escuro hover:text-papel"
       }`}
     >
-      <Icone nome={item.icone} className="h-4 w-4" />
-      {item.nome}
+      <Icone nome={item.icone} className="h-[18px] w-[18px]" />
+      <span className={ativo ? undefined : "sr-only"}>{item.nome}</span>
     </Link>
   );
 }

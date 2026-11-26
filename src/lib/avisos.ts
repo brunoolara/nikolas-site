@@ -11,6 +11,7 @@ import { hoje, rotuloData, somarDias } from "@/lib/posts/tipos";
 import { lerContagem } from "@/lib/estoque/armazem";
 import { rotuloSemana, semanaDe } from "@/lib/estoque/categorias";
 import { lerEstado } from "@/lib/caixinha/armazem";
+import { historicoDe, vistoDe } from "@/lib/notificacoes/historico";
 
 export type Aviso = {
   chave: string;
@@ -107,3 +108,28 @@ export const avisosDe = cache(async (sessao: Sessao): Promise<Aviso[]> => {
   const todos = partes.flat();
   return [...todos.filter((a) => a.tipo === "alerta"), ...todos.filter((a) => a.tipo === "info")];
 });
+
+/**
+ * O número do sino: pendências e notificações que apareceram depois da última
+ * vez que a pessoa abriu Avisos (abrir zera, mesmo que a pendência continue).
+ */
+export const contarNovos = cache(async (sessao: Sessao): Promise<number> => {
+  // o número é um extra: se a leitura falhar, some, mas a tela abre
+  try {
+    return await contar(sessao);
+  } catch (erro) {
+    console.error("avisos: não consegui contar os novos", erro);
+    return 0;
+  }
+});
+
+async function contar(sessao: Sessao): Promise<number> {
+  const [avisos, visto, historico] = await Promise.all([
+    avisosDe(sessao),
+    vistoDe(sessao.usuario),
+    historicoDe(sessao.usuario),
+  ]);
+  const pendencias = avisos.filter((a) => a.tipo === "alerta" && !visto?.chaves.includes(a.chave)).length;
+  const notificacoes = historico.filter((i) => !visto || i.em > visto.em).length;
+  return pendencias + notificacoes;
+}

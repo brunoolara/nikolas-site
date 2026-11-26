@@ -24,12 +24,16 @@ import {
   type TipoAviso,
 } from "./armazem";
 import { enviar } from "./enviar";
+import { guardarNoHistorico } from "./historico";
 
 /** Quem pode receber avisos do delivery: o master e quem tem o Ao vivo. */
-async function destinatarios(tipo: TipoAviso): Promise<Inscricao[]> {
-  const [inscricoes, prefs, usuarios] = await Promise.all([lerInscricoes(), lerPreferencias(), lerUsuarios()]);
-  const comAcesso = new Set([MASTER, ...usuarios.filter((u) => u.ativo && u.areas.includes("operacao")).map((u) => u.usuario)]);
-  return inscricoes.filter((i) => comAcesso.has(i.usuario) && (prefs[i.usuario] ?? PREFERENCIAS_PADRAO)[tipo]);
+/** Quem tem o Ao vivo e quer esse aviso, e os aparelhos inscritos dessas pessoas. */
+async function quemRecebe(tipo: TipoAviso): Promise<{ usuarios: string[]; aparelhos: Inscricao[] }> {
+  const [inscricoes, prefs, cadastro] = await Promise.all([lerInscricoes(), lerPreferencias(), lerUsuarios()]);
+  const usuarios = [MASTER, ...cadastro.filter((u) => u.ativo && u.areas.includes("operacao")).map((u) => u.usuario)].filter(
+    (u) => ({ ...PREFERENCIAS_PADRAO, ...prefs[u] })[tipo],
+  );
+  return { usuarios, aparelhos: inscricoes.filter((i) => usuarios.includes(i.usuario)) };
 }
 
 const resumoItens = (p: PedidoDelivery) => {
@@ -77,7 +81,7 @@ export async function vigiarDelivery(): Promise<Resultado> {
 
   let enviados = 0;
   if (novos.length) {
-    const para = await destinatarios("deliveryNovo");
+    const para = (await quemRecebe("deliveryNovo")).aparelhos;
     for (const p of novos) {
       enviados += await enviar(para, {
         title: p.ifood ? "Novo pedido do iFood" : p.retirada ? "Novo pedido para retirar" : "Novo pedido de delivery",
@@ -88,14 +92,17 @@ export async function vigiarDelivery(): Promise<Resultado> {
     }
   }
   if (atrasados.length) {
-    const para = await destinatarios("deliveryAtrasado");
+    const { usuarios, aparelhos } = await quemRecebe("deliveryAtrasado");
     for (const p of atrasados) {
-      enviados += await enviar(para, {
+      const mensagem = {
         title: "Delivery atrasado",
         body: `${quem(p)}: ${minutosEmPreparo(p, agora)} min em preparação.`,
         tag: `atraso-${p.id}`,
         url: "/operacao?ver=delivery",
-      });
+      };
+      enviados += await enviar(aparelhos, mensagem);
+      // o novo pedido não vai para a tela Avisos (são muitos por dia); o atrasado vai
+      await guardarNoHistorico({ tipo: "deliveryAtrasado", para: usuarios, titulo: mensagem.title, texto: mensagem.body, url: mensagem.url });
     }
   }
 

@@ -25,6 +25,7 @@ import {
   type Preferencias,
 } from "./armazem";
 import { enviar, type Mensagem } from "./enviar";
+import { guardarNoHistorico } from "./historico";
 
 export type Fechamento = {
   /** Id do pagamento: se ele for reaberto e fechado de novo, o aviso novo substitui o velho no celular. */
@@ -45,7 +46,8 @@ export type Fechamento = {
   turno?: Turno;
 };
 
-export type Aviso = { para: Inscricao[]; mensagem: Mensagem };
+/** `para`: os aparelhos inscritos (pode ser vazio: o aviso ainda vai para o histórico). */
+export type Aviso = { usuario: string; tipo: "caixinhaMinha" | "caixinhaTotal"; para: Inscricao[]; mensagem: Mensagem };
 
 /**
  * O aviso para uma pessoa da equipe: curto, só o primeiro nome e o valor que
@@ -114,7 +116,7 @@ export function montarAvisos(
       if (!preferenciasDe(prefs, u.usuario).caixinhaMinha) continue;
       const para = aparelhos(u.usuario);
       const url = u.areas.includes("minha-caixinha") ? "/minha-caixinha" : "/";
-      if (para.length) avisos.push({ para, mensagem: individual(f, l, url) });
+      avisos.push({ usuario: u.usuario, tipo: "caixinhaMinha", para, mensagem: individual(f, l, url) });
     }
   }
 
@@ -124,7 +126,7 @@ export function montarAvisos(
     if (!preferenciasDe(prefs, usuario).caixinhaTotal) continue;
     const para = aparelhos(usuario);
     const url = !u || u.areas.includes("caixinha") ? "/caixinha" : "/";
-    if (para.length && f.linhas.length) avisos.push({ para, mensagem: total(f, url) });
+    if (f.linhas.length) avisos.push({ usuario, tipo: "caixinhaTotal", para, mensagem: total(f, url) });
   }
   return avisos;
 }
@@ -134,6 +136,22 @@ export async function avisarFechamento(f: Fechamento): Promise<number> {
   const [usuarios, inscricoes, prefs] = await Promise.all([lerUsuarios(), lerInscricoes(), lerPreferencias()]);
   const avisos = montarAvisos(f, usuarios, inscricoes, prefs);
   // 12 horas: aviso de dinheiro vale mesmo para quem ligou o celular depois
-  const enviados = await Promise.all(avisos.map((a) => enviar(a.para, a.mensagem, 12 * 3600)));
-  return enviados.reduce((s, n) => s + n, 0);
+  const enviados = await Promise.all(avisos.map((a) => (a.para.length ? enviar(a.para, a.mensagem, 12 * 3600) : 0)));
+  // no histórico (tela Avisos): o total é um aviso só para todos os gestores
+  const total = avisos.filter((a) => a.tipo === "caixinhaTotal");
+  await Promise.all([
+    ...avisos
+      .filter((a) => a.tipo === "caixinhaMinha")
+      .map((a) => guardarNoHistorico({ tipo: a.tipo, para: [a.usuario], titulo: a.mensagem.title, texto: a.mensagem.body, url: a.mensagem.url })),
+    total.length
+      ? guardarNoHistorico({
+          tipo: "caixinhaTotal",
+          para: total.map((a) => a.usuario),
+          titulo: total[0].mensagem.title,
+          texto: total[0].mensagem.body,
+          url: "/caixinha",
+        })
+      : null,
+  ]);
+  return enviados.reduce<number>((s, n) => s + n, 0);
 }

@@ -1,11 +1,15 @@
 // Entrada única: sem login, pede usuário e senha; com login, mostra só as
-// áreas que a pessoa pode abrir.
+// áreas que a pessoa pode abrir. Desde 26/11/2026, como app de banco: o verde
+// do cabeçalho desce numa faixa com a saudação, e por cima da borda dela fica
+// um cartão com os atalhos em ícones (nome curto embaixo; a descrição vai no
+// title, para quem passa o mouse).
 
 import Link from "next/link";
 import Entrar from "@/components/painel/Entrar";
 import Moldura, { podeVer } from "@/components/painel/Moldura";
 import Icone, { type NomeIcone } from "@/components/painel/Icone";
 import { faltaConfigurarSenha, sessaoAtual } from "@/lib/acessos/sessao";
+import { contarNovos } from "@/lib/avisos";
 import type { Area } from "@/lib/acessos/areas";
 
 type Bloco = { href: string; nome: string; descricao: string; icone: NomeIcone; area?: Area; master?: boolean; gestor?: boolean };
@@ -21,7 +25,7 @@ const BLOCOS: Bloco[] = [
   {
     area: "posts",
     href: "/posts",
-    nome: "Posts do status",
+    nome: "Posts",
     icone: "posts",
     descricao: "Os posts do dia para compartilhar no status do WhatsApp.",
   },
@@ -35,7 +39,7 @@ const BLOCOS: Bloco[] = [
   {
     area: "caixinha-turno",
     href: "/caixinha-turno",
-    nome: "Caixinha do turno",
+    nome: "Turno",
     icone: "caixinha",
     descricao: "Para o PC do restaurante: marcar quem trabalhou no turno de agora e fechar e pagar.",
   },
@@ -56,21 +60,21 @@ const BLOCOS: Bloco[] = [
   {
     area: "estoque",
     href: "/estoque",
-    nome: "Contagem de estoque",
+    nome: "Estoque",
     icone: "estoque",
     descricao: "A contagem semanal do estoque, por categoria, pelo celular ou pelo computador.",
   },
   {
     area: "contas",
     href: "/contas",
-    nome: "Contas a pagar",
+    nome: "Contas",
     icone: "contas",
     descricao: "O que vence hoje e nos próximos dias, o código para pagar e o “Paguei”, direto da Takeat.",
   },
   {
     gestor: true,
     href: "/caixa",
-    nome: "Fechamento de caixa",
+    nome: "Caixa",
     icone: "caixa",
     descricao: "Cada caixa fechado na Takeat: formas de pagamento, sangrias e o dinheiro a entregar.",
   },
@@ -132,35 +136,52 @@ export default async function Painel() {
     timeZone: "America/Sao_Paulo",
   });
 
+  const novos = await contarNovos(sessao);
+
   return (
     <>
       <Moldura atual="inicio" />
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
-        <p className="text-sm font-medium text-cafe first-letter:uppercase">{hoje}</p>
-        <h1 className="mt-1 font-display text-3xl sm:text-4xl">
-          {saudacao()}, {sessao.nome.split(" ")[0]}.
-        </h1>
-        <p className="mt-1.5 text-cafe">O que você quer fazer agora?</p>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {liberados.map((b) => (
+      <section className="bg-verde text-papel">
+        <div className="mx-auto max-w-5xl px-4 pb-16 pt-3 sm:pb-20 sm:pt-8">
+          <p className="text-[13px] text-papel/70 first-letter:uppercase">{hoje}</p>
+          <h1 className="mt-0.5 font-display text-[28px] leading-tight sm:text-4xl">
+            {saudacao()}, {sessao.nome.split(" ")[0]}.
+          </h1>
+          {novos ? (
             <Link
-              key={b.href}
-              href={b.href}
-              className="p-cartao flex flex-col p-5 transition-[border-color,box-shadow,transform] duration-150 hover:border-verde/50 hover:shadow-[var(--p-sombra-alta)] active:scale-[0.98] motion-reduce:active:scale-100"
+              href="/avisos"
+              className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-full bg-verde-escuro px-3.5 text-sm font-semibold hover:bg-black/20"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-verde/10 text-verde">
-                <Icone nome={b.icone} className="h-6 w-6" />
-              </span>
-              <h2 className="mt-4 font-display text-2xl">{b.nome}</h2>
-              <p className="mt-1 flex-1 text-sm text-cafe">{b.descricao}</p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-verde">
-                Abrir
-                <Icone nome="seta" className="h-4 w-4" />
-              </span>
+              <span className="h-2 w-2 rounded-full bg-chope" aria-hidden="true" />
+              {novos === 1 ? "1 aviso novo" : `${novos} avisos novos`}
+              <Icone nome="seta" className="h-4 w-4" />
             </Link>
-          ))}
+          ) : null}
         </div>
+      </section>
+
+      <div className="mx-auto max-w-5xl px-4 pb-8">
+        <nav
+          aria-label="Áreas do painel"
+          className="-mt-11 rounded-[22px] border border-linha/70 bg-white px-2 py-4 shadow-[var(--p-sombra-alta)] sm:-mt-12 sm:px-5 sm:py-6"
+        >
+          <ul className="grid grid-cols-4 gap-y-4 sm:grid-cols-6">
+            {liberados.map((b) => (
+              <li key={b.href}>
+                <Link
+                  href={b.href}
+                  title={b.descricao}
+                  className="group flex flex-col items-center gap-1.5 rounded-xl px-1 py-1.5 text-center active:bg-creme/70"
+                >
+                  <span className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-creme text-verde transition-colors duration-150 group-hover:bg-verde group-hover:text-papel sm:h-14 sm:w-14">
+                    <Icone nome={b.icone} className="h-6 w-6" />
+                  </span>
+                  <span className="text-[12px] font-semibold leading-tight text-tinta sm:text-[13px]">{b.nome}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
     </>
   );
