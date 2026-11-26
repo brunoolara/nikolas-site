@@ -54,7 +54,7 @@ const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLo
 export function grupoDe(nome: string): GrupoPagamento {
   const n = semAcento(nome);
   if (/^dinheiro/.test(n)) return "dinheiro";
-  if (/online|ifood/.test(n)) return "online";
+  if (/online/.test(n)) return "online";
   if (/credito/.test(n)) return "credito";
   if (/debito/.test(n)) return "debito";
   if (/pix/.test(n)) return "pix";

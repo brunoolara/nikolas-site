@@ -71,7 +71,6 @@ export type PedidoDelivery = {
   endereco: string;
   bairro: string;
   retirada: boolean;
-  ifood: boolean;
   agendadoPara: string | null;
   inicio: string;
   etapa: EtapaDelivery;
@@ -137,7 +136,7 @@ export function pedidoDelivery(c: Comanda, agora: number): PedidoDelivery {
     endereco: [end.street, end.number, end.complement].filter(Boolean).join(", "),
     bairro: end.neighborhood ?? "",
     retirada,
-    ifood: Boolean(c.ifood_document) || /ifood/i.test(c.sales_channel ?? ""),
+    // o Nikola's não vende pelo iFood (Bruno, 26/11/2026): nenhum pedido leva essa marca
     agendadoPara: c.scheduled_to,
     inicio: c.start_time,
     etapa,

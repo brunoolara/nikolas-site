@@ -279,7 +279,6 @@ function CartaoPedido({ x }: { x: PedidoDelivery }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {x.ifood ? <span className="p-selo">iFood</span> : null}
           <span className={`p-selo ${x.etapa === "saiu" || x.etapa === "finalizado" ? "p-selo-verde" : ""}`}>
             {x.retirada && x.etapa === "saiu" ? "Pronto" : ROTULO_ETAPA[x.etapa]}
           </span>

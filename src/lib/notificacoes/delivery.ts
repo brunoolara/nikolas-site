@@ -88,7 +88,7 @@ export async function vigiarDelivery(): Promise<Resultado> {
     const { usuarios, aparelhos } = await quemRecebe("deliveryNovo");
     for (const p of novos) {
       enviados += await enviar(aparelhos, {
-        title: p.ifood ? "Novo pedido do iFood" : p.retirada ? "Novo pedido para retirar" : "Novo pedido de delivery",
+        title: p.retirada ? "Novo pedido para retirar" : "Novo pedido de delivery",
         body: [quem(p), p.bairro, resumoItens(p)].filter(Boolean).join(" · "),
         tag: `delivery-${p.id}`,
         url: "/operacao?ver=delivery",
@@ -97,7 +97,7 @@ export async function vigiarDelivery(): Promise<Resultado> {
       await guardarNoHistorico({
         tipo: "deliveryNovo",
         para: usuarios,
-        titulo: `${p.ifood ? "Pedido iFood" : p.retirada ? "Pedido para retirar" : "Novo pedido"} · ${horaLocal(p.inicio)}`,
+        titulo: `${p.retirada ? "Pedido para retirar" : "Novo pedido"} · ${horaLocal(p.inicio)}`,
         texto: [quem(p) || "Cliente sem nome", reais(p.valor)].join(" · "),
         url: "/operacao?ver=delivery",
       });
