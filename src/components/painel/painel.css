@@ -202,6 +202,20 @@ html:has(.painel) {
     background: var(--color-creme);
     color: var(--color-cafe);
   }
+  /* Data e hora no iPhone: o Safari dá ao campo uma largura e uma altura
+     mínimas próprias, que passam da coluna e ignoram a altura (26/11/2026).
+     Sem a aparência nativa, o campo segue o tamanho dos outros. */
+  .p-campo[type="date"],
+  .p-campo[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+  }
+  .p-campo::-webkit-date-and-time-value {
+    min-height: 1.5em;
+    text-align: left;
+  }
 
   /* Superfícies */
   .p-cartao {

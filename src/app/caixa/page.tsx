@@ -282,13 +282,14 @@ export default async function Caixa({
         {/* data e turno lado a lado, mesma altura; no celular o Buscar ocupa a linha de baixo */}
         <form
           action="/caixa"
-          className="p-cartao mt-3 grid grid-cols-2 items-end gap-3 p-3 sm:grid-cols-[1fr_1fr_auto] sm:p-4"
+          className="p-cartao mt-3 grid grid-cols-2 items-start gap-3 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-4"
         >
-          <label className="block">
+          <label className="block min-w-0">
             <span className="p-rotulo">Data</span>
-            <input type="date" name="data" defaultValue={data} max={hoje} className="p-campo mt-1 h-11" />
+            {/* sem busca, a data já vem com hoje: o Safari não mostra nada num campo de data vazio */}
+            <input type="date" name="data" defaultValue={data || hoje} max={hoje} className="p-campo mt-1 h-11" />
           </label>
-          <label className="block">
+          <label className="block min-w-0">
             <span className="p-rotulo">Turno</span>
             <select name="turno" defaultValue={turno} className="p-campo mt-1 h-11">
               <option value="">Os dois</option>
