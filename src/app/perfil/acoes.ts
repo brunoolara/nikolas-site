@@ -4,7 +4,7 @@
 // envio de um teste. Cada pessoa só mexe nas suas.
 
 import { revalidatePath } from "next/cache";
-import { sessaoAtual } from "@/lib/acessos/sessao";
+import { sessaoAtual, trocarMinhaSenha } from "@/lib/acessos/sessao";
 import {
   PREFERENCIAS_PADRAO,
   TIPOS,
@@ -114,4 +114,11 @@ export async function acaoMinhaChavePix(tipo: string | null, chave: string): Pro
   revalidatePath("/perfil");
   revalidatePath("/caixinha", "layout");
   return { ok: true, mensagem: r ? "Chave Pix salva." : "Chave Pix tirada." };
+}
+
+/** A própria senha: confere a atual e grava a nova (6 números). */
+export async function acaoMinhaSenha(atual: string, nova: string): Promise<Resposta> {
+  const erro = await trocarMinhaSenha(atual, nova);
+  if (erro) return { ok: false, mensagem: erro };
+  return { ok: true, mensagem: "Senha trocada. Nos outros aparelhos, entre de novo com a senha nova." };
 }

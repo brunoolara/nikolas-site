@@ -38,6 +38,7 @@ const DESCRICAO: Record<Evento["tipo"], string> = {
   cardapio: "salvou",
   conta: "",
   pix: "",
+  senha: "trocou a própria senha",
 };
 
 /** O servidor pode anotar a mesma visita mais de uma vez no dia: fica a primeira. */

@@ -87,8 +87,9 @@ export default function LinhaUsuario({ usuario, nome, areas, ativo, pessoa, gest
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
             value={novaSenha}
-            onChange={(e) => setNovaSenha(e.target.value)}
-            placeholder="Nova senha (6 ou mais)"
+            onChange={(e) => setNovaSenha(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            inputMode="numeric"
+            placeholder="Nova senha (6 números)"
             autoComplete="new-password"
             className="p-campo w-auto"
           />

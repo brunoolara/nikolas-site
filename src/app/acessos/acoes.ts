@@ -9,7 +9,8 @@ import type { Resultado } from "@/lib/acessos/acoes";
 import {
   AREAS,
   MASTER,
-  SENHA_MINIMA,
+  ERRO_SENHA,
+  SENHA_VALIDA,
   USUARIO_VALIDO,
   cifrar,
   gravarUsuarios,
@@ -49,7 +50,7 @@ export async function acaoCriarUsuario(_estado: Resultado, dados: FormData): Pro
     return { ok: false, mensagem: "Usuário: de 3 a 30 letras minúsculas, números, ponto ou hífen, sem espaço." };
   if (usuario === MASTER) return { ok: false, mensagem: "Esse usuário é o do master." };
   if (!nome) return { ok: false, mensagem: "Coloque o nome da pessoa." };
-  if (senha.length < SENHA_MINIMA) return { ok: false, mensagem: `A senha precisa de ${SENHA_MINIMA} caracteres ou mais.` };
+  if (!SENHA_VALIDA.test(senha)) return { ok: false, mensagem: ERRO_SENHA };
   if (!areas.length) return { ok: false, mensagem: "Marque pelo menos uma área." };
 
   const usuarios = await lerUsuarios();
@@ -75,8 +76,7 @@ export async function acaoAlterarUsuario(usuario: string, mudanca: Mudanca): Pro
   const u = usuarios.find((x) => x.usuario === usuario);
   if (!u) return { ok: false, mensagem: "Funcionário não encontrado." };
 
-  if (mudanca.senha !== undefined && mudanca.senha.length < SENHA_MINIMA)
-    return { ok: false, mensagem: `A senha precisa de ${SENHA_MINIMA} caracteres ou mais.` };
+  if (mudanca.senha !== undefined && !SENHA_VALIDA.test(mudanca.senha)) return { ok: false, mensagem: ERRO_SENHA };
   if (mudanca.areas && !soAreas(mudanca.areas).length) return { ok: false, mensagem: "Deixe pelo menos uma área." };
 
   if (mudanca.areas !== undefined || mudanca.pessoa !== undefined) {

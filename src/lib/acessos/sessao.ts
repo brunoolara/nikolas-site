@@ -16,7 +16,17 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { cache } from "react";
 import { registrar } from "@/lib/registro";
-import { AREAS, MASTER, lerUsuarios, senhaConfere, type Area } from "./usuarios";
+import {
+  AREAS,
+  ERRO_SENHA,
+  MASTER,
+  SENHA_VALIDA,
+  cifrar,
+  gravarUsuarios,
+  lerUsuarios,
+  senhaConfere,
+  type Area,
+} from "./usuarios";
 
 const COOKIE = "sessao";
 const DIAS_30 = 60 * 60 * 24 * 30;
@@ -77,14 +87,44 @@ export async function entrar(
     quem = u.nome;
   }
   await registrar({ tipo: "entrou", usuario: nome, nome: quem });
+  await gravarCookie(nome, versao);
+  return null;
+}
 
-  (await cookies()).set(COOKIE, `${nome}~${versao}~${assinar(nome, versao)}`, {
+async function gravarCookie(usuario: string, versao: number) {
+  (await cookies()).set(COOKIE, `${usuario}~${versao}~${assinar(usuario, versao)}`, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: DIAS_30,
   });
+}
+
+/**
+ * O funcionário troca a própria senha, conferindo a atual. A versão sobe, o
+ * que tira o login dos outros aparelhos; este aparelho ganha o cookie novo e
+ * continua dentro. Devolve uma mensagem de erro, ou null se trocou.
+ */
+export async function trocarMinhaSenha(atual: string, nova: string): Promise<string | null> {
+  const sessao = await sessaoAtual();
+  if (!sessao) return "Entre de novo no painel.";
+  if (sessao.master) return "A senha do master fica na Vercel (SENHA_PAINEL) e não muda por aqui.";
+  if (!SENHA_VALIDA.test(nova)) return ERRO_SENHA;
+
+  const usuarios = await lerUsuarios();
+  const u = usuarios.find((x) => x.usuario === sessao.usuario && x.ativo);
+  if (!u) return "Entre de novo no painel.";
+  if (!senhaConfere(u, atual)) {
+    await registrar({ tipo: "falhou", usuario: u.usuario, nome: u.nome, onde: "Senha atual errada ao trocar a senha." });
+    return "A senha atual não confere.";
+  }
+  if (senhaConfere(u, nova)) return "A senha nova é igual à atual.";
+
+  const versao = u.versao + 1;
+  await gravarUsuarios(usuarios.map((x) => (x.usuario === u.usuario ? { ...u, ...cifrar(nova), versao } : x)));
+  await gravarCookie(u.usuario, versao);
+  await registrar({ tipo: "senha", usuario: u.usuario, nome: u.nome });
   return null;
 }
 

@@ -1,4 +1,4 @@
-// Quem está logado neste aparelho, o que pode abrir e o botão de sair.
+// Quem está logado neste aparelho, o que pode abrir, a troca da própria senha e o botão de sair.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -13,6 +13,7 @@ import { lerEquipe } from "@/lib/caixinha/armazem";
 import { mostrarChave, ROTULO_PIX } from "@/lib/caixinha/pix";
 import EditorPix from "../caixinha/EditorPix";
 import Notificacoes from "./Notificacoes";
+import MinhaSenha from "./MinhaSenha";
 import { acaoMinhaChavePix } from "./acoes";
 
 export default async function Perfil() {
@@ -60,9 +61,11 @@ export default async function Perfil() {
           ))}
         </ul>
         {!sessao.master ? (
-          <p className="mt-4 text-sm text-cafe">Para abrir outra área ou trocar a senha, fale com o Bruno.</p>
+          <p className="mt-4 text-sm text-cafe">Para abrir outra área, fale com o Bruno.</p>
         ) : null}
       </section>
+
+      {!sessao.master ? <MinhaSenha /> : null}
 
       {sessao.pessoa ? (
         <section className="p-cartao mt-4 p-5">

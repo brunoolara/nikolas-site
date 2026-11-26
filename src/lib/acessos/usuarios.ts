@@ -33,7 +33,9 @@ export type Usuario = {
 
 /** Só minúsculas, números, ponto, hífen e sublinhado. */
 export const USUARIO_VALIDO = /^[a-z0-9._-]{3,30}$/;
-export const SENHA_MINIMA = 6;
+/** Toda senha nova: exatamente 6 números. As antigas continuam valendo até serem trocadas. */
+export const SENHA_VALIDA = /^\d{6}$/;
+export const ERRO_SENHA = "A senha precisa ter 6 números, só números.";
 
 export const MASTER = (process.env.MASTER_USUARIO || "bruno").toLowerCase();
 

@@ -45,8 +45,17 @@ export default function NovoUsuario({ equipe }: { equipe: DaEquipe[] }) {
           />
         </label>
         <label className="block text-sm font-semibold">
-          Senha
-          <input name="senha" required minLength={6} autoComplete="new-password" className={campo} />
+          Senha <span className="font-normal text-cafe">(6 números)</span>
+          <input
+            name="senha"
+            required
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            title="6 números, só números"
+            autoComplete="new-password"
+            className={campo}
+          />
         </label>
         <label className="block text-sm font-semibold">
           Na equipe da Caixinha é <span className="font-normal text-cafe">(para a Minha caixinha)</span>

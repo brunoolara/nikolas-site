@@ -9,7 +9,7 @@ import "server-only";
 import { get, put } from "@/lib/loja";
 import { forte } from "@/lib/etag";
 
-export type TipoEvento = "entrou" | "falhou" | "saiu" | "visita" | "cardapio" | "conta" | "pix";
+export type TipoEvento = "entrou" | "falhou" | "saiu" | "visita" | "cardapio" | "conta" | "pix" | "senha";
 
 export type Evento = {
   /** ISO 8601. */
