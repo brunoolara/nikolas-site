@@ -55,8 +55,9 @@ async function copiarTexto(texto: string): Promise<boolean> {
 }
 
 function formaSugerida(conta: Conta, tipo: TipoCodigo, formas: Opcao[]): number | null {
-  if (conta.formaId) return conta.formaId;
   const procurar = (nome: string) => formas.find((f) => f.nome.toLowerCase() === nome)?.id ?? null;
+  // pelo nome: a forma da conta pode ser a repetida que saiu da lista
+  if (conta.forma) return procurar(conta.forma.toLowerCase()) ?? conta.formaId;
   if (tipo === "boleto" || tipo === "consumo") return procurar("boleto");
   if (tipo === "pix" || tipo === "chave") return procurar("pix");
   return null;

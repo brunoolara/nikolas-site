@@ -154,6 +154,17 @@ export function lerMes(mes: string): Promise<Conta[]> {
   return despesas(`${mes}-01`, fim);
 }
 
+/** A Takeat do Nikola's tem duas formas "Cheque": fica uma por nome, a mais antiga (menor id). */
+function semRepetir(opcoes: Opcao[]): Opcao[] {
+  const porNome = new Map<string, Opcao>();
+  for (const o of opcoes) {
+    const chave = o.nome.trim().toLowerCase();
+    const ja = porNome.get(chave);
+    if (!ja || o.id < ja.id) porNome.set(chave, o);
+  }
+  return [...porNome.values()];
+}
+
 // Contas do banco e formas de pagamento quase nunca mudam.
 let opcoes: { quando: number; valor: Promise<{ contas: Opcao[]; formas: Opcao[] }> } | null = null;
 
@@ -165,7 +176,7 @@ export function lerOpcoes(): Promise<{ contas: Opcao[]; formas: Opcao[] }> {
     takeatGet<unknown>("/v1/financial/payment-methods"),
   ]).then(([c, f]) => ({
     contas: lista<{ id: number; name: string }>(c, ["data", "items", "bank_accounts"]).map(como),
-    formas: lista<{ id: number; name: string }>(f, ["data", "items", "payment_methods"]).map(como),
+    formas: semRepetir(lista<{ id: number; name: string }>(f, ["data", "items", "payment_methods"]).map(como)),
   }));
   opcoes = { quando: Date.now(), valor };
   valor.catch(() => (opcoes = null));
