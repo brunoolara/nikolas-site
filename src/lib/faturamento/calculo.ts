@@ -1,6 +1,6 @@
 // O resumo de faturamento da tela /faturamento (pedido do Bruno em 26/11/2026,
-// inspirado no relatório mensal da Takeat): total, canais (presencial,
-// delivery próprio e iFood), comandas, ticket médio, pessoas, taxa de serviço,
+// inspirado no relatório mensal da Takeat): total, canais (presencial e
+// delivery), comandas, ticket médio, pessoas, taxa de serviço,
 // dia a dia, hora a hora, dia da semana, formas de pagamento e os produtos
 // mais vendidos. Puro: recebe as comandas já lidas e o filtro de turno.
 //
@@ -11,9 +11,10 @@ import type { Comanda } from "@/lib/takeat/comandas";
 import { apurarVendas } from "@/lib/cmv/calculo";
 
 export type Turno = "almoco" | "jantar";
-export type Canal = "presencial" | "delivery" | "ifood";
-export const CANAIS: Canal[] = ["presencial", "delivery", "ifood"];
-export const ROTULO_CANAL: Record<Canal, string> = { presencial: "Presencial", delivery: "Delivery próprio", ifood: "iFood" };
+// O Nikola's não vende pelo iFood (Bruno, 26/11/2026): todo delivery é próprio.
+export type Canal = "presencial" | "delivery";
+export const CANAIS: Canal[] = ["presencial", "delivery"];
+export const ROTULO_CANAL: Record<Canal, string> = { presencial: "Presencial", delivery: "Delivery" };
 
 export type GrupoPagamento = "credito" | "debito" | "pix" | "dinheiro" | "voucher" | "online" | "prazo" | "outros";
 export const ROTULO_PAGAMENTO: Record<GrupoPagamento, string> = {
@@ -45,11 +46,8 @@ export function quando(iso: string): { dia: string; hora: number; turno: Turno }
   return { dia, hora, turno: hora < 17 ? "almoco" : "jantar" };
 }
 
-export function canalDe(c: Comanda): Canal {
-  const delivery = c.is_delivery || c.table?.table_type === "delivery";
-  if (!delivery) return "presencial";
-  return c.ifood_document || /ifood/i.test(c.sales_channel ?? "") ? "ifood" : "delivery";
-}
+export const canalDe = (c: Comanda): Canal =>
+  c.is_delivery || c.table?.table_type === "delivery" ? "delivery" : "presencial";
 
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 

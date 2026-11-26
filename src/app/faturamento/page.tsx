@@ -129,11 +129,7 @@ function Variacao({ atual, antes, claro }: { atual: number; antes: number; claro
   );
 }
 
-const COR_CANAL: Record<Canal, string> = {
-  presencial: "bg-verde",
-  delivery: "bg-chope",
-  ifood: "bg-[var(--p-vermelho)]",
-};
+const COR_CANAL: Record<Canal, string> = { presencial: "bg-verde", delivery: "bg-chope" };
 
 function Kpi({ rotulo, valor, atual, antes, ant }: { rotulo: string; valor: string; atual: number; antes: number; ant: string }) {
   return (
@@ -314,7 +310,7 @@ export default async function Faturamento({
               <Variacao atual={atual.total} antes={antes.total} claro />
               vs {p.comparado}: {reais(antes.total)}
             </p>
-            <div className="mt-5 grid grid-cols-3 gap-3 border-t border-papel/15 pt-4">
+            <div className="mt-5 grid grid-cols-2 gap-3 border-t border-papel/15 pt-4">
               {CANAIS.map((k) => (
                 <div key={k} className="min-w-0">
                   <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-papel/65">{ROTULO_CANAL[k]}</p>
